@@ -1,0 +1,11 @@
+{
+  "name": "cleo-widget",
+  "version": "1.0.0",
+  "description": "Cleo embeddable chat widget",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.0"
+  }
+}
