@@ -1,94 +1,62 @@
-# Cleo - Plataforma de Chatbots IA
+# Cleo — Asistente IA + Agendamiento para PYMEs
 
-Plataforma SaaS multi-tenant para crear y gestionar chatbots de IA con soporte para WhatsApp y widget web embebible.
+> Tu asistente de IA que atiende clientes por WhatsApp, agenda citas y confirma — sin intervención humana.
 
-## Arquitectura
+## Qué es Cleo
 
-- **Backend**: Node.js + TypeScript + Express
-- **Frontend**: React + Vite (panel de administracion)
-- **Widget**: Script JS embebible para sitios web
-- **Base de datos**: PostgreSQL via Supabase
-- **IA**: OpenAI GPT-4o-mini / Anthropic Claude Haiku
-- **Canales**: WhatsApp (Meta Cloud API) + Widget web
-- **Pagos**: Stripe Subscriptions + Customer Portal
+SaaS para pequeños negocios en Ecuador (peluquerías, clínicas dentales, spas, manicuristas) que combina:
+- **Agendamiento de citas** automático
+- **IA conversacional** en WhatsApp que responde, agenda y confirma
 
-## Estructura del proyecto
+El cliente usa su propio número de WhatsApp Business. Cleo se conecta via WhatsApp Cloud API de Meta.
+
+## Stack
+
+| Capa | Tecnología |
+|------|-----------|
+| **IA** | Claude API (claude-sonnet) — Anthropic |
+| **Backend** | Node.js + TypeScript + Express |
+| **Base de datos** | PostgreSQL via Supabase |
+| **Auth** | Supabase Auth |
+| **WhatsApp** | Meta WhatsApp Cloud API (Embedded Signup) |
+| **Pagos** | Kushki (Ecuador) |
+| **Hosting** | Vercel (frontend) + Railway (backend) |
+
+## Estructura
 
 ```
-├── backend/          # API REST (Express + TypeScript)
-│   ├── src/
-│   │   ├── config/       # Env, Supabase, Stripe
-│   │   ├── middleware/    # Auth JWT
-│   │   ├── routes/        # Auth, Bots, Conversations, Webhook, Widget, Billing
-│   │   ├── services/      # AI, Conversation, WhatsApp, Stripe
-│   │   └── types/
-│   └── supabase-schema.sql
-├── frontend/         # Panel del cliente (React + Vite)
+cleo-project/
+├── backend/
 │   └── src/
-│       ├── components/    # Layout
-│       ├── pages/         # Login, Register, Dashboard, BotEditor, Conversations, Billing
-│       ├── hooks/         # useAuth
-│       └── services/      # API client
-├── widget/           # Chat widget embebible
-│   └── src/widget.js
-├── Dockerfile
+│       ├── config/         # env, supabase client
+│       ├── middleware/      # auth, rate limiting
+│       ├── models/          # schema.sql
+│       ├── routes/          # auth, business, webhook, appointments, conversations
+│       └── services/        # ai.service, whatsapp.service, appointments.service
+├── .env.example
+├── .gitignore
 └── docker-compose.yml
 ```
 
-## Setup
+## Inicio Rápido
 
-### 1. Base de datos
-Ejecuta `backend/supabase-schema.sql` en tu proyecto de Supabase.
-
-### 2. Backend
 ```bash
 cd backend
-cp .env.example .env  # Configura las variables
+cp .env.example .env   # Configurar variables
 npm install
 npm run dev
 ```
 
-### 3. Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
+## Planes
 
-### 4. Widget
-```bash
-cd widget
-npm install
-npm run build
-```
+| Plan | Precio | Conversaciones |
+|------|--------|---------------|
+| Básico | $39/mes | 500/mes |
+| Negocio | $79/mes | 2,000/mes |
+| Pro | $149/mes | 5,000/mes + integraciones |
 
-Embed en cualquier sitio:
-```html
-<script src="https://tu-dominio.com/widget.js" data-bot-id="BOT_ID"></script>
-```
+Trial: 7 días gratis sin tarjeta.
 
-## API Endpoints
+## Licencia
 
-| Metodo | Ruta | Descripcion |
-|--------|------|-------------|
-| POST | `/api/auth/register` | Registro |
-| POST | `/api/auth/login` | Login |
-| GET | `/api/auth/me` | Perfil actual |
-| GET/POST/PUT/DELETE | `/api/bots` | CRUD de bots |
-| GET | `/api/conversations/bot/:botId` | Listar conversaciones |
-| GET | `/api/conversations/:id/messages` | Ver mensajes |
-| GET/POST | `/api/webhook/whatsapp` | Webhook de WhatsApp |
-| GET | `/api/widget/config/:botId` | Config del widget |
-| POST | `/api/widget/message/:botId` | Enviar mensaje via widget |
-| POST | `/api/billing/checkout` | Crear sesion de pago |
-| POST | `/api/billing/portal` | Portal de Stripe |
-| POST | `/api/billing/webhook` | Webhook de Stripe |
-
-## Deploy (Azure App Service)
-
-```bash
-docker build -t cleo .
-docker-compose up -d
-```
-
-O directamente en Azure App Service con la imagen Docker.
+Propietario — © 2026 Cleo. Todos los derechos reservados.

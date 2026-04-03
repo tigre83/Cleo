@@ -1,8 +1,32 @@
+# Dependencies
 node_modules/
-dist/
-build/
+
+# Environment — NUNCA commitear
 .env
 .env.local
-*.log
+.env.production
+.env.*.local
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# Coverage
 coverage/
+
+# Sentry
+.sentryclirc

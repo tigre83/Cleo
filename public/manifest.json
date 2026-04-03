@@ -1,0 +1,13 @@
+{
+  "name": "Cleo",
+  "short_name": "Cleo",
+  "description": "Tu negocio atendido 24/7 con IA",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#080808",
+  "theme_color": "#4ADE80",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
