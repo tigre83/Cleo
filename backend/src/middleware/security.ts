@@ -175,9 +175,13 @@ export function maskEmail(email: string): string {
 import { supabaseAdmin } from "../config/supabase";
 
 export async function auditLog(action: string, details: Record<string, any>, adminEmail?: string) {
-  await supabaseAdmin.from("audit_log").insert({
-    action,
-    details,
-    admin_email: adminEmail || "system",
-  }).catch(err => console.error("Audit log error:", err));
+  try {
+    await supabaseAdmin.from("audit_log").insert({
+      action,
+      details,
+      admin_email: adminEmail || "system",
+    });
+  } catch (err: any) {
+    console.error("Audit log error:", err?.message);
+  }
 }

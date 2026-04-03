@@ -611,7 +611,7 @@ appointmentsRouter.put("/:id", async (req: Request, res: Response) => {
   if (!business) return res.status(404).json({ error: "Negocio no encontrado" });
 
   if (status === "cancelled") {
-    const result = await cancelAppointment(req.params.id, business.id);
+    const result = await cancelAppointment(req.params.id as string, business.id);
     if (!result.success) return res.status(500).json({ error: result.error });
     return res.json(result.appointment);
   }
@@ -619,7 +619,7 @@ appointmentsRouter.put("/:id", async (req: Request, res: Response) => {
   const { data, error } = await supabaseAdmin
     .from("appointments")
     .update({ status })
-    .eq("id", req.params.id)
+    .eq("id", req.params.id as string)
     .eq("business_id", business.id)
     .select()
     .single();
@@ -700,13 +700,13 @@ appointmentsRouter.post("/:id/cancel", async (req: Request, res: Response) => {
   const { data: appt } = await supabaseAdmin
     .from("appointments")
     .select("*")
-    .eq("id", req.params.id)
+    .eq("id", req.params.id as string)
     .eq("business_id", business.id)
     .single();
   if (!appt) return res.status(404).json({ error: "Cita no encontrada" });
 
   // Cancelar en DB
-  const result = await cancelAppointment(req.params.id, business.id);
+  const result = await cancelAppointment(req.params.id as string, business.id);
   if (!result.success) return res.status(500).json({ error: result.error });
 
   // Buscar horarios disponibles para ofrecer alternativas
@@ -853,7 +853,7 @@ blockedSlotsRouter.delete("/:id", async (req: Request, res: Response) => {
   const { error } = await supabaseAdmin
     .from("blocked_slots")
     .delete()
-    .eq("id", req.params.id)
+    .eq("id", req.params.id as string)
     .eq("business_id", business.id);
 
   if (error) return res.status(500).json({ error: error.message });
