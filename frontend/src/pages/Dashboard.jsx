@@ -82,7 +82,14 @@ const PLANS = [
     note: "Sin límite de conversaciones. Atiende a todos tus clientes sin preocuparte por el contador." },
 ];
 const PLANS_EXPLAINER = "¿Qué es una conversación? Cada vez que un cliente te escribe por WhatsApp se abre una ventana de 24 horas — todo lo que se intercambie en esas 24 horas con ese cliente cuenta como 1 sola conversación, sin importar cuántos mensajes se envíen.";
-const PLAN_LABEL = { trial:"Prueba", basico:"Básico", negocio:"Negocio", pro:"Pro", suspended:"Suspendido", cancelled:"Cancelado" };
+const PLAN_LABEL = { trial:"Prueba", basico:"Básico", negocio:"Negocio", pro:"Pro ⭐", suspended:"Suspendido", cancelled:"Cancelado" };
+
+const ACENTOS_PLAN = {
+  trial:   { accent:"#4ADE80", accentGlow:"rgba(74,222,128,0.10)", grad:"linear-gradient(100deg,#4ADE80,#22D3EE)" },
+  basico:  { accent:"#3B82F6", accentGlow:"rgba(59,130,246,0.08)", grad:"linear-gradient(100deg,#3B82F6,#60A5FA)" },
+  negocio: { accent:"#4ADE80", accentGlow:"rgba(74,222,128,0.10)", grad:"linear-gradient(100deg,#4ADE80,#22D3EE)" },
+  pro:     { accent:"#F59E0B", accentGlow:"rgba(245,158,11,0.10)", grad:"linear-gradient(100deg,#F59E0B,#FCD34D)" },
+};
 
 const FAQ_CATS = ["WhatsApp","Citas","Servicios","Planes","IA","Cuenta"];
 const FAQ_DATA = [
@@ -816,6 +823,8 @@ export default function CleoDashboard() {
   const prefersDark = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const resolved = theme === "system" ? (prefersDark ? "dark" : "light") : theme;
   C = THEMES[resolved];
+  const _pa = ACENTOS_PLAN[biz?.plan] || ACENTOS_PLAN.negocio;
+  C = { ...C, accent: _pa.accent, accentGlow: _pa.accentGlow, grad: _pa.grad };
   const cycleTheme = () => setTheme(theme === "dark" ? "light" : theme === "light" ? "system" : "dark");
 
   const [authed, setAuthed] = useState(true);
@@ -927,7 +936,7 @@ export default function CleoDashboard() {
     <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", background: C.bg, color: C.text, minHeight: "100vh", paddingBottom: 80, display: showDash ? "block" : "none", overflowX: "hidden" }}>
 
       {/* HEADER */}
-      <div style={{ position: "sticky", top: 0, zIndex: 100, background: C.bg, borderBottom: `1px solid ${C.border}`, padding: "14px 20px" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 100, background: C.bg, borderBottom: `1px solid ${C.border}`, borderTop: biz?.plan === "pro" ? `2px solid ${C.accent}55` : "none", padding: "14px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
             <Logo size={20} tag />
