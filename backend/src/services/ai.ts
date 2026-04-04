@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import Anthropic from 'anthropic';
+import Anthropic from '@anthropic-ai/sdk';
 import { env } from '../config/env';
 import { Bot, Message } from '../types';
 
