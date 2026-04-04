@@ -85,7 +85,7 @@ function AdminLogin({ onLogin }) {
     if(!e||!p){setErr("Completa los campos");return;}
     setLoading(true); setErr("");
     try {
-      const r = await fetch("/api/admin/login", {
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/login`, {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ email:e, password:p }),
@@ -104,7 +104,7 @@ function AdminLogin({ onLogin }) {
     if(nc.join("").length===6){
       setLoading(true);
       try {
-        const r = await fetch("/api/admin/verify-2fa", {
+        const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/verify-2fa`, {
           method:"POST",
           headers:{"Content-Type":"application/json"},
           body:JSON.stringify({ code:nc.join("") }),
@@ -122,7 +122,7 @@ function AdminLogin({ onLogin }) {
     if(resends>=3){setErr("Demasiados intentos. Intenta en 30 minutos.");return;}
     setCode(["","","","","",""]); setErr("");
     try {
-      await fetch("/api/admin/login", {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/admin/login`, {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ email:e, password:p }),
