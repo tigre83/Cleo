@@ -6,7 +6,7 @@ const T = {
   dark:  { bg:"#080808",s:"#111111",s2:"#161616",b:"#1E1E1E",t:"#F9FAFB",d:"#6B7280",a:"#4ADE80",r:"#EF4444",glow:"rgba(74,222,128,0.08)",ia:"#6B7280" },
   light: { bg:"#FAFAFA",s:"#FFFFFF",s2:"#F3F4F6",b:"#E5E7EB",t:"#111827",d:"#6B7280",a:"#16A34A",r:"#DC2626",glow:"rgba(22,163,74,0.06)",ia:"#9CA3AF" },
 };
-let C = T.dark;
+var C = T.dark;
 
 const EXP_CATS = [
   { v:"infra",  l:"Infraestructura", Icon: Cloud },

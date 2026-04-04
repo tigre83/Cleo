@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Calendar, CalendarDays, BarChart3, Settings, Check, X, ChevronRight, ChevronLeft, Clock, CircleDot, Smartphone, MessageSquare, Phone, Ban, Loader, ArrowLeft, Shield, Zap, User, LogOut, Lock, Pause, Play, Trash2, AlertTriangle, Wifi, WifiOff, Eye, EyeOff, Save, HelpCircle, Sparkles, Plane, Plus, Briefcase, DollarSign, TrendingUp, ToggleRight, Download, MapPin, Car, Home, Sun, Moon as MoonIcon } from "lucide-react";
 import * as XLSX from "xlsx";
+import { supabase } from '../lib/supabase.js';
 
 // ============================================
 // CLEO — Dashboard del dueño del negocio
@@ -24,7 +25,7 @@ const THEMES = {
   },
 };
 
-let C = THEMES.dark;
+var C = THEMES.dark;
 
 const Logo = ({ size = 18, tag = false }) => (
   <span style={{ display: "inline-flex", flexDirection: "column", alignItems: tag ? "flex-start" : "center", userSelect: "none" }}>
