@@ -137,7 +137,7 @@ export async function processMessage(
     const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
     try {
       const response = await anthropic.messages.create({
-        model: env.ANTHROPIC_MODEL,
+        model: env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
         max_tokens: 600,
         system: buildSystemPrompt(business, todayAppts || [], now),
         messages,

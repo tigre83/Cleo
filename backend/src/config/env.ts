@@ -15,11 +15,19 @@ const envSchema = z.object({
 
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().optional(),
   RESEND_API_KEY: z.string().min(1),
+  NOTIFICATION_FROM_EMAIL: z.string().optional(),
+
+  SENTRY_DSN: z.string().optional(),
 
   WHATSAPP_VERIFY_TOKEN: z.string().default('cleo-verify-token'),
   WHATSAPP_API_VERSION: z.string().default('v18.0'),
   WHATSAPP_API_URL: z.string().default('https://graph.facebook.com'),
+  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_APP_SECRET: z.string().optional(),
+  WEBHOOK_VERIFY_TOKEN: z.string().optional(),
 
   STRIPE_SECRET_KEY: z.string().min(1),
   STRIPE_WEBHOOK_SECRET: z.string().min(1),

@@ -460,7 +460,7 @@ webhookRouter.get("/whatsapp", (req: Request, res: Response) => {
   const token = req.query["hub.verify_token"] as string;
   const challenge = req.query["hub.challenge"] as string;
 
-  const result = verifyWebhook(mode, token, challenge, env.WEBHOOK_VERIFY_TOKEN);
+  const result = verifyWebhook(mode, token, challenge, env.WEBHOOK_VERIFY_TOKEN || "");
   if (result) {
     res.status(200).send(result);
   } else {

@@ -73,3 +73,10 @@ export async function requireActivePlan(req: Request, res: Response, next: NextF
     message: "Tu prueba gratuita ha terminado. Elige un plan para continuar.",
   });
 }
+
+// Aliases for auth.ts routes compatibility
+export interface AuthRequest extends Request {
+  client?: { clientId: string; email: string };
+}
+
+export const authMiddleware = requireAuth;
