@@ -209,7 +209,7 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
     if (full.length === 6) {
       setVerifying(true);
       try {
-        const res = await api.post('/auth/verify-email', { email: d.email, code: full });
+        const res = await api.post('/auth/verify', { email: d.email, code: full });
         if (res.data.token) localStorage.setItem('cleo_token', res.data.token);
         setVerifying(false);
         onNext();
@@ -233,7 +233,7 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
     if (pasted.length === 6) {
       inputRefs.current[5]?.focus();
       setVerifying(true);
-      api.post("/auth/verify-email", { email: d.email, code: pasted }).then(res => { if (res.data.token) localStorage.setItem("cleo_token", res.data.token); setVerifying(false); onNext(); }).catch(err => { setVerifying(false); setCodeError(err.response?.data?.error || "Código inválido"); setCode(["","","","","",""]); inputRefs.current[0]?.focus(); });
+      api.post("/auth/verify", { email: d.email, code: pasted }).then(res => { if (res.data.token) localStorage.setItem("cleo_token", res.data.token); setVerifying(false); onNext(); }).catch(err => { setVerifying(false); setCodeError(err.response?.data?.error || "Código inválido"); setCode(["","","","","",""]); inputRefs.current[0]?.focus(); });
     } else {
       inputRefs.current[Math.min(pasted.length, 5)]?.focus();
     }
