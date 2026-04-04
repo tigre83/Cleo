@@ -566,29 +566,45 @@ function Expenses({ expenses, setExpenses, loading, authFetch }) {
 
 // ── SISTEMA ───────────────────────────────────────────────────────────────────
 function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
-  const [showForm, setShowForm]   = useState(false);
-  const [service,  setService]    = useState("");
-  const [status,   setStatus]     = useState("operational");
-  const [desc,     setDesc]       = useState("");
-  const [saving,   setSaving]     = useState(false);
+  const [health,        setHealth]        = useState([]);
+  const [healthLoading, setHealthLoading] = useState(true);
+  const [lastChecked,   setLastChecked]   = useState(null);
+  const [showForm,      setShowForm]      = useState(false);
+  const [service,       setService]       = useState("");
+  const [status,        setStatus]        = useState("operational");
+  const [desc,          setDesc]          = useState("");
+  const [saving,        setSaving]        = useState(false);
 
   const card = { background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"14px 16px" };
   const fi   = { width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",marginBottom:8 };
 
   const statusInfo = {
-    operational: { label:"Operacional", color:C.a,  Icon:CheckCircle },
+    operational: { label:"Operacional", color:C.a,       Icon:CheckCircle },
     degraded:    { label:"Degradado",   color:"#F59E0B", Icon:AlertCircle },
-    outage:      { label:"Caída",       color:C.r,  Icon:XCircle },
+    outage:      { label:"Caída",       color:C.r,       Icon:XCircle },
   };
+
+  const checkHealth = async () => {
+    setHealthLoading(true);
+    try {
+      const data = await authFetch("/api/admin/health-check");
+      setHealth(data);
+      setLastChecked(new Date());
+    } catch(err) { console.error(err); }
+    setHealthLoading(false);
+  };
+
+  useEffect(() => {
+    checkHealth();
+    const t = setInterval(checkHealth, 30000);
+    return () => clearInterval(t);
+  }, []);
 
   const addStatus = async () => {
     if (!service) return;
     setSaving(true);
     try {
-      const data = await authFetch("/api/admin/system-status", {
-        method:"POST",
-        body:JSON.stringify({ service, status, description:desc }),
-      });
+      const data = await authFetch("/api/admin/system-status", { method:"POST", body:JSON.stringify({ service, status, description:desc }) });
       setSystemStatus(prev=>[data,...prev]);
       setService(""); setDesc(""); setShowForm(false);
     } catch(err) { console.error(err); }
@@ -611,31 +627,77 @@ function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
 
   if (loading) return <Spinner />;
 
-  const active    = systemStatus.filter(s=>s.status!=="operational");
-  const resolved  = systemStatus.filter(s=>s.status==="operational");
+  const allOk   = health.length > 0 && health.every(h=>h.ok);
+  const anyDown = health.some(h=>!h.ok);
+  const active  = systemStatus.filter(s=>s.status!=="operational");
+  const resolved = systemStatus.filter(s=>s.status==="operational");
+
+  const serviceIcons = {
+    "Supabase":       "🗄️",
+    "Railway (API)":  "🚂",
+    "Resend":         "📧",
+    "WhatsApp Meta":  "💬",
+    "Claude API":     "🤖",
+  };
 
   return (
     <div>
       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16 }}>
         <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800 }}>Sistema</h2>
-        <button onClick={()=>setShowForm(!showForm)}
-          style={{ padding:"6px 12px",borderRadius:8,border:"1px solid "+C.a+"40",background:C.glow,color:C.a,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>+ Reportar</button>
-      </div>
-
-      {/* Estado general */}
-      <div style={{ ...card,marginBottom:16,display:"flex",alignItems:"center",gap:12 }}>
-        <div style={{ width:12,height:12,borderRadius:"50%",background:active.length>0?C.r:C.a,animation:"pulse 2s infinite",flexShrink:0 }}/>
-        <div>
-          <div style={{ fontSize:14,fontWeight:600 }}>{active.length>0?`${active.length} incidente${active.length>1?"s":""} activo${active.length>1?"s":""}`:"Todos los sistemas operativos"}</div>
-          <div style={{ fontSize:11,color:C.d }}>{systemStatus.length} registros totales</div>
+        <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+          <button onClick={checkHealth}
+            style={{ padding:"6px 10px",borderRadius:8,border:"1px solid "+C.b,background:"transparent",color:C.d,fontSize:11,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4 }}>
+            <RefreshCw size={11} style={healthLoading?{animation:"spin 1s linear infinite"}:{}}/> Verificar
+          </button>
+          <button onClick={()=>setShowForm(!showForm)}
+            style={{ padding:"6px 12px",borderRadius:8,border:"1px solid "+C.a+"40",background:C.glow,color:C.a,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>+ Reportar</button>
         </div>
       </div>
 
-      {/* Formulario */}
+      {/* Estado general */}
+      <div style={{ ...card,marginBottom:16,display:"flex",alignItems:"center",gap:12,background:anyDown?C.r+"08":allOk?C.glow:C.s,border:"1px solid "+(anyDown?C.r+"30":allOk?C.a+"30":C.b) }}>
+        <div style={{ width:14,height:14,borderRadius:"50%",background:anyDown?C.r:allOk?C.a:C.d,animation:"pulse 2s infinite",flexShrink:0 }}/>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:14,fontWeight:600,color:anyDown?C.r:allOk?C.a:C.t }}>
+            {healthLoading?"Verificando servicios..."
+              :anyDown?`${health.filter(h=>!h.ok).length} servicio${health.filter(h=>!h.ok).length>1?"s":""} con problemas`
+              :"Todos los servicios operativos"}
+          </div>
+          {lastChecked && <div style={{ fontSize:10,color:C.d,marginTop:2 }}>Última verificación: {lastChecked.toLocaleTimeString("es-EC")} · Actualiza cada 30s</div>}
+        </div>
+      </div>
+
+      {/* Health checks en tiempo real */}
+      <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:700, marginBottom:10 }}>Servicios en tiempo real</div>
+      {healthLoading && health.length===0
+        ? <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:20 }}>
+            {["Supabase","Railway (API)","Resend","WhatsApp Meta","Claude API"].map(s=>(
+              <div key={s} style={{ ...card,opacity:0.4,display:"flex",alignItems:"center",gap:10 }}>
+                <div style={{ width:10,height:10,borderRadius:"50%",background:C.b,flexShrink:0 }}/>
+                <div style={{ flex:1 }}><div style={{ fontSize:12,fontWeight:600 }}>{s}</div><div style={{ fontSize:10,color:C.d }}>Verificando...</div></div>
+              </div>
+            ))}
+          </div>
+        : <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:20 }}>
+            {health.map(h=>(
+              <div key={h.service} style={{ ...card,border:"1px solid "+(h.ok?C.a+"20":C.r+"30"),background:h.ok?"transparent":C.r+"05",display:"flex",alignItems:"center",gap:10 }}>
+                <div style={{ width:10,height:10,borderRadius:"50%",background:h.ok?C.a:C.r,flexShrink:0,animation:h.ok?"pulse 3s infinite":"none" }}/>
+                <div style={{ flex:1,minWidth:0 }}>
+                  <div style={{ fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:4 }}>
+                    {serviceIcons[h.service]||"⚙️"} {h.service}
+                  </div>
+                  <div style={{ fontSize:10,color:h.ok?C.d:C.r,marginTop:1 }}>{h.detail}</div>
+                </div>
+                <div style={{ fontSize:10,color:C.d,flexShrink:0 }}>{h.latency}ms</div>
+              </div>
+            ))}
+          </div>}
+
+      {/* Formulario nuevo incidente */}
       {showForm && (
         <div style={{ ...card,marginBottom:16 }}>
-          <div style={{ fontSize:13,fontWeight:600,marginBottom:10 }}>Nuevo reporte</div>
-          <input value={service} onChange={e=>setService(e.target.value)} placeholder="Servicio (ej: API, WhatsApp, Supabase)" style={fi}/>
+          <div style={{ fontSize:13,fontWeight:600,marginBottom:10 }}>Registrar incidente</div>
+          <input value={service} onChange={e=>setService(e.target.value)} placeholder="Servicio afectado" style={fi}/>
           <div style={{ display:"flex",gap:6,marginBottom:8 }}>
             {Object.entries(statusInfo).map(([k,v])=>(
               <button key={k} onClick={()=>setStatus(k)}
@@ -645,17 +707,17 @@ function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
           <input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Descripción (opcional)" style={fi}/>
           <button onClick={addStatus} disabled={!service||saving}
             style={{ width:"100%",padding:10,borderRadius:8,border:"none",background:service?C.a:C.b,color:service?C.bg:C.d,fontSize:13,fontWeight:600,cursor:service?"pointer":"default",fontFamily:"inherit" }}>
-            {saving?"Guardando...":"Registrar"}
+            {saving?"Guardando...":"Registrar incidente"}
           </button>
         </div>
       )}
 
-      {/* Incidentes activos */}
+      {/* Incidentes activos manuales */}
       {active.length>0 && (
         <div style={{ marginBottom:16 }}>
           <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:700, marginBottom:8, color:C.r }}>Incidentes activos</div>
           {active.map(s=>{
-            const si = statusInfo[s.status];
+            const si = statusInfo[s.status]||statusInfo.outage;
             return (
               <div key={s.id} style={{ background:C.s,border:"1px solid "+si.color+"30",borderRadius:10,padding:"12px 14px",marginBottom:6 }}>
                 <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:8 }}>
@@ -676,10 +738,10 @@ function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
         </div>
       )}
 
-      {/* Historial resueltos */}
+      {/* Historial */}
       {resolved.length>0 && (
         <div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:700, marginBottom:8, color:C.d }}>Historial</div>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:700, marginBottom:8, color:C.d }}>Historial de incidentes</div>
           {resolved.slice(0,10).map(s=>(
             <div key={s.id} style={{ background:C.s,border:"1px solid "+C.b,borderRadius:10,padding:"10px 14px",marginBottom:4,display:"flex",alignItems:"center",justifyContent:"space-between",opacity:0.6 }}>
               <div style={{ display:"flex",alignItems:"center",gap:8 }}>
@@ -695,7 +757,7 @@ function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
         </div>
       )}
 
-      {systemStatus.length===0 && <EmptyState icon={Activity} text="Sin registros de sistema. Todo operativo." />}
+      {systemStatus.length===0&&health.length===0&&!healthLoading && <EmptyState icon={Activity} text="Sin registros. Todos los servicios operativos." />}
     </div>
   );
 }
@@ -841,7 +903,7 @@ export default function CleoAdmin() {
       {/* Sidebar desktop */}
       {!mob && (
         <div style={{ width:220,borderRight:"1px solid "+C.b,padding:"20px 12px",flexShrink:0,position:"sticky",top:0,height:"100vh",overflowY:"auto" }}>
-          <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:28,paddingLeft:8 }}><AdminLogo size={16}/></div>
+          <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:28,paddingLeft:8 }}><AdminLogo size={22}/></div>
           {tabs.map(t=>(
             <button key={t.id} onClick={()=>{setTab(t.id);setSelectedUser(null);}}
               style={{ width:"100%",padding:"10px 12px",borderRadius:10,border:"none",background:tab===t.id?C.glow:"transparent",color:tab===t.id?C.a:C.d,fontSize:13,fontWeight:tab===t.id?600:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10,marginBottom:2,textAlign:"left" }}>
@@ -861,7 +923,7 @@ export default function CleoAdmin() {
       )}
 
       {/* Contenido */}
-      <div style={{ flex:1,padding:mob?"16px 16px 80px":"24px 28px",maxWidth:mob?"100%":900,overflowY:"auto" }}>
+      <div style={{ flex:1,padding:mob?"16px 16px 80px":"24px 28px",maxWidth:mob?"100%":1100,overflowY:"auto" }}>
         {mob&&(
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12 }}>
             <AdminLogo size={14}/>

@@ -321,4 +321,63 @@ router.delete('/system-status/:id', adminAuthMiddleware, async (req: AdminReques
   }
 });
 
+
+// ── GET /admin/health-check — verifica servicios en tiempo real ───────────────
+router.get('/health-check', adminAuthMiddleware, async (_req: AdminRequest, res: Response) => {
+  const results: Array<{ service: string; ok: boolean; latency: number; detail: string }> = [];
+
+  const check = async (name: string, fn: () => Promise<string>) => {
+    const start = Date.now();
+    try {
+      const detail = await fn();
+      results.push({ service: name, ok: true, latency: Date.now() - start, detail });
+    } catch (err: any) {
+      results.push({ service: name, ok: false, latency: Date.now() - start, detail: err?.message || 'Error desconocido' });
+    }
+  };
+
+  await Promise.all([
+    // Supabase
+    check('Supabase', async () => {
+      const { error } = await supabase.from('businesses').select('id').limit(1);
+      if (error) throw new Error(error.message);
+      return 'Conexión OK';
+    }),
+
+    // Backend / Railway — siempre OK si estamos respondiendo
+    check('Railway (API)', async () => 'Servidor activo'),
+
+    // Resend
+    check('Resend', async () => {
+      if (!env.RESEND_API_KEY) throw new Error('API key no configurada');
+      const r = await fetch('https://api.resend.com/domains', {
+        headers: { Authorization: `Bearer ${env.RESEND_API_KEY}` },
+      });
+      if (!r.ok && r.status !== 200) throw new Error(`HTTP ${r.status}`);
+      return 'API key válida';
+    }),
+
+    // Meta WhatsApp
+    check('WhatsApp Meta', async () => {
+      const token = (env as any).WHATSAPP_ACCESS_TOKEN;
+      const phoneId = (env as any).WHATSAPP_PHONE_NUMBER_ID;
+      if (!token || token === 'pendiente') throw new Error('Token no configurado');
+      const r = await fetch(`https://graph.facebook.com/v18.0/${phoneId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return 'Token válido';
+    }),
+
+    // Claude API (Anthropic)
+    check('Claude API', async () => {
+      const key = (env as any).ANTHROPIC_API_KEY;
+      if (!key) throw new Error('API key no configurada');
+      return 'Key configurada';
+    }),
+  ]);
+
+  res.json(results);
+});
+
 export default router;
