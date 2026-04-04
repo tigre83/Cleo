@@ -832,8 +832,6 @@ export default function CleoDashboard() {
   const cycleTheme = () => setTheme(theme === "dark" ? "light" : theme === "light" ? "system" : "dark");
 
   const [authed, setAuthed] = useState(false);
-  const _pa = ACENTOS_PLAN[biz?.plan] || ACENTOS_PLAN.negocio;
-  C = { ...C, accent: _pa.accent, accentGlow: _pa.accentGlow, grad: _pa.grad };
   const [tab, setTab] = useState("agenda");
   const [agendaView, setAgendaView] = useState("semana"); // dia | semana | mes
   const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS);
@@ -863,6 +861,8 @@ export default function CleoDashboard() {
     schedule: { lunes: { active: true, open: "09:00", close: "18:00" }, martes: { active: true, open: "09:00", close: "18:00" }, miercoles: { active: true, open: "09:00", close: "18:00" }, jueves: { active: true, open: "09:00", close: "18:00" }, viernes: { active: true, open: "09:00", close: "18:00" }, sabado: { active: true, open: "09:00", close: "14:00" }, domingo: { active: false, open: "00:00", close: "00:00" } },
   });
   const logoInputRef = useRef(null);
+  const _pa = ACENTOS_PLAN[biz?.plan] || ACENTOS_PLAN.negocio;
+  C = { ...C, accent: _pa.accent, accentGlow: _pa.accentGlow, grad: _pa.grad };
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
