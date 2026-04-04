@@ -67,8 +67,12 @@ authRouter.post("/register", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "email, password y business_name son requeridos" });
   }
 
-  // Crear usuario en Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+  // Crear usuario en Supabase Auth (admin API — no envía email, sin rate limit)
+  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: false,
+  });
   if (authError) return res.status(400).json({ error: authError.message });
 
   // Generar código de verificación
