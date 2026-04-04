@@ -148,8 +148,6 @@ function AdminLogin({ onLogin }) {
     return () => clearTimeout(t);
   }, [countdown]);
 
-  const [isMember, setIsMember] = useState(false);
-
   const go = async () => {
     if (!email||!pass) { setErr("Completa los campos"); return; }
     setLoading(true); setErr("");
