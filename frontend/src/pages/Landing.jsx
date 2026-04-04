@@ -180,7 +180,7 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
   const handleRegister = async () => {
     if (!validate()) return;
     setLoading(true);
-    try { await api.post("/auth/register", { email: d.email, password: d.password, company_name: d.business_name });
+    try { await api.post("/auth/register", { email: d.email, password: d.password, business_name: d.business_name });
     setLoading(false); setPhase("verify"); } catch (err) { setLoading(false); setEr({ g: err.response?.data?.error || "Error al registrarse" }); }
   };
 
