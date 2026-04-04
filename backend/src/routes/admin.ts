@@ -427,7 +427,7 @@ router.post('/invite', adminAuthMiddleware, async (req: AdminRequest, res: Respo
     const rolLabel  = role === 'owner' ? 'Dueño' : 'Soporte';
 
     await resend.emails.send({
-      from: 'Cleo <soporte@cleoia.app>',
+      from: 'Cleo <noreply@cleoia.app>',
       to:   email,
       subject: 'Te invitaron al panel de administración — Cleo',
       html: `
