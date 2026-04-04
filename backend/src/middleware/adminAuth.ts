@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
-import { AdminAuthPayload } from '../types';
+interface AdminAuthPayload { email: string; role: string; iat?: number; exp?: number; }
 
 export interface AdminRequest extends Request {
   admin?: AdminAuthPayload;
