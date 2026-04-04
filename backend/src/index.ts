@@ -4,7 +4,7 @@ import { env } from "./config/env";
 import { requireAuth, requireActivePlan } from "./middleware/auth";
 import { securityHeaders, getCorsOptions, verifyWebhookSignature } from "./middleware/security";
 import { initSentry, Sentry } from "./config/sentry";
-import { runDailyCleanup } from "./services/cron.service";
+import { runDailyCleanup, runAppointmentReminders } from "./services/cron.service";
 import adminRoutes from "./routes/admin";
 import {
   authRouter,
@@ -98,6 +98,11 @@ app.listen(env.PORT, () => {
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
   runDailyCleanup().catch(e => console.error("Error cron inicial:", e));
   setInterval(() => runDailyCleanup().catch(e => console.error("Error cron:", e)), TWENTY_FOUR_HOURS);
+
+  // Recordatorios de citas: cada 30 minutos
+  const THIRTY_MINUTES = 30 * 60 * 1000;
+  runAppointmentReminders().catch(e => console.error("Error recordatorios inicial:", e));
+  setInterval(() => runAppointmentReminders().catch(e => console.error("Error recordatorios:", e)), THIRTY_MINUTES);
 });
 
 export default app;
