@@ -74,30 +74,61 @@ const AdminLogo = ({ size = 20 }) => (
 // LOGIN
 // ============================================
 function AdminLogin({ onLogin }) {
-  const [step, setStep] = useState(0); // 0=credentials, 1=code
+  const [step, setStep] = useState(0);
   const [e, setE] = useState(""); const [p, setP] = useState(""); const [err, setErr] = useState(""); const [loading, setLoading] = useState(false); const [sp, setSp] = useState(false);
   const [code, setCode] = useState(["","","","","",""]); const [countdown, setCountdown] = useState(0); const [resends, setResends] = useState(0);
   const cRefs = useRef([]);
 
   useEffect(function(){ if(countdown<=0)return; const t=setTimeout(function(){setCountdown(countdown-1)},1000); return function(){clearTimeout(t)}; },[countdown]);
 
-  const go = () => {
+  const go = async () => {
     if(!e||!p){setErr("Completa los campos");return;}
     setLoading(true); setErr("");
-    // In production: POST /api/admin/login → sends 2FA code
-    setTimeout(()=>{setLoading(false); setStep(1); setCountdown(60); setResends(1);},600);
+    try {
+      const r = await fetch("/api/admin/login", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ email:e, password:p }),
+      });
+      const d = await r.json();
+      if(!r.ok){ setErr(d.error||"Credenciales inválidas"); setLoading(false); return; }
+      setStep(1); setCountdown(60); setResends(1);
+    } catch { setErr("Error de conexión"); }
+    setLoading(false);
   };
 
-  const handleCode = (i, v) => {
+  const handleCode = async (i, v) => {
     const clean = v.toUpperCase().replace(/[^A-Z0-9]/g, "");
     const nc = [...code]; nc[i] = clean.slice(0,1); setCode(nc); setErr("");
     if(clean && i<5) cRefs.current[i+1]?.focus();
-    if(nc.join("").length===6){ setLoading(true); setTimeout(()=>{setLoading(false); onLogin(e);},800); }
+    if(nc.join("").length===6){
+      setLoading(true);
+      try {
+        const r = await fetch("/api/admin/verify-2fa", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ code:nc.join("") }),
+        });
+        const d = await r.json();
+        if(!r.ok){ setErr(d.error||"Código inválido"); setLoading(false); return; }
+        localStorage.setItem("adminToken", d.token);
+        onLogin(e);
+      } catch { setErr("Error de conexión"); }
+      setLoading(false);
+    }
   };
 
-  const resend = () => {
+  const resend = async () => {
     if(resends>=3){setErr("Demasiados intentos. Intenta en 30 minutos.");return;}
-    setCode(["","","","","",""]); setCountdown(60); setResends(resends+1); setErr("");
+    setCode(["","","","","",""]); setErr("");
+    try {
+      await fetch("/api/admin/login", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ email:e, password:p }),
+      });
+      setCountdown(60); setResends(resends+1);
+    } catch { setErr("Error de conexión"); }
   };
 
   const cMin = Math.floor(countdown/60); const cSec = String(countdown%60).padStart(2,"0");
@@ -126,8 +157,7 @@ function AdminLogin({ onLogin }) {
         ) : (
           <div>
             <p style={{ fontSize:13, color:C.d, marginBottom:4 }}>Código enviado a</p>
-            <p style={{ fontSize:13, fontWeight:600, marginBottom:12 }}>soporte@cleo.app</p>
-            <div style={{ fontSize:10, color:"#555", marginBottom:12, padding:"6px 10px", borderRadius:6, background:C.s, border:"1px solid "+C.b }}>Demo: escribe cualquier código de 6 caracteres</div>
+            <p style={{ fontSize:13, fontWeight:600, marginBottom:12 }}>{e}</p>
             <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:12 }}>
               {code.map(function(c,i){ return (
                 <input key={i} ref={function(el){cRefs.current[i]=el}} type="text" inputMode="text" maxLength={1} value={c}
@@ -275,8 +305,6 @@ function UserDetail({ user, onBack, onUpdate }) {
       <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:C.d, fontSize:13, cursor:"pointer", fontFamily:"inherit", marginBottom:16 }}>
         <X size={14} /> Volver a la lista
       </button>
-
-      {/* Header */}
       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:4 }}>
         <div style={{ width:48, height:48, borderRadius:14, background:C.glow, border:"1px solid "+C.b, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, color:C.a }}>{user.name[0]}</div>
         <div><div style={{ fontSize:18, fontWeight:700 }}>{user.name}</div><div style={{ fontSize:12, color:C.d }}>{user.email}</div></div>
@@ -287,8 +315,6 @@ function UserDetail({ user, onBack, onUpdate }) {
           <span style={{ fontSize:12, color:C.r, fontWeight:600 }}>Cuenta suspendida</span>
         </div>
       )}
-
-      {/* Info cards */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16, marginTop:isSuspended?0:16 }}>
         {[{l:"Plan",v:user.plan,color:true},{l:"Facturación",v:user.billing==="annual"?"Anual":"Mensual"},{l:"Renovación",v:user.renews||"—"},{l:"Monto",v:user.billing==="annual"&&user.plan!=="trial"?"$"+({"basico":290,"negocio":590,"pro":990}[user.plan]||0)+"/año":"$"+({"basico":29,"negocio":59,"pro":99}[user.plan]||0)+"/mes"},{l:"Registro",v:user.registered},{l:"Última actividad",v:user.last_active},{l:"WhatsApp",v:user.wa?"Conectado":"Desconectado"},{l:"Conversaciones",v:user.convos},{l:"Citas",v:user.appts},{l:"Tipo",v:user.type}].map(function(f,i){
           return (
@@ -299,11 +325,7 @@ function UserDetail({ user, onBack, onUpdate }) {
           );
         })}
       </div>
-
-      {/* ACCIONES */}
       <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10, marginTop:24 }}>Acciones</div>
-
-      {/* Cambiar plan */}
       <div style={{ background:C.s, border:"1px solid "+C.b, borderRadius:12, padding:"14px 16px", marginBottom:8 }}>
         <div style={{ fontSize:11, color:C.d, marginBottom:6 }}>Cambiar plan</div>
         <div style={{ display:"flex", gap:6 }}>
@@ -313,8 +335,6 @@ function UserDetail({ user, onBack, onUpdate }) {
           <button onClick={function(){onUpdate({...user, plan, status: plan==="trial"?"trial":"active"});}} style={{ padding:"10px 16px", borderRadius:8, border:"none", background:C.a, color:C.bg, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Aplicar</button>
         </div>
       </div>
-
-      {/* Extender trial */}
       {user.plan === "trial" && (
         <div style={{ background:C.s, border:"1px solid "+C.b, borderRadius:12, padding:"14px 16px", marginBottom:8 }}>
           <div style={{ fontSize:11, color:C.d, marginBottom:6 }}>Extender trial</div>
@@ -324,18 +344,13 @@ function UserDetail({ user, onBack, onUpdate }) {
           </div>
         </div>
       )}
-
-      {/* Suspender / Reactivar */}
       {isSuspended ? (
         <button onClick={handleReactivate} style={{ width:"100%", padding:10, borderRadius:10, border:"1px solid "+C.a+"40", background:C.glow, color:C.a, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", marginTop:8, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}><Play size={12} /> Reactivar cuenta</button>
       ) : user.plan !== "cancelled" ? (
         <button onClick={handleSuspend} style={{ width:"100%", padding:10, borderRadius:10, border:"1px solid "+C.r+"25", background:C.r+"08", color:C.r, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", marginTop:8, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}><Pause size={12} /> Suspender cuenta</button>
       ) : null}
-
       <button style={{ width:"100%", padding:10, borderRadius:10, border:"1px solid "+C.b, background:"transparent", color:C.d, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", marginTop:8, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}><Mail size={12} /> Enviar email directo</button>
       <button style={{ width:"100%", padding:10, borderRadius:10, border:"1px solid "+C.b, background:"transparent", color:C.r, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", marginTop:8, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}><Trash2 size={12} /> Eliminar cuenta</button>
-
-      {/* NOTAS INTERNAS */}
       <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10, marginTop:28 }}>Notas internas</div>
       <div style={{ background:C.s, border:"1px solid "+C.b, borderRadius:12, padding:"14px 16px", marginBottom:8 }}>
         <div style={{ display:"flex", gap:6, marginBottom: user.notes.length > 0 ? 12 : 0 }}>
@@ -369,8 +384,6 @@ function Finanzas({ users, payments, expenses }) {
   const pro=paid.filter(u=>u.plan==="pro").length;
   const prices = {basico:29,negocio:59,pro:99};
   const annualPrices = {basico:290,negocio:590,pro:990};
-
-  // MRR breakdown: monthly users pay full price, annual users contribute annual/12
   const mrrRows = [];
   ["basico","negocio","pro"].forEach(function(p){
     const monthly = paid.filter(u=>u.plan===p && u.billing==="monthly").length;
@@ -398,8 +411,6 @@ function Finanzas({ users, payments, expenses }) {
   return (
     <div>
       <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, marginBottom:12 }}>Finanzas</h2>
-
-      {/* FILTROS */}
       <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
         <select value={period} onChange={function(e){setPeriod(e.target.value)}} style={{ padding:"8px 12px", borderRadius:8, border:"1px solid "+C.b, background:C.s, color:C.t, fontSize:12, fontFamily:"inherit", outline:"none" }}>
           {periods.map(function(p){ return <option key={p} value={p}>{periodLabels[p]}</option> })}
@@ -410,15 +421,11 @@ function Finanzas({ users, payments, expenses }) {
           })}
         </div>
       </div>
-
-      {/* GANANCIA NETA */}
       <div style={{ ...card, textAlign:"center", marginBottom:16, background: net>=0 ? C.glow : C.r+"08", border: "1px solid "+(net>=0 ? C.a+"25" : C.r+"25") }}>
         <div style={{ fontSize:11, color:C.d, marginBottom:4 }}>Ganancia neta del mes</div>
         <div style={{ fontFamily:"'Syne',sans-serif", fontSize:36, fontWeight:800, color: net>=0 ? C.a : C.r }}>${net.toFixed(0)}</div>
         <div style={{ fontSize:11, color:C.d, marginTop:4 }}>${cobrado} cobrado − ${totalExpenses.toFixed(0)} egresos</div>
       </div>
-
-      {/* INGRESOS */}
       {(view === "ingresos" || view === "ambos") && (<div>
       <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10 }}>Ingresos</div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
@@ -450,8 +457,6 @@ function Finanzas({ users, payments, expenses }) {
         </ResponsiveContainer>
       </div>
       </div>)}
-
-      {/* EGRESOS resumen */}
       {(view === "egresos" || view === "ambos") && (<div>
       <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10 }}>Egresos</div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
@@ -473,8 +478,6 @@ function Finanzas({ users, payments, expenses }) {
         </ResponsiveContainer>
       </div>
       </div>)}
-
-      {/* PAGOS */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
         <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700 }}>Pagos recientes</div>
         <button onClick={()=>setShowPay(!showPay)} style={{ padding:"5px 10px", borderRadius:6, border:"1px solid "+C.a+"40", background:C.glow, color:C.a, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>+ Registrar pago</button>
@@ -522,14 +525,10 @@ function Expenses({ expenses, setExpenses }) {
         <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800 }}>Egresos</h2>
         <button onClick={()=>setShowForm(!showForm)} style={{ padding:"6px 12px", borderRadius:8, border:"1px solid "+C.a+"40", background:C.glow, color:C.a, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>+ Registrar egreso</button>
       </div>
-
-      {/* Total */}
       <div style={{ ...card, marginBottom:16, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <span style={{ fontSize:13, color:C.d }}>Total egresos este mes</span>
         <span style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:C.r }}>${total.toFixed(2)}</span>
       </div>
-
-      {/* Form */}
       {showForm && (
         <div style={{ ...card, marginBottom:16 }}>
           <div style={{ fontSize:13, fontWeight:600, marginBottom:10 }}>Nuevo egreso</div>
@@ -552,8 +551,6 @@ function Expenses({ expenses, setExpenses }) {
           <button onClick={addExpense} disabled={!desc||!amount} style={{ width:"100%", padding:10, borderRadius:8, border:"none", background:desc&&amount?C.a:C.b, color:desc&&amount?C.bg:C.d, fontSize:13, fontWeight:600, cursor:desc&&amount?"pointer":"default", fontFamily:"inherit" }}>Guardar egreso</button>
         </div>
       )}
-
-      {/* By category */}
       <div style={{ ...card, marginBottom:12 }}>
         <div style={{ fontSize:12, color:C.d, marginBottom:8 }}>Por categoría</div>
         {EXP_CATS.map(c => {
@@ -579,8 +576,6 @@ function Expenses({ expenses, setExpenses }) {
           );
         })}
       </div>
-
-      {/* Full list */}
       <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10 }}>Todos los egresos</div>
       {expenses.map(e => {
         const catInfo = EXP_CATS.find(c=>c.v===e.category);
@@ -678,8 +673,6 @@ export default function CleoAdmin() {
 
   return (
     <div style={{ fontFamily:"'DM Sans',sans-serif", background:C.bg, color:C.t, minHeight:"100vh", display:"flex", flexDirection:mob?"column":"row", overflowX:"hidden", maxWidth:"100vw" }}>
-
-      {/* SIDEBAR desktop */}
       {!mob && (
         <div style={{ width:220, borderRight:"1px solid "+C.b, padding:"20px 12px", flexShrink:0, position:"sticky", top:0, height:"100vh", overflowY:"auto" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:28, paddingLeft:8 }}>
@@ -699,8 +692,6 @@ export default function CleoAdmin() {
           </div>
         </div>
       )}
-
-      {/* CONTENT */}
       <div style={{ flex:1, padding:mob?"16px 16px 80px":"24px 28px", maxWidth:mob?"100%":900, overflowY:"auto" }}>
         {mob && (
           <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}>
@@ -716,8 +707,6 @@ export default function CleoAdmin() {
         {tab === "expenses" && <Expenses expenses={expenses} setExpenses={setExpenses} />}
         {tab === "config" && <SysConfig />}
       </div>
-
-      {/* BOTTOM NAV mobile */}
       {mob && (
         <div style={{ position:"fixed", bottom:0, left:0, right:0, background:C.bg, borderTop:"1px solid "+C.b, display:"flex", padding:"8px 0 4px", zIndex:100 }}>
           {tabs.map(t=>(
