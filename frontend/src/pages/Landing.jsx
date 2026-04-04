@@ -838,7 +838,7 @@ export default function CleoApp({ initialView }) {
               <button onClick={cycleTheme} style={{ width: 32, height: 32, borderRadius: "50%", background: C.surface, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 {resolved === "dark" ? <MoonIcon size={14} color={C.dim} /> : resolved === "light" ? <Sun size={14} color={C.dim} /> : <Settings size={14} color={C.dim} />}
               </button>
-              <span style={{ color: C.dim, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Iniciar sesión</span>
+              <button onClick={() => window.location.href="/dashboard"} style={{ color: C.dim, fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Iniciar sesión</button>
               <button onClick={go} style={{ padding: "8px 20px", borderRadius: 50, background: C.accent, color: C.bg, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit" }}>Prueba gratis</button>
             </div>
           )}
