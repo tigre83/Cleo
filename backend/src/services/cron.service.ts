@@ -30,15 +30,15 @@ async function sendWhatsAppReminder(
   fallbackEmail?: string,
   fallbackSubject?: string
 ): Promise<"whatsapp" | "email" | "none"> {
-  if (env.WHATSAPP_TOKEN && env.WHATSAPP_PHONE_ID) {
+  if (env.WHATSAPP_ACCESS_TOKEN && env.WHATSAPP_PHONE_NUMBER_ID) {
     try {
       const phoneClean = phone.replace(/[^0-9]/g, "");
       const res = await fetch(
-        `https://graph.facebook.com/v18.0/${env.WHATSAPP_PHONE_ID}/messages`,
+        `https://graph.facebook.com/v18.0/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${env.WHATSAPP_TOKEN}`,
+            Authorization: `Bearer ${env.WHATSAPP_ACCESS_TOKEN}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -117,7 +117,7 @@ export async function runAppointmentReminders(): Promise<void> {
     const diffMs = apptDate.getTime() - now.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
 
-    const biz = appt.businesses as { business_name: string; email: string } | null;
+    const biz = (appt.businesses as unknown) as { business_name: string; email: string } | null;
     const bizName = biz?.business_name ?? "tu negocio";
     const bizEmail = biz?.email;
 
