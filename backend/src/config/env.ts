@@ -26,6 +26,9 @@ const envSchema = z.object({
   STRIPE_PRICE_BASIC: z.string().optional(),
   STRIPE_PRICE_PRO: z.string().optional(),
   STRIPE_PRICE_ENTERPRISE: z.string().optional(),
+
+  ADMIN_EMAIL: z.string().email(),
+  ADMIN_PASSWORD: z.string().min(1),
 });
 
 export const env = envSchema.parse(process.env);

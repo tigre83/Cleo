@@ -53,3 +53,8 @@ export interface AuthPayload {
   clientId: string;
   email: string;
 }
+
+export interface AdminAuthPayload {
+  role: 'admin';
+  email: string;
+}

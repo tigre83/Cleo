@@ -7,6 +7,7 @@ import BotEditor from './pages/BotEditor';
 import Conversations from './pages/Conversations';
 import Billing from './pages/Billing';
 import Layout from './components/Layout';
+import Admin from './pages/Admin';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { client, loading } = useAuth();
@@ -20,6 +21,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/admin" element={<Admin />} />
         <Route
           path="/*"
           element={

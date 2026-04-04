@@ -7,6 +7,7 @@ import conversationRoutes from './routes/conversations';
 import webhookRoutes from './routes/webhook';
 import widgetRoutes from './routes/widget';
 import billingRoutes from './routes/billing';
+import adminRoutes from './routes/admin';
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/conversations', conversationRoutes);
 app.use('/api/webhook', webhookRoutes);
 app.use('/api/widget', widgetRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {
