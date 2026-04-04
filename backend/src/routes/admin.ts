@@ -533,7 +533,7 @@ router.post('/invite/:token/accept', async (req: Request, res: Response) => {
   }
 });
 
-// ── POST /admin/login/member — login para miembros invitados ──────────────────
+// ── POST /admin/login/member — paso 1: validar credenciales y enviar código 2FA
 router.post('/login/member', async (req: Request, res: Response) => {
   try {
     const { email, password } = z.object({
@@ -558,7 +558,60 @@ router.post('/login/member', async (req: Request, res: Response) => {
       return;
     }
 
-    await supabase.from('admin_users').update({ last_login_at: new Date().toISOString() }).eq('id', data.id);
+    // Generar código 2FA
+    const code      = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const codeHash  = crypto.createHash('sha256').update(code).digest('hex');
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    await supabase.from('admin_users').update({
+      invite_token:      codeHash,
+      invite_expires_at: expiresAt,
+    }).eq('id', data.id);
+
+    await resend.emails.send({
+      from:    'Cleo <noreply@cleoia.app>',
+      to:      email,
+      subject: 'Código de acceso admin — Cleo',
+      html: `<body style="background:#080808;font-family:sans-serif;padding:40px 20px;text-align:center;"><div style="max-width:400px;margin:0 auto;background:#111;border:1px solid #1E1E1E;border-radius:16px;padding:32px;"><div style="font-size:24px;font-weight:800;color:#4ADE80;margin-bottom:16px;">cleo.</div><h2 style="color:#fff;margin:0 0 8px;">Código de acceso</h2><p style="color:#888;font-size:13px;margin:0 0 24px;">Expira en 10 minutos.</p><div style="background:#080808;border:1px solid #222;border-radius:10px;padding:16px;font-size:28px;font-weight:700;letter-spacing:8px;color:#22D3EE;font-family:monospace;">${code}</div></div></body>`,
+    });
+
+    res.json({ message: 'Código 2FA enviado' });
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── POST /admin/verify-2fa/member — paso 2: verificar código y devolver JWT ───
+router.post('/verify-2fa/member', async (req: Request, res: Response) => {
+  try {
+    const { email, code } = z.object({
+      email: z.string().email(),
+      code:  z.string().length(6),
+    }).parse(req.body);
+
+    const codeHash = crypto.createHash('sha256').update(code.toUpperCase()).digest('hex');
+
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('id, email, role, invite_token, invite_expires_at')
+      .eq('email', email)
+      .single();
+
+    if (error || !data || !data.invite_token || data.invite_token !== codeHash) {
+      res.status(401).json({ error: 'Código inválido' });
+      return;
+    }
+    if (new Date(data.invite_expires_at) < new Date()) {
+      res.status(410).json({ error: 'Código expirado. Inicia sesión de nuevo.' });
+      return;
+    }
+
+    await supabase.from('admin_users').update({
+      invite_token:      null,
+      invite_expires_at: null,
+      last_login_at:     new Date().toISOString(),
+    }).eq('id', data.id);
 
     const token = jwt.sign(
       { role: data.role, email: data.email, adminId: data.id },

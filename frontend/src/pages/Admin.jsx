@@ -138,6 +138,7 @@ function AdminLogin({ onLogin }) {
   const [code, setCode]           = useState(["","","","","",""]);
   const [countdown, setCountdown] = useState(0);
   const [resends, setResends]     = useState(0);
+  const [isMember, setIsMember]   = useState(false); // true = miembro invitado
   const cRefs = useRef([]);
   const API = import.meta.env.VITE_API_URL;
 
@@ -147,22 +148,25 @@ function AdminLogin({ onLogin }) {
     return () => clearTimeout(t);
   }, [countdown]);
 
+  const [isMember, setIsMember] = useState(false);
+
   const go = async () => {
     if (!email||!pass) { setErr("Completa los campos"); return; }
     setLoading(true); setErr("");
     try {
-      // Primero intentar login de miembro invitado
+      // Intentar login de miembro invitado primero
       const rm = await fetch(`${API}/api/admin/login/member`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email, password:pass }) });
       if (rm.ok) {
-        const dm = await rm.json();
-        localStorage.setItem("adminToken", dm.token);
-        onLogin(email, dm.role);
-        return;
+        // Miembro válido — pasar a step 2FA
+        setIsMember(true);
+        setStep(1); setCountdown(60); setResends(1);
+        setLoading(false); return;
       }
       // Si no es miembro, intentar login de dueño (2FA)
       const r = await fetch(`${API}/api/admin/login`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email, password:pass }) });
       const d = await r.json();
       if (!r.ok) { setErr(d.error||"Credenciales inválidas"); setLoading(false); return; }
+      setIsMember(false);
       setStep(1); setCountdown(60); setResends(1);
     } catch { setErr("Error de conexión"); }
     setLoading(false);
@@ -175,11 +179,16 @@ function AdminLogin({ onLogin }) {
     if (nc.join("").length===6) {
       setLoading(true);
       try {
-        const r = await fetch(`${API}/api/admin/verify-2fa`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ code:nc.join("") }) });
+        // Usar endpoint según tipo de usuario
+        const endpoint = isMember ? "/api/admin/verify-2fa/member" : "/api/admin/verify-2fa";
+        const body     = isMember
+          ? JSON.stringify({ email, code:nc.join("") })
+          : JSON.stringify({ code:nc.join("") });
+        const r = await fetch(`${API}${endpoint}`, { method:"POST", headers:{"Content-Type":"application/json"}, body });
         const d = await r.json();
         if (!r.ok) { setErr(d.error||"Código inválido"); setLoading(false); return; }
         localStorage.setItem("adminToken", d.token);
-        onLogin(email, 'owner');
+        onLogin(email, isMember ? d.role : 'owner');
       } catch { setErr("Error de conexión"); }
       setLoading(false);
     }
@@ -189,7 +198,11 @@ function AdminLogin({ onLogin }) {
     if (resends>=3) { setErr("Demasiados intentos. Intenta en 30 minutos."); return; }
     setCode(["","","","","",""]); setErr("");
     try {
-      await fetch(`${API}/api/admin/login`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email, password:pass }) });
+      const endpoint = isMember ? "/api/admin/login/member" : "/api/admin/login";
+      const body     = isMember
+        ? JSON.stringify({ email, password:pass })
+        : JSON.stringify({ email, password:pass });
+      await fetch(`${API}${endpoint}`, { method:"POST", headers:{"Content-Type":"application/json"}, body });
       setCountdown(60); setResends(r=>r+1);
     } catch { setErr("Error de conexión"); }
   };
