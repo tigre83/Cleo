@@ -581,14 +581,14 @@ function S4({ data: d, onBack }) {
   );
 }
 
-export default function CleoApp() {
+export default function CleoApp({ initialView }) {
   const [theme, setTheme] = useState("dark");
   const prefersDark = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const resolved = theme === "system" ? (prefersDark ? "dark" : "light") : theme;
   C = THEMES[resolved];
   const cycleTheme = () => setTheme(theme === "dark" ? "light" : theme === "light" ? "system" : "dark");
 
-  const [vw, setVw] = useState("landing"); const [st, setSt] = useState(1); const [mob, setMob] = useState(false); const [billing, setBilling] = useState("monthly");
+  const [vw, setVw] = useState(initialView || "landing"); const [st, setSt] = useState(1); const [mob, setMob] = useState(false); const [billing, setBilling] = useState("monthly");
   const [d, setD] = useState({ business_name: "", email: "", password: "", business_type: "", schedule: null, appointment_duration: 30 });
   const dr = useRef(null); const pr = useRef(null); const cr = useRef(null);
   useEffect(() => { const c = () => setMob(window.innerWidth < 768); c(); window.addEventListener("resize", c); return () => window.removeEventListener("resize", c); }, []);

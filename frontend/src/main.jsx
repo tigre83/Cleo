@@ -10,6 +10,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/terminos" element={<Landing initialView="terminos" />} />
+        <Route path="/privacidad" element={<Landing initialView="privacidad" />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<Landing />} />
       </Routes>
