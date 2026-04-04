@@ -15,6 +15,7 @@ const envSchema = z.object({
 
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
+  RESEND_API_KEY: z.string().min(1),
 
   WHATSAPP_VERIFY_TOKEN: z.string().default('cleo-verify-token'),
   WHATSAPP_API_VERSION: z.string().default('v18.0'),
