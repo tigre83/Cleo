@@ -1,3 +1,4 @@
+import { supabase } from '../lib/supabase.js';
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Calendar, CalendarDays, BarChart3, Settings, Check, X, ChevronRight, ChevronLeft, Clock, CircleDot, Smartphone, MessageSquare, Phone, Ban, Loader, ArrowLeft, Shield, Zap, User, LogOut, Lock, Pause, Play, Trash2, AlertTriangle, Wifi, WifiOff, Eye, EyeOff, Save, HelpCircle, Sparkles, Plane, Plus, Briefcase, DollarSign, TrendingUp, ToggleRight, Download, MapPin, Car, Home, Sun, Moon as MoonIcon } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -765,10 +766,15 @@ function LoginPage({ onLogin }) {
   const [msg, setMsg] = useState("");
   const [resetSent, setResetSent] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !pw) { setMsg("Completa todos los campos"); return; }
     setLoading(true); setMsg("");
-    setTimeout(() => { setLoading(false); onLogin(email); }, 800);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+      if (error) { setMsg("Email o contraseña incorrectos"); setLoading(false); return; }
+      onLogin(email);
+    } catch { setMsg("Error de conexión"); }
+    setLoading(false);
   };
 
   const fi = { width: "100%", padding: "14px 16px", borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.text, fontSize: 15, fontFamily: "inherit", outline: "none", boxSizing: "border-box", marginBottom: 12 };
@@ -804,11 +810,11 @@ function LoginPage({ onLogin }) {
           )}
           <div style={{ fontSize: 13, color: C.dim, marginTop: 8 }}>
             {"¿No tienes cuenta? "}
-            <button onClick={function(){ setMsg("Abre el artefacto cleo-final para registrarte con el onboarding completo"); }} style={{ background: "none", border: "none", color: C.accent, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+            <button onClick={function(){ window.location.href="/"; }} style={{ background: "none", border: "none", color: C.accent, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
               {"Regístrate gratis"}
             </button>
           </div>
-          <p style={{ fontSize: 10, color: "#444", marginTop: 12 }}>{"Demo: en producción esto redirige a cleo.app/registro"}</p>
+          
         </div>
       </div>
     </div>
@@ -827,7 +833,7 @@ export default function CleoDashboard() {
   C = { ...C, accent: _pa.accent, accentGlow: _pa.accentGlow, grad: _pa.grad };
   const cycleTheme = () => setTheme(theme === "dark" ? "light" : theme === "light" ? "system" : "dark");
 
-  const [authed, setAuthed] = useState(true);
+  const [authed, setAuthed] = useState(false);
   const [tab, setTab] = useState("agenda");
   const [agendaView, setAgendaView] = useState("semana"); // dia | semana | mes
   const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS);
