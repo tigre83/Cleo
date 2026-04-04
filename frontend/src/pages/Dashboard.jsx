@@ -829,11 +829,11 @@ export default function CleoDashboard() {
   const prefersDark = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const resolved = theme === "system" ? (prefersDark ? "dark" : "light") : theme;
   C = THEMES[resolved];
-  const _pa = ACENTOS_PLAN[biz?.plan] || ACENTOS_PLAN.negocio;
-  C = { ...C, accent: _pa.accent, accentGlow: _pa.accentGlow, grad: _pa.grad };
   const cycleTheme = () => setTheme(theme === "dark" ? "light" : theme === "light" ? "system" : "dark");
 
   const [authed, setAuthed] = useState(false);
+  const _pa = ACENTOS_PLAN[biz?.plan] || ACENTOS_PLAN.negocio;
+  C = { ...C, accent: _pa.accent, accentGlow: _pa.accentGlow, grad: _pa.grad };
   const [tab, setTab] = useState("agenda");
   const [agendaView, setAgendaView] = useState("semana"); // dia | semana | mes
   const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS);
