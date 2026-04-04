@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { BarChart3, Users, DollarSign, Mail, Settings, Search, ChevronRight, X, Eye, EyeOff, Shield, TrendingUp, Trash2, AlertTriangle, RefreshCw, Minus, Cloud, Brain, Smartphone, Wrench, Briefcase, Pause, Play, StickyNote, Sun, Moon, Activity, CheckCircle, AlertCircle, XCircle, Plus, Database, Server, Cpu, MessageSquare } from "lucide-react";
+import { BarChart3, Users, DollarSign, Mail, Settings, Search, ChevronRight, X, Eye, EyeOff, Shield, TrendingUp, Trash2, AlertTriangle, RefreshCw, Minus, Cloud, Brain, Smartphone, Wrench, Briefcase, Pause, Play, StickyNote, Sun, Moon, Activity, CheckCircle, AlertCircle, XCircle, Plus, Database, Server, Cpu, MessageSquare, Lock, UserPlus, ShieldCheck, Headphones, User } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 const T = {
@@ -890,44 +890,50 @@ function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
 }
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-function SysConfig({ authFetch }) {
-  const [maint,       setMaint]      = useState(false);
-  const [msg,         setMsg]        = useState("Estamos realizando mejoras. Volvemos en unos minutos.");
-  const [prices,      setPrices]     = useState({basico:29,negocio:59,pro:99});
-  const [limits,      setLimits]     = useState({basico:500,negocio:2000,pro:99999});
-  const [team,        setTeam]       = useState([]);
-  const [invEmail,    setInvEmail]   = useState("");
-  const [invRole,     setInvRole]    = useState("soporte");
-  const [invSending,  setInvSending] = useState(false);
-  const [invDone,     setInvDone]    = useState(false);
-  const [invErr,      setInvErr]     = useState("");
-  // Cambio de contraseña
-  const [pwCurrent,   setPwCurrent]  = useState("");
-  const [pwNew,       setPwNew]      = useState("");
-  const [pwConfirm,   setPwConfirm]  = useState("");
-  const [pwLoading,   setPwLoading]  = useState(false);
-  const [pwMsg,       setPwMsg]      = useState("");
-  const [pwErr,       setPwErr]      = useState("");
-  const [showCur,     setShowCur]    = useState(false);
-  const [showNew,     setShowNew]    = useState(false);
-  const fi = { padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:14,fontFamily:"inherit",outline:"none",width:80,textAlign:"center" };
+function SysConfig({ authFetch, adminRole }) {
+  const [activeTab,  setActiveTab]  = useState("cuenta");
+
+  // ── Cuenta (todos) ──
+  const [pwCurrent,  setPwCurrent]  = useState("");
+  const [pwNew,      setPwNew]      = useState("");
+  const [pwConfirm,  setPwConfirm]  = useState("");
+  const [pwLoading,  setPwLoading]  = useState(false);
+  const [pwMsg,      setPwMsg]      = useState("");
+  const [pwErr,      setPwErr]      = useState("");
+  const [showCur,    setShowCur]    = useState(false);
+  const [showNew,    setShowNew]    = useState(false);
+
+  // ── Equipo (owner) ──
+  const [team,       setTeam]       = useState([]);
+  const [invEmail,   setInvEmail]   = useState("");
+  const [invRole,    setInvRole]    = useState("soporte");
+  const [invSending, setInvSending] = useState(false);
+  const [invDone,    setInvDone]    = useState(false);
+  const [invErr,     setInvErr]     = useState("");
+
+  // ── Sistema (owner) ──
+  const [maint,      setMaint]      = useState(false);
+  const [maintMsg,   setMaintMsg]   = useState("Estamos realizando mejoras. Volvemos en unos minutos.");
+  const [prices,     setPrices]     = useState({basico:29,negocio:59,pro:99});
+  const [limits,     setLimits]     = useState({basico:500,negocio:2000,pro:99999});
+
+  const fi   = { padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none",width:80,textAlign:"center" };
+  const fiw  = { width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box" };
+  const card = { background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"16px",marginBottom:12 };
 
   useEffect(()=>{
-    authFetch("/api/admin/team").then(setTeam).catch(()=>{});
+    if (adminRole==="owner") authFetch("/api/admin/team").then(setTeam).catch(()=>{});
   },[]);
 
   const changePassword = async () => {
-    if (!pwCurrent || !pwNew || pwNew !== pwConfirm) return;
-    if (pwNew.length < 8) { setPwErr("Mínimo 8 caracteres"); return; }
+    if (!pwCurrent||!pwNew||pwNew!==pwConfirm) return;
+    if (pwNew.length<8) { setPwErr("Mínimo 8 caracteres"); return; }
     setPwLoading(true); setPwErr(""); setPwMsg("");
     try {
-      const r = await authFetch("/api/admin/change-password", {
-        method:"POST",
-        body:JSON.stringify({ current_password:pwCurrent, new_password:pwNew }),
-      });
+      await authFetch("/api/admin/change-password", { method:"POST", body:JSON.stringify({ current_password:pwCurrent, new_password:pwNew }) });
       setPwMsg("Contraseña actualizada ✓");
       setPwCurrent(""); setPwNew(""); setPwConfirm("");
-    } catch(err) { setPwErr("Contraseña actual incorrecta"); }
+    } catch { setPwErr("Contraseña actual incorrecta"); }
     setPwLoading(false);
   };
 
@@ -938,7 +944,7 @@ function SysConfig({ authFetch }) {
       await authFetch("/api/admin/invite", { method:"POST", body:JSON.stringify({ email:invEmail, role:invRole }) });
       setInvDone(true); setInvEmail("");
       authFetch("/api/admin/team").then(setTeam).catch(()=>{});
-    } catch(err) { setInvErr("Error al enviar la invitación"); }
+    } catch { setInvErr("Error al enviar la invitación"); }
     setInvSending(false);
   };
 
@@ -949,120 +955,157 @@ function SysConfig({ authFetch }) {
     } catch(err) { console.error(err); }
   };
 
+  // Tabs disponibles según rol
+  const tabs = adminRole==="owner"
+    ? [{id:"cuenta",label:"Cuenta",Icon:User},{id:"equipo",label:"Equipo",Icon:Users},{id:"sistema",label:"Sistema",Icon:Settings}]
+    : [{id:"cuenta",label:"Cuenta",Icon:User}];
+
   return (
     <div>
-      <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, marginBottom:16 }}>Configuración</h2>
-      <div style={{ background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"16px",marginBottom:12 }}>
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:maint?12:0 }}>
-          <div><div style={{ fontSize:14,fontWeight:600 }}>Modo mantenimiento</div><div style={{ fontSize:11,color:C.d }}>Bloquea acceso a todos los usuarios</div></div>
-          <button onClick={()=>setMaint(!maint)} style={{ width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:maint?C.r:"#333",position:"relative" }}>
-            <div style={{ width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:maint?20:2,transition:"left 0.2s" }}/>
+      <h2 style={{ fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800,marginBottom:20 }}>Configuración</h2>
+
+      {/* Tabs */}
+      <div style={{ display:"flex",gap:4,marginBottom:24,background:C.s,borderRadius:12,padding:4,border:"1px solid "+C.b }}>
+        {tabs.map(t=>(
+          <button key={t.id} onClick={()=>setActiveTab(t.id)}
+            style={{ flex:1,padding:"9px 0",borderRadius:9,border:"none",cursor:"pointer",fontFamily:"inherit",background:activeTab===t.id?C.bg:"transparent",color:activeTab===t.id?C.a:C.d,fontSize:13,fontWeight:activeTab===t.id?600:500,transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6,boxShadow:activeTab===t.id?"0 1px 4px rgba(0,0,0,0.3)":"none" }}>
+            <t.Icon size={14}/> {t.label}
           </button>
-        </div>
-        {maint&&<textarea value={msg} onChange={e=>setMsg(e.target.value)} rows={2}
-          style={{ width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",resize:"vertical" }}/>}
-      </div>
-      <div style={{ background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"16px",marginBottom:12 }}>
-        <div style={{ fontSize:14,fontWeight:600,marginBottom:12 }}>Precios por plan</div>
-        {["basico","negocio","pro"].map(p=>(
-          <div key={p} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0" }}>
-            <span style={{ fontSize:13,fontWeight:600 }}>{PLAN_LABEL[p]}</span>
-            <div style={{ display:"flex",alignItems:"center",gap:4 }}>
-              <span style={{ fontSize:13,color:C.d }}>$</span>
-              <input type="number" value={prices[p]} onChange={e=>setPrices({...prices,[p]:parseInt(e.target.value)||0})} style={fi}/>
-              <span style={{ fontSize:11,color:C.d }}>/mes</span>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div style={{ background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"16px" }}>
-        <div style={{ fontSize:14,fontWeight:600,marginBottom:12 }}>Límite de conversaciones</div>
-        {["basico","negocio","pro"].map(p=>(
-          <div key={p} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0" }}>
-            <span style={{ fontSize:13,fontWeight:600 }}>{PLAN_LABEL[p]}</span>
-            <input type="number" value={limits[p]} onChange={e=>setLimits({...limits,[p]:parseInt(e.target.value)||0})} style={fi}/>
-          </div>
         ))}
       </div>
 
-      {/* ── CONTRASEÑA ── */}
-      <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10 }}>Cambiar contraseña</div>
-      <div style={{ background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"16px",marginBottom:20 }}>
-        {[
-          {label:"Contraseña actual", val:pwCurrent, set:setPwCurrent, show:showCur, setShow:setShowCur},
-          {label:"Nueva contraseña",  val:pwNew,     set:setPwNew,     show:showNew, setShow:setShowNew},
-          {label:"Confirmar nueva",   val:pwConfirm, set:setPwConfirm, show:false,   setShow:null},
-        ].map((f,i)=>(
-          <div key={i} style={{ position:"relative", marginBottom:8 }}>
-            <div style={{ fontSize:11,color:C.d,marginBottom:4 }}>{f.label}</div>
-            <div style={{ position:"relative" }}>
-              <input type={f.show?"text":"password"} value={f.val} onChange={e=>f.set(e.target.value)}
-                style={{ width:"100%",padding:"10px 40px 10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box" }}/>
-              {f.setShow && <button onClick={()=>f.setShow(!f.show)}
-                style={{ position:"absolute",right:10,top:10,background:"none",border:"none",cursor:"pointer",color:C.d }}>
-                {f.show?<EyeOff size={14}/>:<Eye size={14}/>}
-              </button>}
-            </div>
-          </div>
-        ))}
-        {pwNew && pwConfirm && pwNew!==pwConfirm && <div style={{ fontSize:11,color:C.r,marginBottom:6 }}>Las contraseñas no coinciden</div>}
-        {pwErr && <div style={{ fontSize:11,color:C.r,marginBottom:6 }}>{pwErr}</div>}
-        {pwMsg && <div style={{ fontSize:11,color:C.a,marginBottom:6 }}>{pwMsg}</div>}
-        <button onClick={changePassword} disabled={!pwCurrent||!pwNew||pwNew!==pwConfirm||pwLoading}
-          style={{ width:"100%",padding:10,borderRadius:8,border:"none",
-            background:pwCurrent&&pwNew&&pwNew===pwConfirm?C.a:C.b,
-            color:pwCurrent&&pwNew&&pwNew===pwConfirm?C.bg:C.d,
-            fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>
-          {pwLoading?"Guardando...":"Guardar contraseña"}
-        </button>
-      </div>
-
-      {/* ── EQUIPO ── */}
-      <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10, marginTop:28 }}>Equipo admin</div>
-      <div style={{ background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"16px",marginBottom:12 }}>
-        <div style={{ fontSize:12,color:C.d,marginBottom:12 }}>Invitar nuevo miembro</div>
-        <div style={{ display:"flex",gap:6,marginBottom:8 }}>
-          <input value={invEmail} onChange={e=>setInvEmail(e.target.value)} placeholder="email@cleoia.app"
-            style={{ flex:1,padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none" }}/>
-          <select value={invRole} onChange={e=>setInvRole(e.target.value)}
-            style={{ padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:12,fontFamily:"inherit",outline:"none" }}>
-            <option value="soporte">Soporte</option>
-            <option value="owner">Dueño</option>
-          </select>
-        </div>
-        {invErr && <div style={{ fontSize:11,color:C.r,marginBottom:6 }}>{invErr}</div>}
-        {invDone && <div style={{ fontSize:11,color:C.a,marginBottom:6 }}>✅ Invitación enviada</div>}
-        <button onClick={sendInvite} disabled={!invEmail||invSending}
-          style={{ width:"100%",padding:10,borderRadius:8,border:"none",background:invEmail?C.a:C.b,color:invEmail?C.bg:C.d,fontSize:13,fontWeight:600,cursor:invEmail?"pointer":"default",fontFamily:"inherit" }}>
-          {invSending?"Enviando...":"Enviar invitación"}
-        </button>
-      </div>
-      {team.length>0 && (
-        <div style={{ background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"16px",marginBottom:12 }}>
-          <div style={{ fontSize:12,color:C.d,marginBottom:10 }}>Miembros actuales</div>
-          {team.map(m=>(
-            <div key={m.id} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+C.b }}>
-              <div>
-                <div style={{ fontSize:13,fontWeight:600 }}>{m.email}</div>
-                <div style={{ fontSize:11,color:C.d,marginTop:1 }}>
-                  {m.role==="owner"?"Dueño":"Soporte"} · {m.active?"Activo":"Pendiente"}
-                  {m.last_login_at&&" · Último acceso: "+new Date(m.last_login_at).toLocaleDateString("es-EC")}
+      {/* ── TAB CUENTA ── */}
+      {activeTab==="cuenta" && (
+        <div>
+          <div style={card}>
+            <div style={{ fontSize:13,fontWeight:600,marginBottom:16,display:"flex",alignItems:"center",gap:6 }}><Lock size={14} color={C.a}/> Cambiar contraseña</div>
+            {[
+              {label:"Contraseña actual", val:pwCurrent, set:setPwCurrent, show:showCur, toggle:()=>setShowCur(!showCur)},
+              {label:"Nueva contraseña",  val:pwNew,     set:setPwNew,     show:showNew, toggle:()=>setShowNew(!showNew)},
+              {label:"Confirmar nueva",   val:pwConfirm, set:setPwConfirm, show:false,   toggle:null},
+            ].map((f,i)=>(
+              <div key={i} style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11,color:C.d,marginBottom:4 }}>{f.label}</div>
+                <div style={{ position:"relative" }}>
+                  <input type={f.show?"text":"password"} value={f.val} onChange={e=>f.set(e.target.value)}
+                    style={{...fiw, paddingRight:f.toggle?40:12}}/>
+                  {f.toggle && <button onClick={f.toggle} style={{ position:"absolute",right:10,top:10,background:"none",border:"none",cursor:"pointer",color:C.d }}>
+                    {f.show?<EyeOff size={14}/>:<Eye size={14}/>}
+                  </button>}
                 </div>
               </div>
-              {m.role!=="owner"&&(
-                <button onClick={()=>revokeAccess(m.id)}
-                  style={{ padding:"4px 10px",borderRadius:6,border:"1px solid "+C.r+"25",background:C.r+"08",color:C.r,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>
-                  Revocar
-                </button>
-              )}
+            ))}
+            {pwNew && pwConfirm && pwNew!==pwConfirm && <div style={{ fontSize:11,color:C.r,marginBottom:6 }}>Las contraseñas no coinciden</div>}
+            {pwErr && <div style={{ fontSize:11,color:C.r,marginBottom:6 }}>{pwErr}</div>}
+            {pwMsg && <div style={{ fontSize:11,color:C.a,marginBottom:6 }}>{pwMsg}</div>}
+            <button onClick={changePassword} disabled={!pwCurrent||!pwNew||pwNew!==pwConfirm||pwLoading}
+              style={{ width:"100%",padding:10,borderRadius:8,border:"none",background:pwCurrent&&pwNew&&pwNew===pwConfirm?C.a:C.b,color:pwCurrent&&pwNew&&pwNew===pwConfirm?C.bg:C.d,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginTop:4 }}>
+              {pwLoading?"Guardando...":"Guardar contraseña"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB EQUIPO (owner) ── */}
+      {activeTab==="equipo" && adminRole==="owner" && (
+        <div>
+          <div style={card}>
+            <div style={{ fontSize:13,fontWeight:600,marginBottom:12,display:"flex",alignItems:"center",gap:6 }}><UserPlus size={14} color={C.a}/> Invitar miembro</div>
+            <div style={{ display:"flex",gap:6,marginBottom:8 }}>
+              <input value={invEmail} onChange={e=>setInvEmail(e.target.value)} placeholder="email@cleoia.app"
+                style={{...fiw, flex:1}}/>
+              <select value={invRole} onChange={e=>setInvRole(e.target.value)}
+                style={{ padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:12,fontFamily:"inherit",outline:"none" }}>
+                <option value="soporte">Soporte</option>
+                <option value="owner">Dueño</option>
+              </select>
             </div>
-          ))}
+            {invErr  && <div style={{ fontSize:11,color:C.r,marginBottom:6 }}>{invErr}</div>}
+            {invDone && <div style={{ fontSize:11,color:C.a,marginBottom:6 }}>✓ Invitación enviada</div>}
+            <button onClick={sendInvite} disabled={!invEmail||invSending}
+              style={{ width:"100%",padding:10,borderRadius:8,border:"none",background:invEmail?C.a:C.b,color:invEmail?C.bg:C.d,fontSize:13,fontWeight:600,cursor:invEmail?"pointer":"default",fontFamily:"inherit" }}>
+              {invSending?"Enviando...":"Enviar invitación"}
+            </button>
+          </div>
+
+          {team.length>0 && (
+            <div style={card}>
+              <div style={{ fontSize:13,fontWeight:600,marginBottom:12,display:"flex",alignItems:"center",gap:6 }}><Users size={14} color={C.a}/> Miembros actuales</div>
+              {team.map((m,i)=>(
+                <div key={m.id} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:i<team.length-1?"1px solid "+C.b:"none" }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+                    <div style={{ width:32,height:32,borderRadius:8,background:C.glow,display:"flex",alignItems:"center",justifyContent:"center" }}>
+                      {m.role==="owner"?<ShieldCheck size={14} color="#F59E0B"/>:<Headphones size={14} color={C.a}/>}
+                    </div>
+                    <div>
+                      <div style={{ fontSize:13,fontWeight:600 }}>{m.email}</div>
+                      <div style={{ fontSize:11,color:C.d }}>
+                        {m.role==="owner"?"Administrador":"Soporte"} · {m.active?"Activo":"Pendiente"}
+                        {m.last_login_at&&" · "+new Date(m.last_login_at).toLocaleDateString("es-EC")}
+                      </div>
+                    </div>
+                  </div>
+                  {m.role!=="owner" && (
+                    <button onClick={()=>revokeAccess(m.id)}
+                      style={{ padding:"4px 10px",borderRadius:6,border:"1px solid "+C.r+"25",background:C.r+"08",color:C.r,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>
+                      Revocar
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TAB SISTEMA (owner) ── */}
+      {activeTab==="sistema" && adminRole==="owner" && (
+        <div>
+          {/* Mantenimiento */}
+          <div style={card}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:maint?12:0 }}>
+              <div>
+                <div style={{ fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:6 }}><AlertTriangle size={14} color={maint?C.r:C.d}/> Modo mantenimiento</div>
+                <div style={{ fontSize:11,color:C.d,marginTop:2 }}>Bloquea acceso a todos los usuarios</div>
+              </div>
+              <button onClick={()=>setMaint(!maint)} style={{ width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:maint?C.r:"#333",position:"relative" }}>
+                <div style={{ width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:maint?20:2,transition:"left 0.2s" }}/>
+              </button>
+            </div>
+            {maint && <textarea value={maintMsg} onChange={e=>setMaintMsg(e.target.value)} rows={2}
+              style={{ width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",resize:"vertical",marginTop:8 }}/>}
+          </div>
+
+          {/* Precios */}
+          <div style={card}>
+            <div style={{ fontSize:13,fontWeight:600,marginBottom:12,display:"flex",alignItems:"center",gap:6 }}><DollarSign size={14} color={C.a}/> Precios por plan</div>
+            {["basico","negocio","pro"].map(p=>(
+              <div key={p} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0" }}>
+                <span style={{ fontSize:13,fontWeight:600 }}>{PLAN_LABEL[p]}</span>
+                <div style={{ display:"flex",alignItems:"center",gap:4 }}>
+                  <span style={{ fontSize:13,color:C.d }}>$</span>
+                  <input type="number" value={prices[p]} onChange={e=>setPrices({...prices,[p]:parseInt(e.target.value)||0})} style={fi}/>
+                  <span style={{ fontSize:11,color:C.d }}>/mes</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Límites */}
+          <div style={card}>
+            <div style={{ fontSize:13,fontWeight:600,marginBottom:12,display:"flex",alignItems:"center",gap:6 }}><MessageSquare size={14} color={C.a}/> Límite de conversaciones</div>
+            {["basico","negocio","pro"].map(p=>(
+              <div key={p} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0" }}>
+                <span style={{ fontSize:13,fontWeight:600 }}>{PLAN_LABEL[p]}</span>
+                <input type="number" value={limits[p]} onChange={e=>setLimits({...limits,[p]:parseInt(e.target.value)||0})} style={fi}/>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 }
-
 // ── MAIN ──────────────────────────────────────────────────────────────────────
 export default function CleoAdmin() {
   const [theme,        setTheme]        = useState("dark");
@@ -1168,9 +1211,14 @@ export default function CleoAdmin() {
             </button>
           ))}
           <div style={{ position:"absolute",bottom:16,left:12,right:12 }}>
-            <div style={{ textAlign:"center",marginBottom:10,padding:"6px 0",borderRadius:8,background:adminRole==="owner"?"rgba(245,158,11,0.1)":"rgba(74,222,128,0.08)",border:"1px solid "+(adminRole==="owner"?"rgba(245,158,11,0.25)":"rgba(74,222,128,0.2)") }}>
-              <span style={{ fontSize:11,fontWeight:700,color:adminRole==="owner"?"#F59E0B":C.a }}>{adminRole==="owner"?"👑 Administrador":"🎧 Soporte"}</span>
-              <div style={{ fontSize:10,color:C.d,marginTop:1 }}>{adminEmail}</div>
+            <div style={{ textAlign:"center",marginBottom:10,padding:"8px",borderRadius:8,background:adminRole==="owner"?"rgba(245,158,11,0.08)":"rgba(74,222,128,0.06)",border:"1px solid "+(adminRole==="owner"?"rgba(245,158,11,0.2)":"rgba(74,222,128,0.15)"),display:"flex",alignItems:"center",gap:8 }}>
+              <div style={{ width:28,height:28,borderRadius:6,background:adminRole==="owner"?"rgba(245,158,11,0.12)":C.glow,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                {adminRole==="owner"?<ShieldCheck size={14} color="#F59E0B"/>:<Headphones size={14} color={C.a}/>}
+              </div>
+              <div style={{ textAlign:"left",minWidth:0 }}>
+                <div style={{ fontSize:11,fontWeight:700,color:adminRole==="owner"?"#F59E0B":C.a }}>{adminRole==="owner"?"Administrador":"Soporte"}</div>
+                <div style={{ fontSize:10,color:C.d,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{adminEmail}</div>
+              </div>
             </div>
             <button onClick={()=>loadData()} style={{ width:"100%",padding:10,borderRadius:10,border:"1px solid "+C.b,background:"transparent",color:C.d,fontSize:12,fontWeight:500,cursor:"pointer",fontFamily:"inherit",marginBottom:6,display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
               <RefreshCw size={13}/> Actualizar
@@ -1200,7 +1248,7 @@ export default function CleoAdmin() {
         {tab==="finanzas" && <Finanzas users={users} expenses={expenses} stats={stats} loading={loading}/>}
         {tab==="expenses" && <Expenses expenses={expenses} setExpenses={setExpenses} loading={loading} authFetch={authFetch}/>}
         {tab==="sistema"  && <SystemStatus systemStatus={systemStatus} setSystemStatus={setSystemStatus} loading={loading} authFetch={authFetch}/>}
-        {tab==="config"   && <SysConfig authFetch={authFetch}/>}
+        {tab==="config"   && <SysConfig authFetch={authFetch} adminRole={adminRole}/>}
       </div>
 
       {/* Bottom nav mobile */}
