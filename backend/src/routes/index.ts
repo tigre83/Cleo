@@ -102,7 +102,7 @@ authRouter.post("/register", async (req: Request, res: Response) => {
   sendVerificationEmail(email, code, business_name)
     .catch(err => console.error("Error enviando código:", err));
 
-  res.json({ user: authData.user, business, session: authData.session });
+  res.json({ user: authData.user, business, session: null });
 });
 
 // POST /api/auth/verify — Verificar código de 6 caracteres
