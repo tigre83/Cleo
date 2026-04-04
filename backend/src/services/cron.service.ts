@@ -16,7 +16,7 @@ async function sendEmail(to: string, subject: string, text: string): Promise<voi
   await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: "Cleo <hola@cleo.app>", to: [to], subject, text }),
+    body: JSON.stringify({ from: "Cleo <hola@cleoia.app>", to: [to], subject, text }),
   });
 }
 

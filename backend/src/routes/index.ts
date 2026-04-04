@@ -34,7 +34,7 @@ async function sendVerificationEmail(email: string, code: string, businessName: 
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Cleo <hola@cleo.app>",
+      from: "Cleo <hola@cleoia.app>",
       to: [email],
       subject: `${code} — Tu código de verificación de Cleo`,
       text: [
@@ -224,7 +224,7 @@ authRouter.post("/request-password-change", async (req: Request, res: Response) 
       method: "POST",
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Cleo <hola@cleo.app>", to: [business.email],
+        from: "Cleo <hola@cleoia.app>", to: [business.email],
         subject: `${code} — Código para cambiar tu contraseña`,
         text: `Tu código para cambiar la contraseña de ${business.business_name} es:\n\n${code}\n\nExpira en 15 minutos.`,
       }),
@@ -297,8 +297,8 @@ supportRouter.post("/", async (req: Request, res: Response) => {
       method: "POST",
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Cleo Soporte <hola@cleo.app>",
-        to: ["soporte@cleo.app"],
+        from: "Cleo Soporte <hola@cleoia.app>",
+        to: ["soporte@cleoia.app"],
         reply_to: business.email,
         subject: `Soporte — ${business.business_name}`,
         text: [
@@ -350,7 +350,7 @@ supportRouter.post("/request-delete", async (req: Request, res: Response) => {
       method: "POST",
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Cleo <hola@cleo.app>", to: [business.email],
+        from: "Cleo <hola@cleoia.app>", to: [business.email],
         subject: `${code} — Código para eliminar tu cuenta de Cleo`,
         text: `Tu código para eliminar "${business.business_name}" es:\n\n${code}\n\nExpira en 10 minutos.`,
       }),

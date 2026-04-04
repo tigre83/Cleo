@@ -169,7 +169,7 @@ export async function processMessage(
             method: "POST",
             headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({
-              from: "Cleo Alertas <alertas@cleo.app>", to: ["soporte@cleo.app"],
+              from: "Cleo Alertas <alertas@cleoia.app>", to: ["soporte@cleoia.app"],
               subject: `⚠️ Claude API caída — ${business.business_name}`,
               text: [
                 `Negocio: ${business.business_name} (${businessId})`,

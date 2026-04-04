@@ -303,6 +303,6 @@ async function sendLimitEmail(to: string, bizName: string, subject: string, body
   await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: "Cleo <hola@cleo.app>", to: [to], subject, text: body + "\n\n— Cleo" }),
+    body: JSON.stringify({ from: "Cleo <hola@cleoia.app>", to: [to], subject, text: body + "\n\n— Cleo" }),
   });
 }
