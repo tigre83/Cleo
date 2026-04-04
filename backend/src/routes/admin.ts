@@ -359,8 +359,9 @@ router.get('/health-check', adminAuthMiddleware, async (_req: AdminRequest, res:
 
     // Meta WhatsApp
     check('WhatsApp Meta', async () => {
-      const token = (env as any).WHATSAPP_ACCESS_TOKEN;
-      const phoneId = (env as any).WHATSAPP_PHONE_NUMBER_ID;
+      const envAny = env as Record<string, string | undefined>;
+      const token   = envAny['WHATSAPP_ACCESS_TOKEN'];
+      const phoneId = envAny['WHATSAPP_PHONE_NUMBER_ID'];
       if (!token || token === 'pendiente') throw new Error('Token no configurado');
       const r = await fetch(`https://graph.facebook.com/v18.0/${phoneId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -371,7 +372,8 @@ router.get('/health-check', adminAuthMiddleware, async (_req: AdminRequest, res:
 
     // Claude API (Anthropic)
     check('Claude API', async () => {
-      const key = (env as any).ANTHROPIC_API_KEY;
+      const envAny = env as Record<string, string | undefined>;
+      const key = envAny['ANTHROPIC_API_KEY'];
       if (!key) throw new Error('API key no configurada');
       return 'Key configurada';
     }),

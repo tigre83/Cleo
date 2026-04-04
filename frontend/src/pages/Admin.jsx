@@ -632,13 +632,16 @@ function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
   const active  = systemStatus.filter(s=>s.status!=="operational");
   const resolved = systemStatus.filter(s=>s.status==="operational");
 
-  const serviceIcons = {
-    "Supabase":       "🗄️",
-    "Railway (API)":  "🚂",
-    "Resend":         "📧",
-    "WhatsApp Meta":  "💬",
-    "Claude API":     "🤖",
-  };
+  // Servicios siempre visibles — se actualizan con datos reales
+  const SERVICES = [
+    { name:"Supabase",      icon:"🗄️", desc:"Base de datos" },
+    { name:"Railway (API)", icon:"🚂", desc:"Backend / API" },
+    { name:"Resend",        icon:"📧", desc:"Emails transaccionales" },
+    { name:"WhatsApp Meta", icon:"💬", desc:"Mensajería WhatsApp" },
+    { name:"Claude API",    icon:"🤖", desc:"Inteligencia artificial" },
+  ];
+
+  const getServiceStatus = (name) => health.find(h=>h.service===name);
 
   return (
     <div>
@@ -654,44 +657,66 @@ function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
         </div>
       </div>
 
-      {/* Estado general */}
-      <div style={{ ...card,marginBottom:16,display:"flex",alignItems:"center",gap:12,background:anyDown?C.r+"08":allOk?C.glow:C.s,border:"1px solid "+(anyDown?C.r+"30":allOk?C.a+"30":C.b) }}>
-        <div style={{ width:14,height:14,borderRadius:"50%",background:anyDown?C.r:allOk?C.a:C.d,animation:"pulse 2s infinite",flexShrink:0 }}/>
+      {/* Banner estado general */}
+      <div style={{ ...card,marginBottom:20,display:"flex",alignItems:"center",gap:12,background:anyDown?C.r+"08":allOk?C.glow:C.s2,border:"1px solid "+(anyDown?C.r+"30":allOk?C.a+"30":C.b) }}>
+        <div style={{ width:14,height:14,borderRadius:"50%",background:anyDown?C.r:healthLoading?"#F59E0B":allOk?C.a:C.d,flexShrink:0,
+          boxShadow:anyDown?`0 0 8px ${C.r}`:`0 0 8px ${allOk&&!healthLoading?C.a:"#F59E0B"}`,
+          animation:"pulse 2s infinite" }}/>
         <div style={{ flex:1 }}>
-          <div style={{ fontSize:14,fontWeight:600,color:anyDown?C.r:allOk?C.a:C.t }}>
-            {healthLoading?"Verificando servicios..."
-              :anyDown?`${health.filter(h=>!h.ok).length} servicio${health.filter(h=>!h.ok).length>1?"s":""} con problemas`
-              :"Todos los servicios operativos"}
+          <div style={{ fontSize:14,fontWeight:600,color:anyDown?C.r:healthLoading?"#F59E0B":allOk?C.a:C.t }}>
+            {healthLoading&&health.length===0 ? "Verificando servicios..."
+             : anyDown ? `${health.filter(h=>!h.ok).length} servicio${health.filter(h=>!h.ok).length>1?"s":""} con problemas`
+             : "Todos los servicios operativos ✓"}
           </div>
-          {lastChecked && <div style={{ fontSize:10,color:C.d,marginTop:2 }}>Última verificación: {lastChecked.toLocaleTimeString("es-EC")} · Actualiza cada 30s</div>}
+          <div style={{ fontSize:10,color:C.d,marginTop:2 }}>
+            {lastChecked ? `Última verificación: ${lastChecked.toLocaleTimeString("es-EC")} · Auto-refresca cada 30s` : "Conectando..."}
+          </div>
         </div>
       </div>
 
-      {/* Health checks en tiempo real */}
-      <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:700, marginBottom:10 }}>Servicios en tiempo real</div>
-      {healthLoading && health.length===0
-        ? <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:20 }}>
-            {["Supabase","Railway (API)","Resend","WhatsApp Meta","Claude API"].map(s=>(
-              <div key={s} style={{ ...card,opacity:0.4,display:"flex",alignItems:"center",gap:10 }}>
-                <div style={{ width:10,height:10,borderRadius:"50%",background:C.b,flexShrink:0 }}/>
-                <div style={{ flex:1 }}><div style={{ fontSize:12,fontWeight:600 }}>{s}</div><div style={{ fontSize:10,color:C.d }}>Verificando...</div></div>
+      {/* Grid de servicios — siempre visible */}
+      <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:700, marginBottom:12 }}>Servicios en tiempo real</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:24 }}>
+        {SERVICES.map(svc => {
+          const h    = getServiceStatus(svc.name);
+          const isOk     = h?.ok === true;
+          const isDown   = h?.ok === false;
+          const isLoading = !h;
+          const dotColor  = isLoading ? "#6B7280" : isOk ? C.a : isDown ? C.r : "#F59E0B";
+          const borderCol = isLoading ? C.b : isOk ? C.a+"25" : C.r+"40";
+          const bgCol     = isLoading ? "transparent" : isOk ? C.a+"04" : C.r+"08";
+
+          return (
+            <div key={svc.name} style={{ background:bgCol, border:"1px solid "+borderCol, borderRadius:14, padding:"14px 16px", display:"flex", alignItems:"flex-start", gap:12, transition:"all 0.3s" }}>
+              {/* Indicador */}
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, paddingTop:2 }}>
+                <div style={{ width:12, height:12, borderRadius:"50%", background:dotColor, flexShrink:0,
+                  boxShadow: isOk ? `0 0 6px ${C.a}` : isDown ? `0 0 6px ${C.r}` : "none",
+                  animation: isLoading||healthLoading ? "pulse 1s infinite" : isOk ? "pulse 3s infinite" : "none" }}/>
               </div>
-            ))}
-          </div>
-        : <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:20 }}>
-            {health.map(h=>(
-              <div key={h.service} style={{ ...card,border:"1px solid "+(h.ok?C.a+"20":C.r+"30"),background:h.ok?"transparent":C.r+"05",display:"flex",alignItems:"center",gap:10 }}>
-                <div style={{ width:10,height:10,borderRadius:"50%",background:h.ok?C.a:C.r,flexShrink:0,animation:h.ok?"pulse 3s infinite":"none" }}/>
-                <div style={{ flex:1,minWidth:0 }}>
-                  <div style={{ fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:4 }}>
-                    {serviceIcons[h.service]||"⚙️"} {h.service}
-                  </div>
-                  <div style={{ fontSize:10,color:h.ok?C.d:C.r,marginTop:1 }}>{h.detail}</div>
+              {/* Info */}
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:5 }}>
+                  <span>{svc.icon}</span> {svc.name}
                 </div>
-                <div style={{ fontSize:10,color:C.d,flexShrink:0 }}>{h.latency}ms</div>
+                <div style={{ fontSize:11, color:C.d, marginTop:1 }}>{svc.desc}</div>
+                <div style={{ fontSize:11, marginTop:4, color: isDown ? C.r : isOk ? C.a : C.d, fontWeight: isDown ? 600 : 400 }}>
+                  {isLoading ? "Verificando..." : h.detail}
+                </div>
               </div>
-            ))}
-          </div>}
+              {/* Latencia */}
+              {h && (
+                <div style={{ flexShrink:0, textAlign:"right" }}>
+                  <div style={{ fontSize:12, fontWeight:700, color: h.latency<200?C.a:h.latency<600?"#F59E0B":C.r }}>{h.latency}ms</div>
+                  <div style={{ fontSize:9, color:C.d }}>latencia</div>
+                </div>
+              )}
+              {/* Badge estado */}
+              <div style={{ position:"absolute" }} />
+            </div>
+          );
+        })}
+      </div>
 
       {/* Formulario nuevo incidente */}
       {showForm && (
