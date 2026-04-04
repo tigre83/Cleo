@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { BarChart3, Users, DollarSign, Mail, Settings, Search, ChevronRight, X, Eye, EyeOff, Shield, TrendingUp, Trash2, AlertTriangle, RefreshCw, Minus, Cloud, Brain, Smartphone, Wrench, Briefcase, Pause, Play, StickyNote, Sun, Moon, Activity, CheckCircle, AlertCircle, XCircle, Plus } from "lucide-react";
+import { BarChart3, Users, DollarSign, Mail, Settings, Search, ChevronRight, X, Eye, EyeOff, Shield, TrendingUp, Trash2, AlertTriangle, RefreshCw, Minus, Cloud, Brain, Smartphone, Wrench, Briefcase, Pause, Play, StickyNote, Sun, Moon, Activity, CheckCircle, AlertCircle, XCircle, Plus, Database, Server, Cpu, MessageSquare } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 const T = {
@@ -634,12 +634,24 @@ function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
 
   // Servicios siempre visibles — se actualizan con datos reales
   const SERVICES = [
-    { name:"Supabase",      icon:"🗄️", desc:"Base de datos" },
-    { name:"Railway (API)", icon:"🚂", desc:"Backend / API" },
-    { name:"Resend",        icon:"📧", desc:"Emails transaccionales" },
-    { name:"WhatsApp Meta", icon:"💬", desc:"Mensajería WhatsApp" },
-    { name:"Claude API",    icon:"🤖", desc:"Inteligencia artificial" },
+    { name:"Supabase",      Icon:Database,       desc:"Base de datos" },
+    { name:"Railway (API)", Icon:Server,          desc:"Backend / API" },
+    { name:"Resend",        Icon:Mail,            desc:"Emails transaccionales" },
+    { name:"WhatsApp Meta", Icon:MessageSquare,   desc:"Mensajería WhatsApp" },
+    { name:"Claude API",    Icon:Cpu,             desc:"Inteligencia artificial" },
   ];
+
+  // Progreso hacia el siguiente refresh (0-100)
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress(p => {
+        if (p >= 100) { return 0; }
+        return p + (100 / (30 * 10)); // 30s ÷ 100ms ticks
+      });
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
 
   const getServiceStatus = (name) => health.find(h=>h.service===name);
 
@@ -687,18 +699,21 @@ function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
           const bgCol     = isLoading ? "transparent" : isOk ? C.a+"04" : C.r+"08";
 
           return (
-            <div key={svc.name} style={{ background:bgCol, border:"1px solid "+borderCol, borderRadius:14, padding:"14px 16px", display:"flex", alignItems:"flex-start", gap:12, transition:"all 0.3s" }}>
-              {/* Indicador */}
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, paddingTop:2 }}>
-                <div style={{ width:12, height:12, borderRadius:"50%", background:dotColor, flexShrink:0,
-                  boxShadow: isOk ? `0 0 6px ${C.a}` : isDown ? `0 0 6px ${C.r}` : "none",
-                  animation: isLoading||healthLoading ? "pulse 1s infinite" : isOk ? "pulse 3s infinite" : "none" }}/>
+            <div key={svc.name} style={{ background:bgCol, border:"1px solid "+borderCol, borderRadius:14, padding:"14px 16px", display:"flex", alignItems:"flex-start", gap:12, transition:"all 0.4s", position:"relative", overflow:"hidden" }}>
+              {/* Barra de progreso — indica tiempo hasta próximo refresh */}
+              <div style={{ position:"absolute", bottom:0, left:0, right:0, height:2, background:C.b }}>
+                <div style={{ height:"100%", width:progress+"%", background:isDown?C.r:isOk?C.a:C.d, transition:"width 0.1s linear", opacity:0.5 }}/>
+              </div>
+              {/* Icono + indicador */}
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, paddingTop:2 }}>
+                <svc.Icon size={18} color={isDown?C.r:isOk?C.a:C.d} strokeWidth={1.5}/>
+                <div style={{ width:8, height:8, borderRadius:"50%", background:dotColor, flexShrink:0,
+                  boxShadow: isOk ? `0 0 5px ${C.a}` : isDown ? `0 0 5px ${C.r}` : "none",
+                  animation: isLoading||healthLoading ? "pulse 0.8s infinite" : isOk ? "pulse 3s infinite" : "none" }}/>
               </div>
               {/* Info */}
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:5 }}>
-                  <span>{svc.icon}</span> {svc.name}
-                </div>
+                <div style={{ fontSize:13, fontWeight:700, color:isDown?C.r:C.t }}>{svc.name}</div>
                 <div style={{ fontSize:11, color:C.d, marginTop:1 }}>{svc.desc}</div>
                 <div style={{ fontSize:11, marginTop:4, color: isDown ? C.r : isOk ? C.a : C.d, fontWeight: isDown ? 600 : 400 }}>
                   {isLoading ? "Verificando..." : h.detail}
@@ -707,12 +722,10 @@ function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
               {/* Latencia */}
               {h && (
                 <div style={{ flexShrink:0, textAlign:"right" }}>
-                  <div style={{ fontSize:12, fontWeight:700, color: h.latency<200?C.a:h.latency<600?"#F59E0B":C.r }}>{h.latency}ms</div>
+                  <div style={{ fontSize:13, fontWeight:700, color: h.latency<200?C.a:h.latency<600?"#F59E0B":C.r }}>{h.latency}ms</div>
                   <div style={{ fontSize:9, color:C.d }}>latencia</div>
                 </div>
               )}
-              {/* Badge estado */}
-              <div style={{ position:"absolute" }} />
             </div>
           );
         })}
