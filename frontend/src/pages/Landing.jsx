@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import api from "../services/api";
 import { Scissors, Sparkles, Heart, Building, Dog, Brain, Bone, Eye, Baby, ClipboardList, Home, Stethoscope, Moon, Flower2, Lamp, MessageSquare, Calendar, BarChart3, Check, X, ArrowLeft, Send, Smartphone, Settings, Info, Shield, CreditCard, Link2, Loader, ChevronRight, Clock, Star, CircleDot, Users, Activity, BookOpen, GraduationCap, Sun } from "lucide-react";
 const MoonIcon = Moon;
 
@@ -176,11 +177,11 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
     return !Object.keys(e).length;
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!validate()) return;
     setLoading(true);
-    // Simulate API call → in production this calls POST /api/auth/register
-    setTimeout(() => { setLoading(false); setPhase("verify"); }, 800);
+    try { await api.post("/auth/register", { email: d.email, password: d.password, company_name: d.business_name });
+    setLoading(false); setPhase("verify"); } catch (err) { setLoading(false); setEr({ g: err.response?.data?.error || "Error al registrarse" }); }
   };
 
   // --- Verification code ---
@@ -189,7 +190,7 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
   const [verifying, setVerifying] = useState(false);
   const inputRefs = useRef([]);
 
-  const handleCodeChange = (index, value) => {
+  const handleCodeChange = async (index, value) => {
     const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (!clean && value) return;
 
@@ -207,12 +208,17 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
     const full = newCode.join("");
     if (full.length === 6) {
       setVerifying(true);
-      // Simulate verification → in production calls POST /api/auth/verify
-      setTimeout(() => {
+      try {
+        const res = await api.post('/auth/verify-email', { email: d.email, code: full });
+        if (res.data.token) localStorage.setItem('cleo_token', res.data.token);
         setVerifying(false);
-        // Simulate: always succeeds in demo
         onNext();
-      }, 1000);
+      } catch (err) {
+        setVerifying(false);
+        setCodeError(err.response?.data?.error || 'Código inválido');
+        setCode(['','','','','','']);
+        inputRefs.current[0]?.focus();
+      }
     }
   };
 
@@ -227,7 +233,7 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
     if (pasted.length === 6) {
       inputRefs.current[5]?.focus();
       setVerifying(true);
-      setTimeout(() => { setVerifying(false); onNext(); }, 1000);
+      api.post("/auth/verify-email", { email: d.email, code: pasted }).then(res => { if (res.data.token) localStorage.setItem("cleo_token", res.data.token); setVerifying(false); onNext(); }).catch(err => { setVerifying(false); setCodeError(err.response?.data?.error || "Código inválido"); setCode(["","","","","",""]); inputRefs.current[0]?.focus(); });
     } else {
       inputRefs.current[Math.min(pasted.length, 5)]?.focus();
     }
@@ -284,7 +290,7 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
       )}
 
       <div style={{ textAlign: "center", marginTop: 8 }}>
-        <button onClick={() => { setCode(["","","","","",""]); setCodeError(""); }}
+        <button onClick={async () => { setCode(["","","","","",""]); setCodeError(""); try { await api.post("/auth/resend-code", { email: d.email }); } catch(e) { setCodeError("Error al reenviar"); } }}
           style={{ background: "none", border: "none", color: C.accent, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
           Reenviar código
         </button>
