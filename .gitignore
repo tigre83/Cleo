@@ -30,3 +30,5 @@ coverage/
 
 # Sentry
 .sentryclirc
+.vercel
+.env*.local
