@@ -607,4 +607,145 @@ router.delete('/team/:id', adminAuthMiddleware, async (req: AdminRequest, res: R
   }
 });
 
+
+// ── POST /admin/change-password — cambiar contraseña desde adentro ────────────
+router.post('/change-password', adminAuthMiddleware, async (req: AdminRequest, res: Response) => {
+  try {
+    const { current_password, new_password } = z.object({
+      current_password: z.string(),
+      new_password:     z.string().min(8),
+    }).parse(req.body);
+
+    // Obtener email del JWT
+    const authHeader = (req as any).headers?.authorization || '';
+    const token = authHeader.replace('Bearer ', '');
+    const decoded = jwt.verify(token, env.JWT_SECRET) as { email: string; role: string };
+    const adminEmail = decoded.email;
+
+    // Si es el dueño principal (usa env credentials)
+    if (adminEmail === env.ADMIN_EMAIL) {
+      if (current_password !== env.ADMIN_PASSWORD) {
+        res.status(401).json({ error: 'Contraseña actual incorrecta' });
+        return;
+      }
+      // El dueño debe cambiarla en Railway — no podemos cambiar env vars en runtime
+      res.status(400).json({ error: 'El administrador principal debe cambiar la contraseña en Railway' });
+      return;
+    }
+
+    // Miembro invitado — verificar con bcrypt
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('id, password_hash')
+      .eq('email', adminEmail)
+      .single();
+
+    if (error || !data) { res.status(404).json({ error: 'Usuario no encontrado' }); return; }
+
+    const valid = await bcrypt.compare(current_password, data.password_hash || '');
+    if (!valid) { res.status(401).json({ error: 'Contraseña actual incorrecta' }); return; }
+
+    const newHash = await bcrypt.hash(new_password, 12);
+    await supabase.from('admin_users').update({ password_hash: newHash }).eq('id', data.id);
+
+    res.json({ ok: true });
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+// ── POST /admin/forgot-password — enviar código de recuperación ───────────────
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const { email } = z.object({ email: z.string().email() }).parse(req.body);
+
+    // Generar código
+    const code     = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+    // Buscar en admin_users (miembros invitados)
+    const { data } = await supabase
+      .from('admin_users')
+      .select('id, email')
+      .eq('email', email)
+      .eq('active', true)
+      .single();
+
+    // También aceptar el email del dueño principal
+    const isOwner = email === env.ADMIN_EMAIL;
+
+    if (!data && !isOwner) {
+      // No revelar si el email existe
+      res.json({ ok: true });
+      return;
+    }
+
+    if (data) {
+      await supabase.from('admin_users').update({
+        invite_token:      codeHash, // reutilizamos invite_token para el código
+        invite_expires_at: expiresAt,
+      }).eq('id', data.id);
+    }
+
+    // Enviar email
+    await resend.emails.send({
+      from:    'Cleo <noreply@cleoia.app>',
+      to:      email,
+      subject: `${code} — Código para recuperar tu contraseña`,
+      html: `
+<body style="background:#080808;font-family:sans-serif;padding:40px 20px;text-align:center;">
+  <div style="max-width:400px;margin:0 auto;background:#111;border:1px solid #1E1E1E;border-radius:16px;padding:32px;">
+    <div style="font-size:24px;font-weight:800;color:#4ADE80;margin-bottom:8px;">cleo.</div>
+    <h2 style="color:#fff;margin:0 0 8px;">Recuperar contraseña</h2>
+    <p style="color:#888;font-size:14px;margin:0 0 24px;">Tu código expira en 15 minutos.</p>
+    <div style="background:#080808;border:1px solid #222;border-radius:10px;padding:16px;font-size:28px;font-weight:700;letter-spacing:8px;color:#22D3EE;font-family:monospace;">${code}</div>
+    <p style="color:#444;font-size:11px;margin-top:16px;">Si no solicitaste esto, ignora este email.</p>
+  </div>
+</body>`,
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+// ── POST /admin/reset-password — aplicar nueva contraseña con código ──────────
+router.post('/reset-password', async (req: Request, res: Response) => {
+  try {
+    const { email, code, new_password } = z.object({
+      email:        z.string().email(),
+      code:         z.string().length(6),
+      new_password: z.string().min(8),
+    }).parse(req.body);
+
+    const codeHash = crypto.createHash('sha256').update(code.toUpperCase()).digest('hex');
+
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('id, invite_token, invite_expires_at')
+      .eq('email', email)
+      .single();
+
+    if (error || !data) { res.status(404).json({ error: 'Código inválido' }); return; }
+    if (data.invite_token !== codeHash) { res.status(401).json({ error: 'Código inválido' }); return; }
+    if (new Date(data.invite_expires_at) < new Date()) { res.status(410).json({ error: 'Código expirado' }); return; }
+
+    const newHash = await bcrypt.hash(new_password, 12);
+    await supabase.from('admin_users').update({
+      password_hash:     newHash,
+      invite_token:      null,
+      invite_expires_at: null,
+    }).eq('id', data.id);
+
+    res.json({ ok: true });
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
 export default router;

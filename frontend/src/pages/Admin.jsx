@@ -48,6 +48,85 @@ const EmptyState = ({ icon: Icon, text }) => (
   </div>
 );
 
+// ── RECUPERAR CONTRASEÑA ─────────────────────────────────────────────────────
+function ForgotPassword({ email, API }) {
+  const [open,    setOpen]    = useState(false);
+  const [fEmail,  setFEmail]  = useState(email||"");
+  const [step,    setStep]    = useState(0); // 0=email, 1=code, 2=newpw
+  const [code,    setCode]    = useState("");
+  const [newPw,   setNewPw]   = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [msg,     setMsg]     = useState("");
+  const [err,     setErr]     = useState("");
+
+  const sendCode = async () => {
+    if (!fEmail) return;
+    setLoading(true); setErr("");
+    try {
+      const r = await fetch(`${API}/api/admin/forgot-password`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ email:fEmail }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setErr(d.error||"Error"); setLoading(false); return; }
+      setStep(1); setMsg("Código enviado a "+fEmail);
+    } catch { setErr("Error de conexión"); }
+    setLoading(false);
+  };
+
+  const resetPw = async () => {
+    if (!code||!newPw||newPw!==confirm) return;
+    setLoading(true); setErr("");
+    try {
+      const r = await fetch(`${API}/api/admin/reset-password`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ email:fEmail, code, new_password:newPw }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setErr(d.error||"Código inválido"); setLoading(false); return; }
+      setMsg("Contraseña actualizada. Ya puedes iniciar sesión.");
+      setStep(3);
+    } catch { setErr("Error de conexión"); }
+    setLoading(false);
+  };
+
+  const fi = { width:"100%",padding:"12px 14px",borderRadius:10,border:"1px solid #1E1E1E",background:"#111111",color:"#F9FAFB",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box",marginBottom:8 };
+
+  if (!open) return (
+    <button onClick={()=>setOpen(true)} style={{ background:"none",border:"none",color:"#6B7280",fontSize:12,cursor:"pointer",fontFamily:"inherit",marginTop:12,display:"block",width:"100%" }}>
+      ¿Olvidaste tu contraseña?
+    </button>
+  );
+
+  return (
+    <div style={{ marginTop:16,padding:16,borderRadius:12,border:"1px solid #1E1E1E",background:"#111111",textAlign:"left" }}>
+      <div style={{ fontSize:13,fontWeight:600,marginBottom:12,color:"#F9FAFB" }}>Recuperar contraseña</div>
+      {step===0 && <>
+        <input value={fEmail} onChange={e=>setFEmail(e.target.value)} placeholder="Tu email de admin" style={fi}/>
+        {err && <div style={{ fontSize:11,color:"#EF4444",marginBottom:6 }}>{err}</div>}
+        <button onClick={sendCode} disabled={!fEmail||loading}
+          style={{ width:"100%",padding:10,borderRadius:8,border:"none",background:fEmail?"#4ADE80":"#1E1E1E",color:fEmail?"#080808":"#6B7280",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>
+          {loading?"Enviando...":"Enviar código"}
+        </button>
+      </>}
+      {step===1 && <>
+        {msg && <div style={{ fontSize:11,color:"#4ADE80",marginBottom:8 }}>{msg}</div>}
+        <input value={code} onChange={e=>setCode(e.target.value)} placeholder="Código de 6 caracteres" style={fi}/>
+        <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Nueva contraseña" style={fi}/>
+        <input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Confirmar contraseña" style={fi}/>
+        {err && <div style={{ fontSize:11,color:"#EF4444",marginBottom:6 }}>{err}</div>}
+        <button onClick={resetPw} disabled={!code||!newPw||newPw!==confirm||loading}
+          style={{ width:"100%",padding:10,borderRadius:8,border:"none",background:code&&newPw&&newPw===confirm?"#4ADE80":"#1E1E1E",color:code&&newPw&&newPw===confirm?"#080808":"#6B7280",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>
+          {loading?"Guardando...":"Cambiar contraseña"}
+        </button>
+      </>}
+      {step===3 && <div style={{ fontSize:12,color:"#4ADE80",textAlign:"center",padding:"8px 0" }}>{msg}</div>}
+      <button onClick={()=>{setOpen(false);setStep(0);setErr("");setMsg("");}} style={{ background:"none",border:"none",color:"#6B7280",fontSize:11,cursor:"pointer",fontFamily:"inherit",marginTop:8,display:"block" }}>Cancelar</button>
+    </div>
+  );
+}
+
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
 function AdminLogin({ onLogin }) {
   const [step, setStep]           = useState(0);
@@ -137,6 +216,7 @@ function AdminLogin({ onLogin }) {
             </div>
             {err && <div style={{ fontSize:12, color:C.r, marginBottom:10 }}>{err}</div>}
             <button onClick={go} disabled={loading} style={{ width:"100%",padding:15,borderRadius:12,border:"none",background:loading?C.b:C.a,color:loading?C.d:C.bg,fontSize:15,fontWeight:700,cursor:loading?"default":"pointer",fontFamily:"inherit" }}>{loading?"Verificando...":"Entrar"}</button>
+            {step===0 && <ForgotPassword email={email} API={API}/>}
           </div>
         ) : (
           <div>
@@ -821,11 +901,35 @@ function SysConfig({ authFetch }) {
   const [invSending,  setInvSending] = useState(false);
   const [invDone,     setInvDone]    = useState(false);
   const [invErr,      setInvErr]     = useState("");
+  // Cambio de contraseña
+  const [pwCurrent,   setPwCurrent]  = useState("");
+  const [pwNew,       setPwNew]      = useState("");
+  const [pwConfirm,   setPwConfirm]  = useState("");
+  const [pwLoading,   setPwLoading]  = useState(false);
+  const [pwMsg,       setPwMsg]      = useState("");
+  const [pwErr,       setPwErr]      = useState("");
+  const [showCur,     setShowCur]    = useState(false);
+  const [showNew,     setShowNew]    = useState(false);
   const fi = { padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:14,fontFamily:"inherit",outline:"none",width:80,textAlign:"center" };
 
   useEffect(()=>{
     authFetch("/api/admin/team").then(setTeam).catch(()=>{});
   },[]);
+
+  const changePassword = async () => {
+    if (!pwCurrent || !pwNew || pwNew !== pwConfirm) return;
+    if (pwNew.length < 8) { setPwErr("Mínimo 8 caracteres"); return; }
+    setPwLoading(true); setPwErr(""); setPwMsg("");
+    try {
+      const r = await authFetch("/api/admin/change-password", {
+        method:"POST",
+        body:JSON.stringify({ current_password:pwCurrent, new_password:pwNew }),
+      });
+      setPwMsg("Contraseña actualizada ✓");
+      setPwCurrent(""); setPwNew(""); setPwConfirm("");
+    } catch(err) { setPwErr("Contraseña actual incorrecta"); }
+    setPwLoading(false);
+  };
 
   const sendInvite = async () => {
     if (!invEmail) return;
@@ -879,6 +983,38 @@ function SysConfig({ authFetch }) {
             <input type="number" value={limits[p]} onChange={e=>setLimits({...limits,[p]:parseInt(e.target.value)||0})} style={fi}/>
           </div>
         ))}
+      </div>
+
+      {/* ── CONTRASEÑA ── */}
+      <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10 }}>Cambiar contraseña</div>
+      <div style={{ background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"16px",marginBottom:20 }}>
+        {[
+          {label:"Contraseña actual", val:pwCurrent, set:setPwCurrent, show:showCur, setShow:setShowCur},
+          {label:"Nueva contraseña",  val:pwNew,     set:setPwNew,     show:showNew, setShow:setShowNew},
+          {label:"Confirmar nueva",   val:pwConfirm, set:setPwConfirm, show:false,   setShow:null},
+        ].map((f,i)=>(
+          <div key={i} style={{ position:"relative", marginBottom:8 }}>
+            <div style={{ fontSize:11,color:C.d,marginBottom:4 }}>{f.label}</div>
+            <div style={{ position:"relative" }}>
+              <input type={f.show?"text":"password"} value={f.val} onChange={e=>f.set(e.target.value)}
+                style={{ width:"100%",padding:"10px 40px 10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box" }}/>
+              {f.setShow && <button onClick={()=>f.setShow(!f.show)}
+                style={{ position:"absolute",right:10,top:10,background:"none",border:"none",cursor:"pointer",color:C.d }}>
+                {f.show?<EyeOff size={14}/>:<Eye size={14}/>}
+              </button>}
+            </div>
+          </div>
+        ))}
+        {pwNew && pwConfirm && pwNew!==pwConfirm && <div style={{ fontSize:11,color:C.r,marginBottom:6 }}>Las contraseñas no coinciden</div>}
+        {pwErr && <div style={{ fontSize:11,color:C.r,marginBottom:6 }}>{pwErr}</div>}
+        {pwMsg && <div style={{ fontSize:11,color:C.a,marginBottom:6 }}>{pwMsg}</div>}
+        <button onClick={changePassword} disabled={!pwCurrent||!pwNew||pwNew!==pwConfirm||pwLoading}
+          style={{ width:"100%",padding:10,borderRadius:8,border:"none",
+            background:pwCurrent&&pwNew&&pwNew===pwConfirm?C.a:C.b,
+            color:pwCurrent&&pwNew&&pwNew===pwConfirm?C.bg:C.d,
+            fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>
+          {pwLoading?"Guardando...":"Guardar contraseña"}
+        </button>
       </div>
 
       {/* ── EQUIPO ── */}
@@ -1014,7 +1150,7 @@ export default function CleoAdmin() {
     {id:"finanzas", label:"Finanzas", Icon:DollarSign,  roles:["owner"]},
     {id:"expenses", label:"Egresos",  Icon:Minus,       roles:["owner"]},
     {id:"sistema",  label:"Sistema",  Icon:Activity,    roles:["owner","soporte"]},
-    {id:"config",   label:"Config",   Icon:Settings,    roles:["owner"]},
+    {id:"config",   label:"Config",   Icon:Settings,    roles:["owner","soporte"]},
   ];
   const tabs = allTabs.filter(t=>t.roles.includes(adminRole));
 
@@ -1032,6 +1168,10 @@ export default function CleoAdmin() {
             </button>
           ))}
           <div style={{ position:"absolute",bottom:16,left:12,right:12 }}>
+            <div style={{ textAlign:"center",marginBottom:10,padding:"6px 0",borderRadius:8,background:adminRole==="owner"?"rgba(245,158,11,0.1)":"rgba(74,222,128,0.08)",border:"1px solid "+(adminRole==="owner"?"rgba(245,158,11,0.25)":"rgba(74,222,128,0.2)") }}>
+              <span style={{ fontSize:11,fontWeight:700,color:adminRole==="owner"?"#F59E0B":C.a }}>{adminRole==="owner"?"👑 Administrador":"🎧 Soporte"}</span>
+              <div style={{ fontSize:10,color:C.d,marginTop:1 }}>{adminEmail}</div>
+            </div>
             <button onClick={()=>loadData()} style={{ width:"100%",padding:10,borderRadius:10,border:"1px solid "+C.b,background:"transparent",color:C.d,fontSize:12,fontWeight:500,cursor:"pointer",fontFamily:"inherit",marginBottom:6,display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
               <RefreshCw size={13}/> Actualizar
             </button>
