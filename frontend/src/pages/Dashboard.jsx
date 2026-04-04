@@ -1,7 +1,7 @@
-import { supabase } from '../lib/supabase.js';
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Calendar, CalendarDays, BarChart3, Settings, Check, X, ChevronRight, ChevronLeft, Clock, CircleDot, Smartphone, MessageSquare, Phone, Ban, Loader, ArrowLeft, Shield, Zap, User, LogOut, Lock, Pause, Play, Trash2, AlertTriangle, Wifi, WifiOff, Eye, EyeOff, Save, HelpCircle, Sparkles, Plane, Plus, Briefcase, DollarSign, TrendingUp, ToggleRight, Download, MapPin, Car, Home, Sun, Moon as MoonIcon } from "lucide-react";
 import * as XLSX from "xlsx";
+import { supabase } from '../lib/supabase.js';
 
 // ============================================
 // CLEO — Dashboard del dueño del negocio
