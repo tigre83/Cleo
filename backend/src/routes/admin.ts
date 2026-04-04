@@ -13,7 +13,7 @@ const resend = new Resend(env.RESEND_API_KEY);
 // In-memory store for 2FA codes (short-lived, single admin)
 let pending2FA: { codeHash: string; expiresAt: number } | null = null;
 
-// --- POST /admin/login — validate credentials, send 2FA code ---
+// ── POST /admin/login ─────────────────────────────────────────────────────────
 router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = z
@@ -61,16 +61,13 @@ router.post('/login', async (req: Request, res: Response) => {
 
     res.json({ message: 'Código 2FA enviado a tu email' });
   } catch (err) {
-    if (err instanceof z.ZodError) {
-      res.status(400).json({ error: err.errors });
-      return;
-    }
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
     console.error('Admin login error:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
-// --- POST /admin/verify-2fa — verify code, return JWT ---
+// ── POST /admin/verify-2fa ────────────────────────────────────────────────────
 router.post('/verify-2fa', async (req: Request, res: Response) => {
   try {
     const { code } = z.object({ code: z.string().length(6) }).parse(req.body);
@@ -88,34 +85,26 @@ router.post('/verify-2fa', async (req: Request, res: Response) => {
     }
 
     pending2FA = null;
-
     const token = jwt.sign(
       { role: 'admin' as const, email: env.ADMIN_EMAIL },
       env.JWT_SECRET,
       { expiresIn: '8h' }
     );
-
     res.json({ token });
   } catch (err) {
-    if (err instanceof z.ZodError) {
-      res.status(400).json({ error: err.errors });
-      return;
-    }
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
     console.error('Admin 2FA error:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
-// --- All routes below require admin JWT ---
-
-// GET /admin/users — list all businesses
+// ── GET /admin/users ──────────────────────────────────────────────────────────
 router.get('/users', adminAuthMiddleware, async (_req: AdminRequest, res: Response) => {
   try {
     const { data, error } = await supabase
       .from('businesses')
-      .select('id, email, business_name, plan, status, trial_ends_at, messages_used, email_verified, created_at')
+      .select('id, email, business_name, business_type, plan, status, billing_cycle, plan_renews_at, messages_used, messages_limit, email_verified, created_at, cancelled_at, cancel_at_period_end, paused_until')
       .order('created_at', { ascending: false });
-
     if (error) throw error;
     res.json(data ?? []);
   } catch (err) {
@@ -124,54 +113,75 @@ router.get('/users', adminAuthMiddleware, async (_req: AdminRequest, res: Respon
   }
 });
 
-// GET /admin/stats — aggregate stats (MRR, total users, churn)
+// ── GET /admin/stats ──────────────────────────────────────────────────────────
 router.get('/stats', adminAuthMiddleware, async (_req: AdminRequest, res: Response) => {
   try {
     const { data: businesses, error } = await supabase
       .from('businesses')
-      .select('id, plan, status, created_at');
-
+      .select('id, plan, status, billing_cycle, created_at');
     if (error) throw error;
-    const all: Array<{ id: string; plan: string; status: string; created_at: string }> =
-      businesses ?? [];
 
-    const totalUsers = all.length;
-    const activeUsers = all.filter((b) => b.status === 'active').length;
-    const churned = all.filter((b) => b.status === 'churned' || b.status === 'canceled').length;
-    const churnRate = totalUsers > 0 ? Math.round((churned / totalUsers) * 100) : 0;
+    const all: Array<{ id: string; plan: string; status: string; billing_cycle: string; created_at: string }> = businesses ?? [];
 
-    const planPrices: Record<string, number> = {
-      free: 0,
-      basic: 29,
-      pro: 79,
-      enterprise: 199,
-    };
+    const totalUsers   = all.length;
+    const activeUsers  = all.filter(b => b.status === 'active').length;
+    const trialUsers   = all.filter(b => b.plan === 'trial').length;
+    const churned      = all.filter(b => ['churned','canceled','cancelled'].includes(b.status)).length;
+    const churnRate    = totalUsers > 0 ? Math.round((churned / totalUsers) * 100) : 0;
+
+    // Precios reales de Cleo
+    const monthlyPrices: Record<string, number> = { basico: 29, negocio: 59, pro: 99 };
+    const annualPrices:  Record<string, number> = { basico: 290, negocio: 590, pro: 990 };
+
     const mrr = all
-      .filter((b) => b.status === 'active')
-      .reduce((sum: number, b) => sum + (planPrices[b.plan] ?? 0), 0);
+      .filter(b => b.status === 'active')
+      .reduce((sum, b) => {
+        if (b.billing_cycle === 'annual') {
+          return sum + Math.round((annualPrices[b.plan] ?? 0) / 12);
+        }
+        return sum + (monthlyPrices[b.plan] ?? 0);
+      }, 0);
 
+    // Nuevos esta semana
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const newThisWeek = all.filter(b => new Date(b.created_at) > weekAgo).length;
+
+    // Conteo por plan
     const planCounts: Record<string, number> = {};
     for (const b of all) {
       planCounts[b.plan] = (planCounts[b.plan] ?? 0) + 1;
     }
 
-    res.json({ totalUsers, activeUsers, mrr, churnRate, planCounts });
+    // Crecimiento mensual — últimos 6 meses
+    const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const growth = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const yr = d.getFullYear();
+      const mo = d.getMonth();
+      const count = all.filter(b => {
+        const c = new Date(b.created_at);
+        return c.getFullYear() === yr && c.getMonth() === mo;
+      }).length;
+      growth.push({ m: MONTH_SHORT[mo], u: count });
+    }
+
+    res.json({ totalUsers, activeUsers, trialUsers, mrr, churnRate, planCounts, newThisWeek, growth });
   } catch (err) {
     console.error('Admin stats error:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
-// PATCH /admin/users/:id — change plan or suspend
+// ── PATCH /admin/users/:id ────────────────────────────────────────────────────
 router.patch('/users/:id', adminAuthMiddleware, async (req: AdminRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const updates = z
-      .object({
-        plan: z.enum(['free', 'basic', 'pro', 'enterprise']).optional(),
-        status: z.enum(['active', 'suspended', 'churned', 'canceled']).optional(),
-      })
-      .parse(req.body);
+    const updates = z.object({
+      plan:   z.enum(['trial','basico','negocio','pro']).optional(),
+      status: z.enum(['active','suspended','churned','canceled']).optional(),
+    }).parse(req.body);
 
     if (!updates.plan && !updates.status) {
       res.status(400).json({ error: 'Nada que actualizar' });
@@ -186,18 +196,127 @@ router.patch('/users/:id', adminAuthMiddleware, async (req: AdminRequest, res: R
       .single();
 
     if (error) throw error;
-    if (!data) {
-      res.status(404).json({ error: 'Usuario no encontrado' });
-      return;
-    }
-
+    if (!data) { res.status(404).json({ error: 'Usuario no encontrado' }); return; }
     res.json(data);
   } catch (err) {
-    if (err instanceof z.ZodError) {
-      res.status(400).json({ error: err.errors });
-      return;
-    }
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
     console.error('Admin patch user error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── GET /admin/expenses ───────────────────────────────────────────────────────
+router.get('/expenses', adminAuthMiddleware, async (_req: AdminRequest, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .order('date', { ascending: false });
+    if (error) throw error;
+    res.json(data ?? []);
+  } catch (err) {
+    console.error('Admin expenses error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── POST /admin/expenses ──────────────────────────────────────────────────────
+router.post('/expenses', adminAuthMiddleware, async (req: AdminRequest, res: Response) => {
+  try {
+    const body = z.object({
+      category:    z.string(),
+      description: z.string(),
+      amount:      z.number().min(0),
+      date:        z.string(),
+      recurring:   z.boolean().optional().default(false),
+      notes:       z.string().optional().default(''),
+    }).parse(req.body);
+
+    const { data, error } = await supabase.from('expenses').insert(body).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
+    console.error('Admin create expense error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── DELETE /admin/expenses/:id ────────────────────────────────────────────────
+router.delete('/expenses/:id', adminAuthMiddleware, async (req: AdminRequest, res: Response) => {
+  try {
+    const { error } = await supabase.from('expenses').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Admin delete expense error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── GET /admin/system-status ──────────────────────────────────────────────────
+router.get('/system-status', adminAuthMiddleware, async (_req: AdminRequest, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('system_status')
+      .select('*')
+      .order('started_at', { ascending: false });
+    if (error) throw error;
+    res.json(data ?? []);
+  } catch (err) {
+    console.error('Admin system-status error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── POST /admin/system-status ─────────────────────────────────────────────────
+router.post('/system-status', adminAuthMiddleware, async (req: AdminRequest, res: Response) => {
+  try {
+    const body = z.object({
+      service:     z.string(),
+      status:      z.enum(['operational','degraded','outage']),
+      description: z.string().optional().default(''),
+    }).parse(req.body);
+
+    const { data, error } = await supabase
+      .from('system_status')
+      .insert({ ...body, started_at: new Date().toISOString() })
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
+    console.error('Admin create status error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── PATCH /admin/system-status/:id/resolve ────────────────────────────────────
+router.patch('/system-status/:id/resolve', adminAuthMiddleware, async (req: AdminRequest, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('system_status')
+      .update({ status: 'operational', resolved_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('Admin resolve status error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── DELETE /admin/system-status/:id ──────────────────────────────────────────
+router.delete('/system-status/:id', adminAuthMiddleware, async (req: AdminRequest, res: Response) => {
+  try {
+    const { error } = await supabase.from('system_status').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Admin delete status error:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
