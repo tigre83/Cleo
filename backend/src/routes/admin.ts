@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { z } from 'zod';
@@ -378,6 +379,232 @@ router.get('/health-check', adminAuthMiddleware, async (_req: AdminRequest, res:
   ]);
 
   res.json(results);
+});
+
+
+// ── GET /admin/team — listar miembros del equipo ──────────────────────────────
+router.get('/team', adminAuthMiddleware, async (req: AdminRequest, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('id, email, role, active, created_at, last_login_at, invited_by')
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    res.json(data ?? []);
+  } catch (err) {
+    console.error('Admin team error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── POST /admin/invite — enviar invitación ────────────────────────────────────
+router.post('/invite', adminAuthMiddleware, async (req: AdminRequest, res: Response) => {
+  try {
+    const { email, role } = z.object({
+      email: z.string().email(),
+      role:  z.enum(['owner', 'soporte']),
+    }).parse(req.body);
+
+    // Generar token único
+    const token      = crypto.randomBytes(32).toString('hex');
+    const expiresAt  = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    // Upsert en admin_users
+    const { error } = await supabase
+      .from('admin_users')
+      .upsert({
+        email,
+        role,
+        invite_token:      token,
+        invite_expires_at: expiresAt,
+        invited_by:        env.ADMIN_EMAIL,
+        active:            false,
+      }, { onConflict: 'email' });
+    if (error) throw error;
+
+    // Enviar email de invitación
+    const inviteUrl = `${env.FRONTEND_URL}/admin/invite/${token}`;
+    const rolLabel  = role === 'owner' ? 'Dueño' : 'Soporte';
+
+    await resend.emails.send({
+      from: 'Cleo <soporte@cleoia.app>',
+      to:   email,
+      subject: 'Te invitaron al panel de administración — Cleo',
+      html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#080808;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#080808;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="max-width:480px;">
+        <tr><td style="text-align:center;padding-bottom:24px;">
+          <span style="font-size:28px;font-weight:800;color:#4ADE80;">Cleo</span>
+          <span style="font-size:14px;color:#555;margin-left:8px;">Admin</span>
+        </td></tr>
+        <tr><td style="background:#0D0D0D;border:1px solid #1A1A1A;border-radius:16px;padding:32px;">
+          <h1 style="margin:0 0 8px;font-size:20px;color:#FFF;">Fuiste invitado al panel admin</h1>
+          <p style="margin:0 0 8px;font-size:14px;color:#888;">Rol asignado: <strong style="color:#4ADE80;">${rolLabel}</strong></p>
+          <p style="margin:0 0 24px;font-size:14px;color:#888;">Este link expira en 24 horas.</p>
+          <a href="${inviteUrl}" style="display:block;text-align:center;background:#4ADE80;color:#080808;padding:14px 24px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Aceptar invitación</a>
+          <p style="margin:16px 0 0;font-size:11px;color:#444;text-align:center;">Si no esperabas esta invitación, ignora este email.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+    });
+
+    res.json({ ok: true, expires_at: expiresAt });
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
+    console.error('Admin invite error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── GET /admin/invite/:token — validar token de invitación ────────────────────
+router.get('/invite/:token', async (req: Request, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('email, role, invite_expires_at')
+      .eq('invite_token', req.params.token)
+      .single();
+
+    if (error || !data) {
+      res.status(404).json({ error: 'Invitación no encontrada o ya usada' });
+      return;
+    }
+    if (new Date(data.invite_expires_at) < new Date()) {
+      res.status(410).json({ error: 'La invitación expiró' });
+      return;
+    }
+    res.json({ email: data.email, role: data.role });
+  } catch (err) {
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── POST /admin/invite/:token/accept — crear contraseña y activar cuenta ──────
+router.post('/invite/:token/accept', async (req: Request, res: Response) => {
+  try {
+    const { password } = z.object({ password: z.string().min(8) }).parse(req.body);
+
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('id, email, role, invite_expires_at')
+      .eq('invite_token', req.params.token)
+      .single();
+
+    if (error || !data) {
+      res.status(404).json({ error: 'Invitación no encontrada' });
+      return;
+    }
+    if (new Date(data.invite_expires_at) < new Date()) {
+      res.status(410).json({ error: 'La invitación expiró' });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    await supabase
+      .from('admin_users')
+      .update({
+        password_hash:     passwordHash,
+        invite_token:      null,
+        invite_expires_at: null,
+        active:            true,
+      })
+      .eq('id', data.id);
+
+    // Emitir JWT igual que el login normal
+    const token = jwt.sign(
+      { role: data.role, email: data.email, adminId: data.id },
+      env.JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.json({ token, role: data.role, email: data.email });
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── POST /admin/login/member — login para miembros invitados ──────────────────
+router.post('/login/member', async (req: Request, res: Response) => {
+  try {
+    const { email, password } = z.object({
+      email:    z.string().email(),
+      password: z.string(),
+    }).parse(req.body);
+
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('id, email, role, password_hash, active')
+      .eq('email', email)
+      .single();
+
+    if (error || !data || !data.active || !data.password_hash) {
+      res.status(401).json({ error: 'Credenciales inválidas' });
+      return;
+    }
+
+    const valid = await bcrypt.compare(password, data.password_hash);
+    if (!valid) {
+      res.status(401).json({ error: 'Credenciales inválidas' });
+      return;
+    }
+
+    await supabase.from('admin_users').update({ last_login_at: new Date().toISOString() }).eq('id', data.id);
+
+    const token = jwt.sign(
+      { role: data.role, email: data.email, adminId: data.id },
+      env.JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.json({ token, role: data.role, email: data.email });
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── PATCH /admin/team/:id — cambiar rol o desactivar ─────────────────────────
+router.patch('/team/:id', adminAuthMiddleware, async (req: AdminRequest, res: Response) => {
+  try {
+    const updates = z.object({
+      role:   z.enum(['owner','soporte']).optional(),
+      active: z.boolean().optional(),
+    }).parse(req.body);
+
+    const { data, error } = await supabase
+      .from('admin_users')
+      .update(updates)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors }); return; }
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── DELETE /admin/team/:id — revocar acceso ───────────────────────────────────
+router.delete('/team/:id', adminAuthMiddleware, async (req: AdminRequest, res: Response) => {
+  try {
+    const { error } = await supabase.from('admin_users').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 export default router;

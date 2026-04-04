@@ -72,6 +72,15 @@ function AdminLogin({ onLogin }) {
     if (!email||!pass) { setErr("Completa los campos"); return; }
     setLoading(true); setErr("");
     try {
+      // Primero intentar login de miembro invitado
+      const rm = await fetch(`${API}/api/admin/login/member`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email, password:pass }) });
+      if (rm.ok) {
+        const dm = await rm.json();
+        localStorage.setItem("adminToken", dm.token);
+        onLogin(email, dm.role);
+        return;
+      }
+      // Si no es miembro, intentar login de dueño (2FA)
       const r = await fetch(`${API}/api/admin/login`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email, password:pass }) });
       const d = await r.json();
       if (!r.ok) { setErr(d.error||"Credenciales inválidas"); setLoading(false); return; }
@@ -91,7 +100,7 @@ function AdminLogin({ onLogin }) {
         const d = await r.json();
         if (!r.ok) { setErr(d.error||"Código inválido"); setLoading(false); return; }
         localStorage.setItem("adminToken", d.token);
-        onLogin(email);
+        onLogin(email, 'owner');
       } catch { setErr("Error de conexión"); }
       setLoading(false);
     }
@@ -801,12 +810,40 @@ function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
 }
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-function SysConfig() {
-  const [maint,  setMaint]  = useState(false);
-  const [msg,    setMsg]    = useState("Estamos realizando mejoras. Volvemos en unos minutos.");
-  const [prices, setPrices] = useState({basico:29,negocio:59,pro:99});
-  const [limits, setLimits] = useState({basico:500,negocio:2000,pro:99999});
+function SysConfig({ authFetch }) {
+  const [maint,       setMaint]      = useState(false);
+  const [msg,         setMsg]        = useState("Estamos realizando mejoras. Volvemos en unos minutos.");
+  const [prices,      setPrices]     = useState({basico:29,negocio:59,pro:99});
+  const [limits,      setLimits]     = useState({basico:500,negocio:2000,pro:99999});
+  const [team,        setTeam]       = useState([]);
+  const [invEmail,    setInvEmail]   = useState("");
+  const [invRole,     setInvRole]    = useState("soporte");
+  const [invSending,  setInvSending] = useState(false);
+  const [invDone,     setInvDone]    = useState(false);
+  const [invErr,      setInvErr]     = useState("");
   const fi = { padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:14,fontFamily:"inherit",outline:"none",width:80,textAlign:"center" };
+
+  useEffect(()=>{
+    authFetch("/api/admin/team").then(setTeam).catch(()=>{});
+  },[]);
+
+  const sendInvite = async () => {
+    if (!invEmail) return;
+    setInvSending(true); setInvErr(""); setInvDone(false);
+    try {
+      await authFetch("/api/admin/invite", { method:"POST", body:JSON.stringify({ email:invEmail, role:invRole }) });
+      setInvDone(true); setInvEmail("");
+      authFetch("/api/admin/team").then(setTeam).catch(()=>{});
+    } catch(err) { setInvErr("Error al enviar la invitación"); }
+    setInvSending(false);
+  };
+
+  const revokeAccess = async (id) => {
+    try {
+      await authFetch(`/api/admin/team/${id}`, { method:"DELETE" });
+      setTeam(prev=>prev.filter(m=>m.id!==id));
+    } catch(err) { console.error(err); }
+  };
 
   return (
     <div>
@@ -843,6 +880,49 @@ function SysConfig() {
           </div>
         ))}
       </div>
+
+      {/* ── EQUIPO ── */}
+      <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10, marginTop:28 }}>Equipo admin</div>
+      <div style={{ background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"16px",marginBottom:12 }}>
+        <div style={{ fontSize:12,color:C.d,marginBottom:12 }}>Invitar nuevo miembro</div>
+        <div style={{ display:"flex",gap:6,marginBottom:8 }}>
+          <input value={invEmail} onChange={e=>setInvEmail(e.target.value)} placeholder="email@cleoia.app"
+            style={{ flex:1,padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none" }}/>
+          <select value={invRole} onChange={e=>setInvRole(e.target.value)}
+            style={{ padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:12,fontFamily:"inherit",outline:"none" }}>
+            <option value="soporte">Soporte</option>
+            <option value="owner">Dueño</option>
+          </select>
+        </div>
+        {invErr && <div style={{ fontSize:11,color:C.r,marginBottom:6 }}>{invErr}</div>}
+        {invDone && <div style={{ fontSize:11,color:C.a,marginBottom:6 }}>✅ Invitación enviada</div>}
+        <button onClick={sendInvite} disabled={!invEmail||invSending}
+          style={{ width:"100%",padding:10,borderRadius:8,border:"none",background:invEmail?C.a:C.b,color:invEmail?C.bg:C.d,fontSize:13,fontWeight:600,cursor:invEmail?"pointer":"default",fontFamily:"inherit" }}>
+          {invSending?"Enviando...":"Enviar invitación"}
+        </button>
+      </div>
+      {team.length>0 && (
+        <div style={{ background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"16px",marginBottom:12 }}>
+          <div style={{ fontSize:12,color:C.d,marginBottom:10 }}>Miembros actuales</div>
+          {team.map(m=>(
+            <div key={m.id} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+C.b }}>
+              <div>
+                <div style={{ fontSize:13,fontWeight:600 }}>{m.email}</div>
+                <div style={{ fontSize:11,color:C.d,marginTop:1 }}>
+                  {m.role==="owner"?"Dueño":"Soporte"} · {m.active?"Activo":"Pendiente"}
+                  {m.last_login_at&&" · Último acceso: "+new Date(m.last_login_at).toLocaleDateString("es-EC")}
+                </div>
+              </div>
+              {m.role!=="owner"&&(
+                <button onClick={()=>revokeAccess(m.id)}
+                  style={{ padding:"4px 10px",borderRadius:6,border:"1px solid "+C.r+"25",background:C.r+"08",color:C.r,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>
+                  Revocar
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -856,6 +936,8 @@ export default function CleoAdmin() {
   const cycleTheme  = () => setTheme(t=>t==="dark"?"light":t==="light"?"system":"dark");
 
   const [authed,       setAuthed]       = useState(false);
+  const [adminRole,    setAdminRole]    = useState('owner'); // 'owner' | 'soporte'
+  const [adminEmail,   setAdminEmail]   = useState('');
   const [tab,          setTab]          = useState("overview");
   const [selectedUser, setSelectedUser] = useState(null);
   const [mob,          setMob]          = useState(false);
@@ -922,18 +1004,19 @@ export default function CleoAdmin() {
     } catch(err) { console.error(err); }
   };
 
-  if (!authed) return <AdminLogin onLogin={()=>setAuthed(true)}/>;
+  if (!authed) return <AdminLogin onLogin={(email, role)=>{ setAuthed(true); setAdminRole(role||'owner'); setAdminEmail(email); }}/>
 
   const TIcon = resolved==="dark"?Moon:resolved==="light"?Sun:Settings;
 
-  const tabs = [
-    {id:"overview", label:"Resumen",  Icon:BarChart3},
-    {id:"users",    label:"Usuarios", Icon:Users},
-    {id:"finanzas", label:"Finanzas", Icon:DollarSign},
-    {id:"expenses", label:"Egresos",  Icon:Minus},
-    {id:"sistema",  label:"Sistema",  Icon:Activity},
-    {id:"config",   label:"Config",   Icon:Settings},
+  const allTabs = [
+    {id:"overview", label:"Resumen",  Icon:BarChart3,   roles:["owner"]},
+    {id:"users",    label:"Usuarios", Icon:Users,       roles:["owner","soporte"]},
+    {id:"finanzas", label:"Finanzas", Icon:DollarSign,  roles:["owner"]},
+    {id:"expenses", label:"Egresos",  Icon:Minus,       roles:["owner"]},
+    {id:"sistema",  label:"Sistema",  Icon:Activity,    roles:["owner","soporte"]},
+    {id:"config",   label:"Config",   Icon:Settings,    roles:["owner"]},
   ];
+  const tabs = allTabs.filter(t=>t.roles.includes(adminRole));
 
   return (
     <div style={{ fontFamily:"'DM Sans',sans-serif",background:C.bg,color:C.t,minHeight:"100vh",display:"flex",flexDirection:mob?"column":"row",overflowX:"hidden",maxWidth:"100vw" }}>
@@ -977,7 +1060,7 @@ export default function CleoAdmin() {
         {tab==="finanzas" && <Finanzas users={users} expenses={expenses} stats={stats} loading={loading}/>}
         {tab==="expenses" && <Expenses expenses={expenses} setExpenses={setExpenses} loading={loading} authFetch={authFetch}/>}
         {tab==="sistema"  && <SystemStatus systemStatus={systemStatus} setSystemStatus={setSystemStatus} loading={loading} authFetch={authFetch}/>}
-        {tab==="config"   && <SysConfig/>}
+        {tab==="config"   && <SysConfig authFetch={authFetch}/>}
       </div>
 
       {/* Bottom nav mobile */}
