@@ -1268,7 +1268,7 @@ export default function CleoDashboard() {
           const fi = { width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface2, color: C.text, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box" };
           const CONFIG_TABS = [
             { id:"negocio",   label:"Negocio",    Icon:Briefcase },
-            { id:"asistente", label:"Asistente",  Icon:Smartphone },
+            { id:"asistente", label:"IA",          Icon:Zap },
             { id:"plan",      label:"Plan",        Icon:DollarSign },
             { id:"cuenta",    label:"Cuenta",      Icon:User },
           ];
@@ -1415,7 +1415,9 @@ export default function CleoDashboard() {
                 {biz.plan !== "trial" && <button onClick={() => setRetentionModal(true)} style={{ width: "100%", padding: 8, borderRadius: 10, border: "none", background: "transparent", color: C.dim, fontSize: 11, cursor: "pointer", fontFamily: "inherit", marginTop: 6 }}>Cancelar suscripción</button>}
               </div>
 
-              {/* ── 5. AYUDA ── */}
+              {/* ── 5. AYUDA ── */}              </div>}
+
+              {cfgTab==="cuenta" && <div>
               <div style={st}>Ayuda</div>
               <button onClick={() => setHelpModal(true)} style={{ ...fw, width: "100%", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit", textAlign: "left", marginBottom: 6 }}>
                 <HelpCircle size={15} color={C.accent} /><div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>Preguntas frecuentes</div><div style={{ fontSize: 11, color: C.dim }}>Busca respuestas al instante</div></div><ChevronRight size={16} color={C.dim} />
@@ -1426,9 +1428,7 @@ export default function CleoDashboard() {
 
 
               {/* ── 6. CUENTA ── */}
-              </div>}
 
-              {cfgTab==="cuenta" && <div>
               <div style={st}>Cuenta</div>
               <div style={{ fontSize: 12, color: C.dim, marginBottom: 8 }}>{biz.email}</div>
               <div style={fw}><button onClick={() => setPasswordModal(true)} style={{ width: "100%", padding: 10, borderRadius: 10, border: `1px solid ${C.border}`, background: "transparent", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8 }}><Lock size={14} color={C.dim} /> Cambiar contraseña</button></div>
