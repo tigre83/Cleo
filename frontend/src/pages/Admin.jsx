@@ -1170,8 +1170,7 @@ export default function CleoAdmin() {
   const [authed,       setAuthed]       = useState(false);
   const [adminRole,    setAdminRole]    = useState('owner');
   const [adminEmail,   setAdminEmail]   = useState('');
-  const [adminRole,    setAdminRole]    = useState('owner'); // 'owner' | 'soporte'
-  const [adminEmail,   setAdminEmail]   = useState('');
+
   const [tab,          setTab]          = useState("overview");
   const [selectedUser, setSelectedUser] = useState(null);
   const [mob,          setMob]          = useState(false);
