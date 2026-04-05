@@ -1303,32 +1303,30 @@ export default function CleoDashboard() {
               {/* ── 1. MI NEGOCIO ── */}
               <div style={st}>Mi negocio</div>
 
-              <div style={{...fw, display:"flex", alignItems:"center", gap:16}}>
-                {/* Logo */}
-                <div style={{ flexShrink:0 }}>
+              <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, marginBottom:8, display:"flex", alignItems:"stretch", overflow:"hidden" }}>
+                {/* COL 1: Logo */}
+                <div style={{ width:140, flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8, padding:"16px 12px", borderRight:`1px solid ${C.border}` }}>
                   <input ref={logoInputRef} type="file" accept="image/png,image/jpeg" style={{ display:"none" }} onChange={e => { const f=e.target.files?.[0]; if(!f) return; if(f.size>2*1024*1024){showToast("Máximo 2MB");return;} if(!["image/png","image/jpeg"].includes(f.type)){showToast("Solo PNG o JPG");return;} const r=new FileReader(); r.onload=ev=>{setBiz({...biz,logo:ev.target.result});showToast("Logo actualizado ✓");}; r.readAsDataURL(f); }} />
                   <div onClick={() => logoInputRef.current?.click()} style={{ width:56, height:56, borderRadius:14, overflow:"hidden", background:biz.logo?"transparent":`${C.accent}10`, border:`1.5px solid ${biz.logo?C.border:C.accent+"25"}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
                     {biz.logo ? <img src={biz.logo} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:`${C.accent}60` }}>{initial}</span>}
                   </div>
-                  <div style={{ display:"flex", gap:4, marginTop:6 }}>
-                    <button onClick={() => logoInputRef.current?.click()} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${C.accent}40`, background:C.accentGlow, color:C.accent, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Subir</button>
-                    {biz.logo && <button onClick={() => {setBiz({...biz,logo:null});showToast("Logo eliminado");}} style={{ padding:"4px 8px", borderRadius:6, border:`1px solid ${C.border}`, background:"transparent", color:C.dim, fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>Quitar</button>}
-                  </div>
+                  <button onClick={() => logoInputRef.current?.click()} style={{ padding:"5px 14px", borderRadius:6, border:`1px solid ${C.accent}40`, background:C.accentGlow, color:C.accent, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Subir</button>
+                  {biz.logo && <button onClick={() => {setBiz({...biz,logo:null});showToast("Logo eliminado");}} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:"transparent", color:C.dim, fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>Quitar</button>}
+                  <div style={{ fontSize:9, color:C.dim, textAlign:"center", lineHeight:1.5 }}>PNG o JPG<br/>400×400px · 2MB</div>
                 </div>
-                {/* Nombre | Duracion */}
-                <div style={{ flex:1, minWidth:0, display:"flex", gap:0 }}>
-                  <div style={{ flex:1, paddingRight:16, borderRight:`1px solid ${C.border}` }}>
-                    <div style={fl}>Nombre del negocio</div>
-                    <div style={{ fontSize:15, fontWeight:600, color:C.text }}>{biz.name}</div>
+                {/* COL 2: Nombre */}
+                <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", padding:"16px", borderRight:`1px solid ${C.border}` }}>
+                  <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase", marginBottom:6 }}>Nombre del negocio</div>
+                  <div style={{ fontSize:15, fontWeight:600, color:C.text }}>{biz.name}</div>
+                </div>
+                {/* COL 3: Duracion */}
+                <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", padding:"16px" }}>
+                  <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase", marginBottom:6 }}>Duración de cita</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:4 }}>
+                    {DURS.map(d => <button key={d} onClick={() => {setBiz({...biz,duration:d,customDuration:false});showToast("Guardado ✓");}} style={{ padding:"7px 0", borderRadius:8, border:`1.5px solid ${biz.duration===d&&!biz.customDuration?C.accent:C.border}`, background:biz.duration===d&&!biz.customDuration?C.accentGlow:"transparent", color:biz.duration===d&&!biz.customDuration?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", textAlign:"center" }}>{d}m</button>)}
+                    <button onClick={() => setBiz({...biz,customDuration:true,duration:biz.customDuration?biz.duration:120})} style={{ padding:"7px 0", borderRadius:8, border:`1.5px solid ${biz.customDuration?C.accent:C.border}`, background:biz.customDuration?C.accentGlow:"transparent", color:biz.customDuration?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", textAlign:"center" }}>Otro</button>
                   </div>
-                  <div style={{ flex:1, paddingLeft:16 }}>
-                    <div style={fl}>Duracion de cita</div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:4 }}>
-                      {DURS.map(d => <button key={d} onClick={() => {setBiz({...biz,duration:d,customDuration:false});showToast("Guardado");}} style={{ padding:"7px 0", borderRadius:8, border:`1.5px solid ${biz.duration===d&&!biz.customDuration?C.accent:C.border}`, background:biz.duration===d&&!biz.customDuration?C.accentGlow:"transparent", color:biz.duration===d&&!biz.customDuration?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", textAlign:"center" }}>{d}m</button>)}
-                      <button onClick={() => setBiz({...biz,customDuration:true,duration:biz.customDuration?biz.duration:120})} style={{ padding:"7px 0", borderRadius:8, border:`1.5px solid ${biz.customDuration?C.accent:C.border}`, background:biz.customDuration?C.accentGlow:"transparent", color:biz.customDuration?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", textAlign:"center" }}>Otro</button>
-                    </div>
-                    {biz.customDuration && <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:6 }}><input type="number" min="5" max="480" value={biz.duration} onChange={e => setBiz({...biz,duration:Math.max(5,Math.min(480,parseInt(e.target.value)||5))})} onBlur={() => showToast("Guardado")} style={{ ...fi, width:60, textAlign:"center", padding:"4px 6px" }} /><span style={{ fontSize:11, color:C.dim }}>min</span></div>}
-                  </div>
+                  {biz.customDuration && <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:6 }}><input type="number" min="5" max="480" value={biz.duration} onChange={e => setBiz({...biz,duration:Math.max(5,Math.min(480,parseInt(e.target.value)||5))})} onBlur={() => showToast("Guardado ✓")} style={{ ...fi, width:60, textAlign:"center", padding:"4px 6px" }} /><span style={{ fontSize:11, color:C.dim }}>min</span></div>}
                 </div>
               </div>
 
