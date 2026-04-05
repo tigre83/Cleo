@@ -870,8 +870,29 @@ function LoginPage({ onLogin }) {
         {view==="code" && <>
           <h2 style={{ fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,marginBottom:4,textAlign:"center" }}>Nueva contraseña</h2>
           {msg&&<div style={{ fontSize:12,color:C.accent,marginBottom:16,textAlign:"center" }}>{msg}</div>}
-          <input value={code} onChange={e=>setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6))}
-            placeholder="Código de 6 caracteres" style={{...fi,textAlign:"center",letterSpacing:6,fontFamily:"monospace",fontSize:20}}/>
+          <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:12 }}>
+            {[0,1,2,3,4,5].map(i=>(
+              <input key={i} id={`rc${i}`}
+                value={code[i]||""}
+                onChange={e=>{
+                  const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(-1);
+                  const arr = (code+"      ").split("").slice(0,6);
+                  arr[i] = v;
+                  setCode(arr.join("").trimEnd());
+                  if (v && i<5) document.getElementById(`rc${i+1}`)?.focus();
+                }}
+                onKeyDown={e=>{
+                  if (e.key==="Backspace" && !code[i] && i>0) document.getElementById(`rc${i-1}`)?.focus();
+                }}
+                maxLength={1}
+                style={{ width:44,height:52,textAlign:"center",fontSize:22,fontWeight:700,fontFamily:"monospace",
+                  borderRadius:10,border:"1.5px solid "+(code[i]?C.accent:C.border),
+                  background:C.surface,color:C.text,outline:"none",
+                  boxShadow:code[i]?"0 0 8px "+C.accent+"40":"none",
+                  transition:"all 0.15s" }}
+              />
+            ))}
+          </div>
           <div style={{ position:"relative" }}>
             <input value={newPw} onChange={e=>setNewPw(e.target.value)} type={showNew?"text":"password"} placeholder="Nueva contraseña"
               style={{...fi,paddingRight:48}}/>
