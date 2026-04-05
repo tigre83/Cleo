@@ -583,6 +583,7 @@ function Finanzas({ users, expenses, setExpenses, stats, loading, authFetch }) {
     const isCurrent = i===5;
     return { mes: label, ingresos: isCurrent ? mrr : 0, gastos: isCurrent ? totalExpenses : 0 };
   });
+  const hasChartData = chartData.some(d=>d.ingresos>0||d.gastos>0);
 
   // Gastos por categoría
   const catBreakdown = EXP_CATS.map(ct=>{
