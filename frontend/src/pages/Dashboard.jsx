@@ -1304,15 +1304,19 @@ export default function CleoDashboard() {
               <div style={st}>Mi negocio</div>
 
               <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, marginBottom:8, display:"flex", alignItems:"stretch", overflow:"hidden" }}>
-                {/* COL 1: Logo */}
-                <div style={{ width:140, flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8, padding:"16px 12px", borderRight:`1px solid ${C.border}` }}>
+                {/* COL 1: Logo + Subir */}
+                <div style={{ flex:1, display:"flex", alignItems:"center", gap:14, padding:"20px 16px", borderRight:`1px solid ${C.border}` }}>
                   <input ref={logoInputRef} type="file" accept="image/png,image/jpeg" style={{ display:"none" }} onChange={e => { const f=e.target.files?.[0]; if(!f) return; if(f.size>2*1024*1024){showToast("Máximo 2MB");return;} if(!["image/png","image/jpeg"].includes(f.type)){showToast("Solo PNG o JPG");return;} const r=new FileReader(); r.onload=ev=>{setBiz({...biz,logo:ev.target.result});showToast("Logo actualizado ✓");}; r.readAsDataURL(f); }} />
-                  <div onClick={() => logoInputRef.current?.click()} style={{ width:56, height:56, borderRadius:14, overflow:"hidden", background:biz.logo?"transparent":`${C.accent}10`, border:`1.5px solid ${biz.logo?C.border:C.accent+"25"}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+                  <div onClick={() => logoInputRef.current?.click()} style={{ width:56, height:56, borderRadius:14, overflow:"hidden", background:biz.logo?"transparent":`${C.accent}10`, border:`1.5px solid ${biz.logo?C.border:C.accent+"25"}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
                     {biz.logo ? <img src={biz.logo} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:`${C.accent}60` }}>{initial}</span>}
                   </div>
-                  <button onClick={() => logoInputRef.current?.click()} style={{ padding:"5px 14px", borderRadius:6, border:`1px solid ${C.accent}40`, background:C.accentGlow, color:C.accent, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Subir</button>
-                  {biz.logo && <button onClick={() => {setBiz({...biz,logo:null});showToast("Logo eliminado");}} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:"transparent", color:C.dim, fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>Quitar</button>}
-                  <div style={{ fontSize:9, color:C.dim, textAlign:"center", lineHeight:1.5 }}>PNG o JPG<br/>400×400px · 2MB</div>
+                  <div>
+                    <div style={{ display:"flex", gap:6, marginBottom:6 }}>
+                      <button onClick={() => logoInputRef.current?.click()} style={{ padding:"5px 14px", borderRadius:6, border:`1px solid ${C.accent}40`, background:C.accentGlow, color:C.accent, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Subir</button>
+                      {biz.logo && <button onClick={() => {setBiz({...biz,logo:null});showToast("Logo eliminado");}} style={{ padding:"5px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:"transparent", color:C.dim, fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>Quitar</button>}
+                    </div>
+                    <div style={{ fontSize:10, color:C.dim, lineHeight:1.5 }}>PNG o JPG · 400×400px · 2MB máx</div>
+                  </div>
                 </div>
                 {/* COL 2: Nombre */}
                 <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", padding:"16px", borderRight:`1px solid ${C.border}` }}>
