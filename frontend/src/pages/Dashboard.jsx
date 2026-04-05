@@ -301,18 +301,57 @@ function CancelModal({ appt, onConfirm, onClose }) {
   if (!appt) return null;
   const time = appt.datetime.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" });
   const dateStr = appt.datetime.toLocaleDateString("es-EC", { weekday: "long", day: "numeric", month: "long" });
+  const firstName = appt.client_name.split(" ")[0];
   return (
     <BottomSheet open={!!appt} onClose={onClose} title="Cancelar cita">
-      <div style={{ background: `${C.red}08`, border: `1px solid ${C.red}20`, borderRadius: 12, padding: 16, marginBottom: 16 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{appt.client_name}</div>
-        <div style={{ fontSize: 13, color: C.dim, marginTop: 4 }}>{dateStr} a las {time} · {appt.duration_minutes} min</div>
+      {/* Info de la cita */}
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{appt.client_name}</div>
+          <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: `${C.accent}15`, color: C.accent, letterSpacing: "0.05em" }}>CONFIRMADA</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.dim }}>
+            <Calendar size={11} color={C.dim}/> {dateStr} a las {time}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.dim }}>
+            <Clock size={11} color={C.dim}/> {appt.duration_minutes} minutos
+          </div>
+          {appt.service_name && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.dim }}>
+              <Briefcase size={11} color={C.dim}/> {appt.service_name}
+              {appt.service_price && <span style={{ color: C.accent, fontWeight: 600 }}>· ${appt.service_price}</span>}
+            </div>
+          )}
+        </div>
       </div>
-      <p style={{ fontSize: 13, color: C.dim, lineHeight: 1.5, marginBottom: 16 }}>
-        Al cancelar, Cleo enviará un mensaje automático por WhatsApp a {appt.client_name.split(" ")[0]} ofreciendo horarios alternativos.
-      </p>
+
+      {/* Mensaje inteligente */}
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 14px", background: `${C.accent}06`, border: `1px solid ${C.accent}20`, borderRadius: 12, marginBottom: 10 }}>
+        <MessageSquare size={14} color={C.accent} style={{ flexShrink: 0, marginTop: 1 }}/>
+        <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.6, margin: 0 }}>
+          Cleo notificará automáticamente a <span style={{ color: C.text, fontWeight: 600 }}>{firstName}</span> y ofrecerá nuevos horarios disponibles.
+        </p>
+      </div>
+
+      {/* Advertencia ligera */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 12px", marginBottom: 20 }}>
+        <AlertTriangle size={12} color={C.dim} style={{ flexShrink: 0 }}/>
+        <span style={{ fontSize: 11, color: C.dim }}>Esta acción liberará el espacio en tu agenda.</span>
+      </div>
+
+      {/* Botones */}
       <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={onClose} style={{ flex: 1, padding: 13, borderRadius: 12, border: `1px solid ${C.border}`, background: "transparent", color: C.text, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>No cancelar</button>
-        <button onClick={() => onConfirm(appt.id)} style={{ flex: 1, padding: 13, borderRadius: 12, border: "none", background: C.red, color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Cancelar cita</button>
+        <button onClick={onClose}
+          style={{ flex: 1, padding: 13, borderRadius: 12, border: "none", background: C.accent, color: C.bg, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s" }}
+          onMouseEnter={e=>e.target.style.opacity="0.9"} onMouseLeave={e=>e.target.style.opacity="1"}>
+          Mantener cita
+        </button>
+        <button onClick={() => onConfirm(appt.id)}
+          style={{ flex: 1, padding: 13, borderRadius: 12, border: `1px solid ${C.red}40`, background: `${C.red}10`, color: C.red, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}
+          onMouseEnter={e=>{e.target.style.background=C.red;e.target.style.color="#fff";}} onMouseLeave={e=>{e.target.style.background=`${C.red}10`;e.target.style.color=C.red;}}>
+          Cancelar cita
+        </button>
       </div>
     </BottomSheet>
   );
