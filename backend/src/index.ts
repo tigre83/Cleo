@@ -7,6 +7,7 @@ import { initSentry, Sentry } from "./config/sentry";
 import { runDailyCleanup, runAppointmentReminders } from "./services/cron.service";
 import adminRoutes from "./routes/admin";
 import {
+  viewsRouter,
   authRouter,
   businessRouter,
   webhookRouter,
@@ -49,6 +50,7 @@ app.get("/health", (_req, res) => {
 });
 
 // --- Rutas públicas ---
+app.use("/api/views", viewsRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRoutes);
 app.use("/api/webhook", webhookRouter);  // Meta necesita acceso sin auth
