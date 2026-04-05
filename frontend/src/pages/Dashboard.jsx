@@ -1408,7 +1408,7 @@ export default function CleoDashboard() {
               </div>
 
 
-              {cfgTab==="asistente" && canUse(biz.plan, "location") ? (
+              {cfgTab==="asistente" && (canUse(biz.plan, "location") ? (
               <div style={fw}>
                 <div style={fl}>Ubicación y modalidad</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1429,7 +1429,7 @@ export default function CleoDashboard() {
                   {biz.location_url && <a href={biz.location_url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: C.accent, textDecoration: "none", marginTop: 4 }}><MapPin size={10} /> Ver en Maps</a>}
                 </div>}
               </div>
-              ) : <div style={{ marginBottom: 8 }}><LockedBanner plan={biz.plan} /></div>}
+              ) : <div style={{ marginBottom: 8 }}><LockedBanner plan={biz.plan} /></div>)}
 
               {/* ── 2. SERVICIOS shortcut ── */}
               </div>}
