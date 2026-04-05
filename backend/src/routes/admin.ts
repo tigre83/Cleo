@@ -801,4 +801,42 @@ router.post('/reset-password', async (req: Request, res: Response) => {
   }
 });
 
+
+// ── GET /admin/views-stats — estadísticas de visitas ─────────────────────────
+router.get('/views-stats', adminAuthMiddleware, async (_req: AdminRequest, res: Response) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const weekStart  = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const [total, today, week, month] = await Promise.all([
+      supabase.from("page_views").select("id", { count:"exact", head:true }),
+      supabase.from("page_views").select("id", { count:"exact", head:true }).gte("created_at", todayStart),
+      supabase.from("page_views").select("id", { count:"exact", head:true }).gte("created_at", weekStart),
+      supabase.from("page_views").select("id", { count:"exact", head:true }).gte("created_at", monthStart),
+    ]);
+
+    const { data: refs } = await supabase
+      .from("page_views").select("referrer").gte("created_at", monthStart).not("referrer", "is", null);
+
+    const refCount: Record<string, number> = {};
+    (refs || []).forEach((r: any) => {
+      if (r.referrer) {
+        try {
+          const host = new URL(r.referrer).hostname.replace("www.", "");
+          refCount[host] = (refCount[host] || 0) + 1;
+        } catch {}
+      }
+    });
+    const topReferrers = Object.entries(refCount)
+      .sort((a, b) => b[1] - a[1]).slice(0, 5)
+      .map(([source, count]) => ({ source, count }));
+
+    res.json({ total: total.count||0, today: today.count||0, week: week.count||0, month: month.count||0, topReferrers });
+  } catch (err) {
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
 export default router;

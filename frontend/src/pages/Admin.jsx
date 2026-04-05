@@ -1137,6 +1137,7 @@ export default function CleoAdmin() {
   const [users,        setUsers]        = useState([]);
   const [expenses,     setExpenses]     = useState([]);
   const [systemStatus, setSystemStatus] = useState([]);
+  const [views, setViews] = useState({ total:0, today:0, week:0, month:0, topReferrers:[] });
   const [loading,      setLoading]      = useState(false);
 
   const API = import.meta.env.VITE_API_URL;

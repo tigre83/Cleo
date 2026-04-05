@@ -101,6 +101,20 @@ function ChatDemo() {
   const [ci, setCi] = useState(""); const [cm, setCm] = useState([]); const [isCu, setIsCu] = useState(false); const r = useRef(null);
   const f = DEMO_FLOWS[ak];
   const res = useCallback((k) => { setAk(k); setVis([]); setTyp(false); setIsCu(false); setCm([]); }, []);
+
+  // Track page view
+  useEffect(() => {
+    const API = import.meta.env.VITE_API_URL;
+    fetch(`${API}/api/views`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        page: "/",
+        referrer: document.referrer || null,
+      }),
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => { if (isCu) return; const t = []; f.messages.forEach((m) => { if (m.from === "bot") t.push(setTimeout(() => setTyp(true), m.delay - 1200)); t.push(setTimeout(() => { setTyp(false); setVis(p => [...p, m]); }, m.delay)); }); return () => t.forEach(clearTimeout); }, [ak, f.messages, isCu]);
   useEffect(() => { r.current && (r.current.scrollTop = r.current.scrollHeight); }, [vis, cm, typ]);
   const snd = () => { if (!ci.trim()) return; setIsCu(true); setCm(p => [...p, { from: "user", text: ci }]); setCi(""); setTyp(true); setTimeout(() => { setTyp(false); const x = ["Gracias, ¿me das tu nombre para agendar?", "Entendido. ¿Qué día te queda mejor?", "Déjame verificar disponibilidad."]; setCm(p => [...p, { from: "bot", text: x[Math.floor(Math.random() * x.length)] }]); }, 2000); };

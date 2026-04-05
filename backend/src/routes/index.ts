@@ -53,6 +53,74 @@ async function sendVerificationEmail(email: string, code: string, businessName: 
   });
 }
 
+
+// ============================================
+// PAGE VIEWS (analytics propio)
+// ============================================
+export const viewsRouter = Router();
+
+// POST /api/views — registrar visita
+viewsRouter.post("/", async (req: Request, res: Response) => {
+  const { page, referrer } = req.body;
+  const userAgent = req.headers["user-agent"] || "";
+
+  // Ignorar bots
+  const isBot = /bot|crawler|spider|crawling/i.test(userAgent);
+  if (isBot) return res.json({ ok: true });
+
+  await supabaseAdmin.from("page_views").insert({
+    page: page || "/",
+    referrer: referrer || null,
+    user_agent: userAgent.slice(0, 200),
+  });
+
+  return res.json({ ok: true });
+});
+
+// GET /api/views/stats — obtener estadísticas (solo admin)
+viewsRouter.get("/stats", async (_req: Request, res: Response) => {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const weekStart  = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const [total, today, week, month] = await Promise.all([
+    supabaseAdmin.from("page_views").select("id", { count:"exact", head:true }),
+    supabaseAdmin.from("page_views").select("id", { count:"exact", head:true }).gte("created_at", todayStart),
+    supabaseAdmin.from("page_views").select("id", { count:"exact", head:true }).gte("created_at", weekStart),
+    supabaseAdmin.from("page_views").select("id", { count:"exact", head:true }).gte("created_at", monthStart),
+  ]);
+
+  // Top referrers este mes
+  const { data: refs } = await supabaseAdmin
+    .from("page_views")
+    .select("referrer")
+    .gte("created_at", monthStart)
+    .not("referrer", "is", null);
+
+  const refCount: Record<string, number> = {};
+  (refs || []).forEach(r => {
+    if (r.referrer) {
+      try {
+        const host = new URL(r.referrer).hostname.replace("www.", "");
+        refCount[host] = (refCount[host] || 0) + 1;
+      } catch {}
+    }
+  });
+  const topReferrers = Object.entries(refCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([source, count]) => ({ source, count }));
+
+  return res.json({
+    total:   total.count   || 0,
+    today:   today.count   || 0,
+    week:    week.count    || 0,
+    month:   month.count   || 0,
+    topReferrers,
+  });
+});
+
 // ============================================
 // AUTH ROUTES
 // ============================================
