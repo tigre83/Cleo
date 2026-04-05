@@ -1416,8 +1416,8 @@ export default function CleoDashboard() {
               <button onClick={() => setTab("services")} style={{ ...fw, width: "100%", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit", textAlign: "left" }}>
                 <Briefcase size={16} color={C.accent} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>Administrar servicios</div>
-                  <div style={{ fontSize: 11, color: C.dim, marginTop: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color:C.text }}>Administrar servicios</div>
+                  <div style={{ fontSize: 11, color: C.dim, marginTop: 1, color:C.dim }}>
                     {services.filter(s=>s.active).length} activos · {services.length} total
                     {biz.plan !== "trial" && biz.plan !== "pro" && <span style={{ color: services.filter(s=>s.active).length > ({basico:10,negocio:20}[biz.plan]||99) ? C.accent : C.dim }}> · Límite: {({basico:10,negocio:20})[biz.plan]}</span>}
                     {biz.plan === "pro" && <span> · Sin límite</span>}
