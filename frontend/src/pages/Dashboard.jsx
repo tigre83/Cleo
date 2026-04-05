@@ -821,6 +821,8 @@ function LoginPage({ onLogin }) {
   };
 
   return (
+    <>
+    {logoutModal && <LogoutModal/>}
     <div style={{ fontFamily:"'DM Sans',system-ui,sans-serif", background:C.bg, color:C.text, minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <div style={{ width:"100%", maxWidth:380 }}>
         <div style={{ textAlign:"center", marginBottom:36 }}><Logo size={32} tag /></div>
@@ -945,6 +947,7 @@ export default function CleoDashboard() {
   const [blockTarget, setBlockTarget] = useState(null);
   const [calMonth, setCalMonth] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
   const [profileOpen, setProfileOpen] = useState(false);
+  const [logoutModal, setLogoutModal] = useState(false);
   const [away, setAway] = useState({ active: false, message: "", improving: false });
   const [toast, setToast] = useState("");
   const [passwordModal, setPasswordModal] = useState(false);
@@ -1797,5 +1800,6 @@ export default function CleoDashboard() {
       </div>
     </div>
     </div>
+    </>
   );
 }
