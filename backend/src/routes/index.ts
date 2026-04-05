@@ -260,6 +260,7 @@ authRouter.post("/forgot-password", async (req: Request, res: Response) => {
     verification_code_expires_at: codeExpiresAt,
   }).eq("id", business.id);
 
+  const bizName = business?.business_name || "tu negocio";
   await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
@@ -267,11 +268,39 @@ authRouter.post("/forgot-password", async (req: Request, res: Response) => {
       from: "Cleo <noreply@cleoia.app>",
       to: [email],
       subject: `${code} — Recupera tu contraseña de Cleo`,
-      text: `Tu código para recuperar la contraseña es:
-
-${code}
-
-Expira en 15 minutos.`,
+      html: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#080808;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#080808;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
+        <tr><td style="text-align:center;padding-bottom:28px;">
+          <span style="font-size:30px;font-weight:800;color:#4ADE80;">cleo.</span>
+          <div style="font-size:11px;letter-spacing:2px;color:#555;margin-top:4px;">powered by ia</div>
+        </td></tr>
+        <tr><td style="background:#0D0D0D;border:1px solid #1A1A1A;border-radius:16px;padding:36px;">
+          <p style="margin:0 0 6px;font-size:13px;color:#6B7280;">Hola,</p>
+          <h1 style="margin:0 0 4px;font-size:20px;font-weight:800;color:#F9FAFB;">${bizName}</h1>
+          <p style="margin:0 0 24px;font-size:14px;color:#9CA3AF;">Recibimos una solicitud para recuperar tu contraseña de Cleo.</p>
+          <p style="margin:0 0 12px;font-size:13px;color:#6B7280;text-align:center;">Tu código de verificación es:</p>
+          <div style="text-align:center;margin-bottom:24px;">
+            <div style="display:inline-block;background:#080808;border:1px solid #1E1E1E;border-radius:12px;padding:18px 32px;">
+              <span style="font-size:36px;font-weight:700;letter-spacing:12px;color:#22D3EE;font-family:'Courier New',monospace;">${code}</span>
+            </div>
+          </div>
+          <div style="background:#0A1A0A;border:1px solid #14532D;border-radius:8px;padding:12px 16px;">
+            <p style="margin:0;font-size:12px;color:#6B7280;">⏱ Este código <strong style="color:#F9FAFB;">expira en 15 minutos</strong>. Si no solicitaste este cambio, ignora este email.</p>
+          </div>
+        </td></tr>
+        <tr><td style="text-align:center;padding-top:20px;">
+          <p style="margin:0;font-size:11px;color:#374151;">© 2026 Cleo · Hecho en Ecuador para PYMEs</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
     }),
   });
 
