@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useInactivityTimeout } from "../hooks/useInactivityTimeout.js";
 import { BarChart3, Users, DollarSign, Mail, Settings, Search, ChevronRight, X, Eye, EyeOff, Shield, TrendingUp, Trash2, AlertTriangle, RefreshCw, Minus, Cloud, Brain, Smartphone, Wrench, Briefcase, Pause, Play, StickyNote, Sun, Moon, Activity, CheckCircle, AlertCircle, XCircle, Plus, Database, Server, Cpu, MessageSquare, Lock, UserPlus, ShieldCheck, Headphones, User } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, AreaChart, Area, CartesianGrid } from "recharts";
 
 const T = {
   dark:  { bg:"#080808",s:"#111111",s2:"#161616",b:"#1E1E1E",t:"#F9FAFB",d:"#6B7280",a:"#4ADE80",r:"#EF4444",glow:"rgba(74,222,128,0.08)",ia:"#6B7280" },
