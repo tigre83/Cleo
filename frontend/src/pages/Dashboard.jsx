@@ -1289,22 +1289,25 @@ export default function CleoDashboard() {
               {/* ── 1. MI NEGOCIO ── */}
               <div style={st}>Mi negocio</div>
 
-              <div style={fw}>
-                <div style={fl}>Logo</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, overflow: "hidden", background: biz.logo ? "transparent" : `${C.accent}10`, border: `1.5px solid ${biz.logo ? C.border : C.accent+"25"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    {biz.logo ? <img src={biz.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: `${C.accent}60` }}>{initial}</span>}
+              <div style={{...fw, display:"flex", alignItems:"center", gap:16}}>
+                {/* Logo */}
+                <div style={{ flexShrink:0 }}>
+                  <input ref={logoInputRef} type="file" accept="image/png,image/jpeg" style={{ display:"none" }} onChange={e => { const f=e.target.files?.[0]; if(!f) return; if(f.size>2*1024*1024){showToast("Máximo 2MB");return;} if(!["image/png","image/jpeg"].includes(f.type)){showToast("Solo PNG o JPG");return;} const r=new FileReader(); r.onload=ev=>{setBiz({...biz,logo:ev.target.result});showToast("Logo actualizado ✓");}; r.readAsDataURL(f); }} />
+                  <div onClick={() => logoInputRef.current?.click()} style={{ width:56, height:56, borderRadius:14, overflow:"hidden", background:biz.logo?"transparent":`${C.accent}10`, border:`1.5px solid ${biz.logo?C.border:C.accent+"25"}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+                    {biz.logo ? <img src={biz.logo} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:`${C.accent}60` }}>{initial}</span>}
                   </div>
-                  <div>
-                    <input ref={logoInputRef} type="file" accept="image/png,image/jpeg" style={{ display: "none" }} onChange={e => { const f=e.target.files?.[0]; if(!f) return; if(f.size>2*1024*1024){showToast("Máximo 2MB");return;} if(!["image/png","image/jpeg"].includes(f.type)){showToast("Solo PNG o JPG");return;} const r=new FileReader(); r.onload=ev=>{setBiz({...biz,logo:ev.target.result});showToast("Logo actualizado ✓");}; r.readAsDataURL(f); }} />
-                    <button onClick={() => logoInputRef.current?.click()} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.accent}40`, background: C.accentGlow, color: C.accent, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Subir</button>
-                    {biz.logo && <button onClick={() => {setBiz({...biz,logo:null});showToast("Logo eliminado");}} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, fontSize: 11, cursor: "pointer", fontFamily: "inherit", marginLeft: 6 }}>Quitar</button>}
-                    <div style={{ fontSize: 10, color: C.dim, marginTop: 3 }}>PNG o JPG · 400×400px · 2MB máx</div>
+                  <div style={{ display:"flex", gap:4, marginTop:6 }}>
+                    <button onClick={() => logoInputRef.current?.click()} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${C.accent}40`, background:C.accentGlow, color:C.accent, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Subir</button>
+                    {biz.logo && <button onClick={() => {setBiz({...biz,logo:null});showToast("Logo eliminado");}} style={{ padding:"4px 8px", borderRadius:6, border:`1px solid ${C.border}`, background:"transparent", color:C.dim, fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>Quitar</button>}
                   </div>
                 </div>
+                {/* Nombre */}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={fl}>Nombre del negocio</div>
+                  <div style={{ fontSize:15, fontWeight:600, color:C.text }}>{biz.name}</div>
+                  <div style={{ fontSize:10, color:C.dim, marginTop:4 }}>PNG o JPG · 400×400px · 2MB máx</div>
+                </div>
               </div>
-
-              <div style={fw}><div style={fl}>Nombre del negocio</div><div style={{ fontSize: 14, color: C.dim }}>{biz.name}</div></div>
 
               <div style={fw}>
                 <div style={fl}>Horarios</div>
