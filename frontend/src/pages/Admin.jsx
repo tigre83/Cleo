@@ -545,7 +545,7 @@ function UserDetail({ user, onBack, onUpdate }) {
 
 // ── FINANZAS ──────────────────────────────────────────────────────────────────
 function Finanzas({ users, expenses, setExpenses, stats, loading, authFetch }) {
-  const [view,      setView]      = useState("movimientos");
+  const [showForm,  setShowForm]  = useState(false);
   const [cat,       setCat]       = useState("infra");
   const [desc,      setDesc]      = useState("");
   const [amount,    setAmount]    = useState("");
@@ -554,6 +554,7 @@ function Finanzas({ users, expenses, setExpenses, stats, loading, authFetch }) {
   const [notes,     setNotes]     = useState("");
   const [saving,    setSaving]    = useState(false);
   const [movFilter, setMovFilter] = useState("todos");
+  const [newId,     setNewId]     = useState(null);
 
   if (loading) return <Spinner />;
 
@@ -574,6 +575,22 @@ function Finanzas({ users, expenses, setExpenses, stats, loading, authFetch }) {
   const card          = { background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"16px 18px" };
   const fi            = { width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",marginBottom:8 };
 
+  // Datos para gráfico: últimos 6 meses simulados con datos reales del mes actual
+  const now = new Date();
+  const chartData = Array.from({length:6},(_,i)=>{
+    const d = new Date(now.getFullYear(), now.getMonth()-5+i, 1);
+    const label = d.toLocaleString("es",{month:"short"});
+    const isCurrent = i===5;
+    return { mes: label, ingresos: isCurrent ? mrr : 0, gastos: isCurrent ? totalExpenses : 0 };
+  });
+
+  // Gastos por categoría
+  const catBreakdown = EXP_CATS.map(ct=>{
+    const total = expenses.filter(e=>e.category===ct.v).reduce((s,e)=>s+(e.amount||0),0);
+    return { ...ct, total };
+  }).filter(ct=>ct.total>0).sort((a,b)=>b.total-a.total);
+  const maxCat = Math.max(...catBreakdown.map(c=>c.total),1);
+
   const addExpense = async () => {
     if (!desc||!amount) return;
     setSaving(true);
@@ -583,7 +600,9 @@ function Finanzas({ users, expenses, setExpenses, stats, loading, authFetch }) {
         body:JSON.stringify({ category:cat, description:desc, amount:parseFloat(amount), date, recurring, notes }),
       });
       setExpenses(prev=>[data,...prev]);
-      setDesc(""); setAmount(""); setNotes(""); setView("movimientos");
+      setNewId(data.id);
+      setTimeout(()=>setNewId(null), 2000);
+      setDesc(""); setAmount(""); setNotes(""); setShowForm(false);
     } catch(err) { console.error(err); }
     setSaving(false);
   };
@@ -601,81 +620,126 @@ function Finanzas({ users, expenses, setExpenses, stats, loading, authFetch }) {
 
   return (
     <div>
-      <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, marginBottom:20 }}>Finanzas</h2>
-
-      {/* KPIs */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:10 }}>
-        <div style={card}>
-          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Ingresos del mes</div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:C.a }}>${mrr.toFixed(0)}</div>
-          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>{activeUsers} usuarios activos</div>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
+        <div>
+          <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, marginBottom:2 }}>Finanzas</h2>
+          <div style={{ fontSize:11, color:C.d }}>Control financiero del negocio</div>
         </div>
-        <div style={card}>
-          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Gastos del mes</div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:totalExpenses>0?C.r:C.t }}>${totalExpenses.toFixed(0)}</div>
-          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>{expenses.length} registros</div>
-        </div>
-        <div style={{ ...card, background:net>=0?"rgba(74,222,128,0.06)":C.r+"08", border:`1px solid ${net>=0?C.a+"25":C.r+"25"}` }}>
-          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Ganancia neta</div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:net>=0?C.a:C.r }}>${net.toFixed(0)}</div>
-          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>{net>=0?"Resultado positivo":"Resultado negativo"}</div>
-        </div>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:24 }}>
-        <div style={card}>
-          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>MRR</div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:C.a }}>${mrr.toFixed(0)}</div>
-          <div style={{ display:"flex", gap:8, marginTop:6 }}>
-            {["basico","negocio","pro"].map(p=>{
-              const n=users.filter(u=>u.plan===p&&u.status==="active").length;
-              const col=p==="basico"?"#3B82F6":p==="negocio"?C.a:"#F59E0B";
-              return <div key={p} style={{ display:"flex",alignItems:"center",gap:3 }}>
-                <div style={{ width:6,height:6,borderRadius:2,background:col }}/>
-                <span style={{ fontSize:10,color:C.d }}>{PLAN_LABEL[p]} <span style={{ color:C.t,fontWeight:600 }}>{n}</span></span>
-              </div>;
-            })}
-          </div>
-        </div>
-        <div style={card}>
-          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Usuarios de pago</div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:C.t }}>{activeUsers}</div>
-          <div style={{ fontSize:11, color:C.d, marginTop:6 }}>
-            {users.filter(u=>u.status==="active"&&u.billing_cycle==="annual").length} anuales · {users.filter(u=>u.status==="active"&&u.billing_cycle!=="annual"&&u.plan!=="trial").length} mensuales
-          </div>
-        </div>
+        <button onClick={()=>setShowForm(!showForm)}
+          style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 16px", borderRadius:10, border:`1px solid ${showForm?C.a+"60":C.b}`, background:showForm?C.glow:"transparent", color:showForm?C.a:C.d, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s" }}>
+          <Plus size={13}/> Registrar gasto
+        </button>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display:"flex", gap:4, background:C.s2, borderRadius:10, padding:4, marginBottom:20, width:"fit-content" }}>
-        {[{v:"movimientos",l:"Movimientos"},{v:"registrar",l:"+ Registrar gasto"}].map(t=>(
-          <button key={t.v} onClick={()=>setView(t.v)}
-            style={{ padding:"7px 16px", borderRadius:8, border:"none", background:view===t.v?C.bg:"transparent", color:view===t.v?C.t:C.d, fontSize:12, fontWeight:view===t.v?600:400, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>
-            {t.l}
-          </button>
+      {/* Formulario colapsable */}
+      {showForm && (
+        <div style={{ ...card, marginBottom:20, border:`1px solid ${C.a}25`, background:`rgba(74,222,128,0.03)` }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <div style={{ fontSize:13, fontWeight:600, color:C.t }}>Nuevo egreso</div>
+            <button onClick={()=>setShowForm(false)} style={{ background:"none",border:"none",cursor:"pointer",color:C.d,padding:2 }}><X size={14}/></button>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4, marginBottom:12 }}>
+            {EXP_CATS.map(ct=>(
+              <button key={ct.v} onClick={()=>setCat(ct.v)}
+                style={{ padding:"7px 8px",borderRadius:8,border:`1.5px solid ${cat===ct.v?C.a:C.b}`,background:cat===ct.v?C.glow:"transparent",color:cat===ct.v?C.a:C.t,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:4 }}>
+                <ct.Icon size={11} color={cat===ct.v?C.a:C.d}/> {ct.l}
+              </button>
+            ))}
+          </div>
+          <input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Descripción del gasto" style={fi}/>
+          <div style={{ display:"flex", gap:8, marginBottom:0 }}>
+            <div style={{ flex:1, position:"relative" }}>
+              <span style={{ position:"absolute",left:12,top:10,color:C.d,fontSize:13 }}>$</span>
+              <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00" style={{...fi,paddingLeft:24}}/>
+            </div>
+            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...fi,flex:1}}/>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <label style={{ display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.d,cursor:"pointer",flex:1 }}>
+              <input type="checkbox" checked={recurring} onChange={e=>setRecurring(e.target.checked)} style={{ accentColor:C.a }}/>
+              Recurrente
+            </label>
+            <button onClick={addExpense} disabled={!desc||!amount||saving}
+              style={{ flex:2,padding:"10px 0",borderRadius:8,border:"none",background:desc&&amount?C.a:C.b,color:desc&&amount?C.bg:C.d,fontSize:13,fontWeight:700,cursor:desc&&amount?"pointer":"default",fontFamily:"inherit",transition:"all 0.2s" }}>
+              {saving?"Guardando...":"Guardar"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* KPIs — fila única de 5 */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:8, marginBottom:20 }}>
+        {[
+          { label:"Ingresos", value:`$${mrr.toFixed(0)}`, sub:`${activeUsers} usuarios`, color:C.a },
+          { label:"Gastos", value:`$${totalExpenses.toFixed(0)}`, sub:`${expenses.length} registros`, color:totalExpenses>0?C.r:C.t },
+          { label:"Ganancia neta", value:`$${net.toFixed(0)}`, sub:net>=0?"Positivo":"Negativo", color:net>=0?C.a:C.r, highlight:true },
+          { label:"MRR", value:`$${mrr.toFixed(0)}`, sub:"Mensual recurrente", color:C.a },
+          { label:"Usuarios pago", value:activeUsers, sub:`${users.filter(u=>u.status==="active"&&u.billing_cycle==="annual").length} anuales`, color:C.t },
+        ].map((k,i)=>(
+          <div key={i} style={{ background:k.highlight?(net>=0?"rgba(74,222,128,0.06)":C.r+"08"):C.s, border:`1px solid ${k.highlight?(net>=0?C.a+"25":C.r+"25"):C.b}`, borderRadius:12, padding:"14px 16px" }}>
+            <div style={{ fontSize:9, fontWeight:600, letterSpacing:"0.09em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>{k.label}</div>
+            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:k.color, marginBottom:4 }}>{k.value}</div>
+            <div style={{ fontSize:10, color:C.d }}>{k.sub}</div>
+          </div>
         ))}
       </div>
 
-      {/* Movimientos */}
-      {view==="movimientos" && (
+      {/* Gráfico principal — Area chart ingresos vs gastos */}
+      <div style={{ ...card, marginBottom:20 }}>
+        <div style={{ fontSize:12, fontWeight:600, color:C.t, marginBottom:4 }}>Evolución financiera</div>
+        <div style={{ fontSize:10, color:C.d, marginBottom:16 }}>Ingresos vs gastos · últimos 6 meses</div>
+        <AreaChart width={undefined} height={160} data={chartData} style={{ width:"100%" }}
+          margin={{ top:4, right:4, bottom:0, left:0 }}>
+          <defs>
+            <linearGradient id="gi" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#4ADE80" stopOpacity={0.2}/>
+              <stop offset="95%" stopColor="#4ADE80" stopOpacity={0}/>
+            </linearGradient>
+            <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#F87171" stopOpacity={0.15}/>
+              <stop offset="95%" stopColor="#F87171" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke={C.b} vertical={false}/>
+          <XAxis dataKey="mes" tick={{ fontSize:10, fill:C.d }} axisLine={false} tickLine={false}/>
+          <YAxis tick={{ fontSize:10, fill:C.d }} axisLine={false} tickLine={false} width={36} tickFormatter={v=>`$${v}`}/>
+          <Tooltip contentStyle={{ background:C.s, border:"1px solid "+C.b, borderRadius:8, fontSize:11 }} labelStyle={{ color:C.t }} itemStyle={{ color:C.d }}/>
+          <Area type="monotone" dataKey="ingresos" stroke="#4ADE80" strokeWidth={2} fill="url(#gi)" name="Ingresos"/>
+          <Area type="monotone" dataKey="gastos" stroke="#F87171" strokeWidth={2} fill="url(#gg)" name="Gastos"/>
+        </AreaChart>
+        <div style={{ display:"flex", gap:16, marginTop:8 }}>
+          <div style={{ display:"flex",alignItems:"center",gap:5,fontSize:11,color:C.d }}><div style={{ width:10,height:2,background:"#4ADE80",borderRadius:2 }}/> Ingresos</div>
+          <div style={{ display:"flex",alignItems:"center",gap:5,fontSize:11,color:C.d }}><div style={{ width:10,height:2,background:"#F87171",borderRadius:2 }}/> Gastos</div>
+        </div>
+      </div>
+
+      {/* Layout: movimientos + breakdown */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:16 }}>
+
+        {/* Movimientos */}
         <div style={card}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
             <div style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:700 }}>Movimientos</div>
-            <div style={{ display:"flex", gap:4, background:C.s2, borderRadius:8, padding:3 }}>
+            <div style={{ display:"flex", gap:3, background:C.s2, borderRadius:8, padding:3 }}>
               {["todos","ingresos","egresos"].map(v=>(
                 <button key={v} onClick={()=>setMovFilter(v)}
-                  style={{ padding:"4px 10px", borderRadius:6, border:"none", background:movFilter===v?C.bg:"transparent", color:movFilter===v?C.t:C.d, fontSize:11, fontWeight:movFilter===v?600:400, cursor:"pointer", fontFamily:"inherit", textTransform:"capitalize" }}>
+                  style={{ padding:"4px 10px", borderRadius:6, border:"none", background:movFilter===v?C.bg:"transparent", color:movFilter===v?C.t:C.d, fontSize:10, fontWeight:movFilter===v?600:400, cursor:"pointer", fontFamily:"inherit", textTransform:"capitalize", transition:"all 0.15s" }}>
                   {v}
                 </button>
               ))}
             </div>
           </div>
           {movs.length===0 ? (
-            <div style={{ textAlign:"center", padding:"20px 0", color:C.d, fontSize:13 }}>Sin movimientos</div>
+            <div style={{ textAlign:"center", padding:"32px 0", color:C.d, fontSize:13 }}>
+              <TrendingUp size={24} color={C.b} style={{ marginBottom:8, display:"block", margin:"0 auto 8px" }}/>
+              Sin {movFilter==="todos"?"movimientos":movFilter}
+            </div>
           ) : movs.map((m,i)=>(
-            <div key={m.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:i<movs.length-1?"1px solid "+C.b:"none" }}>
+            <div key={m.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:i<movs.length-1?"1px solid "+C.b:"none", background:m.raw?.id===newId?"rgba(74,222,128,0.05)":"transparent", borderRadius:6, transition:"background 0.5s" }}>
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <div style={{ width:32, height:32, borderRadius:8, background:`${m.color}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  {m.type==="ingreso" ? <TrendingUp size={14} color={m.color}/> : <TrendingDown size={14} color={m.color}/>}
+                  {m.type==="ingreso" ? <TrendingUp size={13} color={m.color}/> : <TrendingDown size={13} color={m.color}/>}
                 </div>
                 <div>
                   <div style={{ fontSize:13, fontWeight:500, color:C.t }}>{m.desc}</div>
@@ -685,56 +749,50 @@ function Finanzas({ users, expenses, setExpenses, stats, loading, authFetch }) {
                   </div>
                 </div>
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontSize:14, fontWeight:700, color:m.type==="ingreso"?C.a:C.r }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+                <span style={{ fontSize:13, fontWeight:700, color:m.type==="ingreso"?C.a:C.r }}>
                   {m.type==="ingreso"?"+":"-"}${m.amount.toFixed(0)}
                 </span>
                 {m.type==="egreso" && (
-                  <button onClick={()=>deleteExpense(m.raw.id)} style={{ background:"none",border:"none",cursor:"pointer",color:C.d,padding:4 }}><Trash2 size={13}/></button>
+                  <button onClick={()=>deleteExpense(m.raw.id)} style={{ background:"none",border:"none",cursor:"pointer",color:C.d,padding:4,opacity:0.6 }}><Trash2 size={12}/></button>
                 )}
               </div>
             </div>
           ))}
         </div>
-      )}
 
-      {/* Registrar gasto */}
-      {view==="registrar" && (
+        {/* Breakdown gastos */}
         <div style={card}>
-          <div style={{ fontSize:13, fontWeight:600, marginBottom:14 }}>Nuevo egreso</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, marginBottom:12 }}>
-            {EXP_CATS.map(ct=>(
-              <button key={ct.v} onClick={()=>setCat(ct.v)}
-                style={{ padding:"8px",borderRadius:8,border:"1.5px solid "+(cat===ct.v?C.a:C.b),background:cat===ct.v?C.glow:"transparent",color:cat===ct.v?C.a:C.t,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:5 }}>
-                <ct.Icon size={13} color={cat===ct.v?C.a:C.d}/> {ct.l}
-              </button>
-            ))}
-          </div>
-          <input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Descripción" style={fi}/>
-          <div style={{ display:"flex", gap:6 }}>
-            <div style={{ flex:1, position:"relative" }}>
-              <span style={{ position:"absolute",left:12,top:10,color:C.d,fontSize:13 }}>$</span>
-              <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00" style={{...fi,paddingLeft:24}}/>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:700, marginBottom:4 }}>Gastos por categoría</div>
+          <div style={{ fontSize:10, color:C.d, marginBottom:16 }}>Composición del mes</div>
+          {catBreakdown.length===0 ? (
+            <div style={{ textAlign:"center", padding:"24px 0", color:C.d, fontSize:12 }}>Sin gastos registrados</div>
+          ) : catBreakdown.map((ct,i)=>(
+            <div key={ct.v} style={{ marginBottom:12 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                  <ct.Icon size={11} color={C.d}/>
+                  <span style={{ fontSize:11, color:C.t }}>{ct.l}</span>
+                </div>
+                <span style={{ fontSize:11, fontWeight:600, color:C.t }}>${ct.total.toFixed(0)}</span>
+              </div>
+              <div style={{ height:4, background:C.s2, borderRadius:4, overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${(ct.total/maxCat)*100}%`, background:C.a, borderRadius:4, transition:"width 0.5s ease", opacity:0.7+((ct.total/maxCat)*0.3) }}/>
+              </div>
             </div>
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...fi,flex:1}}/>
-          </div>
-          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
-            <div style={{ display:"flex",alignItems:"center",gap:6 }}><RefreshCw size={12} color={C.d}/><span style={{ fontSize:12,color:C.d }}>Recurrente</span></div>
-            <button onClick={()=>setRecurring(!recurring)} style={{ width:36,height:20,borderRadius:10,border:"none",cursor:"pointer",background:recurring?C.a:"#333",position:"relative" }}>
-              <div style={{ width:16,height:16,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:recurring?18:2,transition:"left 0.2s" }}/>
-            </button>
-          </div>
-          <input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Notas (opcional)" style={fi}/>
-          <button onClick={addExpense} disabled={!desc||!amount||saving}
-            style={{ width:"100%",padding:10,borderRadius:8,border:"none",background:desc&&amount?C.a:C.b,color:desc&&amount?C.bg:C.d,fontSize:13,fontWeight:600,cursor:desc&&amount?"pointer":"default",fontFamily:"inherit" }}>
-            {saving?"Guardando...":"Guardar egreso"}
-          </button>
+          ))}
+          {catBreakdown.length>0 && (
+            <div style={{ marginTop:16, paddingTop:12, borderTop:"1px solid "+C.b, display:"flex", justifyContent:"space-between" }}>
+              <span style={{ fontSize:11, color:C.d }}>Total gastos</span>
+              <span style={{ fontSize:13, fontWeight:700, color:C.r }}>${totalExpenses.toFixed(0)}</span>
+            </div>
+          )}
         </div>
-      )}
+
+      </div>
     </div>
   );
 }
-
 
 
 // ── SISTEMA ───────────────────────────────────────────────────────────────────
