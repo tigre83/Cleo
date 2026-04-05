@@ -1243,7 +1243,7 @@ export default function CleoAdmin() {
 
   useEffect(()=>{
     const c=()=>setMob(window.innerWidth<768);
-    c(); window.addEventListener("resize",c); return()=>window.removeEventListener("resize",c);
+    window.addEventListener("resize",c); return()=>window.removeEventListener("resize",c);
   },[]);
 
   useEffect(()=>{
