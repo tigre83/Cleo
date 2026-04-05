@@ -1271,7 +1271,8 @@ export default function CleoAdmin() {
     {id:"sistema",  label:"Sistema",  Icon:Activity,    roles:["owner","soporte"]},
     {id:"config",   label:"Config",   Icon:Settings,    roles:["owner","soporte"]},
   ];
-  const tabs = allTabs.filter(t=>t.roles.includes(adminRole));
+  const effectiveRole = (adminRole==="admin") ? "owner" : adminRole;
+  const tabs = allTabs.filter(t=>t.roles.includes(effectiveRole));
 
   return (
     <div style={{ fontFamily:"'DM Sans',sans-serif",background:C.bg,color:C.t,minHeight:"100vh",display:"flex",flexDirection:mob?"column":"row",overflowX:"hidden",maxWidth:"100vw" }}>
