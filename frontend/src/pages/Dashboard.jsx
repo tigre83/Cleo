@@ -958,7 +958,8 @@ export default function CleoDashboard() {
   const [, forceUpdate] = useState(0);
   const cycleTheme = () => { setTheme(t => t === "dark" ? "light" : t === "light" ? "system" : "dark"); forceUpdate(n => n+1); };
 
-  const [authed, setAuthed] = useState(false);
+  const [authed,       setAuthed]       = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [tab, setTab] = useState("agenda");
   const [agendaView, setAgendaView] = useState("semana"); // dia | semana | mes
@@ -983,6 +984,8 @@ export default function CleoDashboard() {
     setDirSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user && !authed) setAuthed(true);
+      setInitializing(false);
       const token = session?.access_token;
       const API = import.meta.env.VITE_API_URL;
       await fetch(`${API}/api/business/me`, {
@@ -1103,7 +1106,7 @@ export default function CleoDashboard() {
         </div>
       </div>
     )}
-    {!authed && <LoginPage onLogin={function(e){ if(e){ setAuthed(true); }}} />}
+    {initializing ? null : !authed && <LoginPage onLogin={function(e){ if(e){ setAuthed(true); }}} />}
     {authed && trialExpired && (
     <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", background: C.bg, color: C.text, minHeight: "100vh", padding: "40px 20px" }}>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
