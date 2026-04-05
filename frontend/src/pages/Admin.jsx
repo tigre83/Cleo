@@ -272,29 +272,43 @@ function Overview({ stats, users, loading, views }) {
     <div>
       <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, marginBottom:16 }}>Resumen</h2>
       {/* Card Visitas */}
-      <div style={{ background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"14px 16px", marginBottom:16 }}>
-        <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:700, marginBottom:12, display:"flex", alignItems:"center", gap:6 }}>
-          <Activity size={14} color={C.a}/> Visitas al sitio web
+      <div style={{ background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"20px 24px", marginBottom:16 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <Activity size={13} color={C.a}/>
+            <span style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d }}>Visitas al sitio web</span>
+          </div>
+          <span style={{ fontSize:11, color:C.d }}>Auto · cada 30s</span>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, marginBottom: views.topReferrers?.length>0?12:0 }}>
-          {[{label:"Hoy",value:views.today},{label:"7 días",value:views.week},{label:"Mes",value:views.month},{label:"Total",value:views.total}].map((v,i)=>(
-            <div key={i} style={{ textAlign:"center", padding:"10px 0", background:C.s2, borderRadius:10 }}>
-              <div style={{ fontSize:20, fontWeight:700, color:C.a }}>{(v.value||0).toLocaleString()}</div>
-              <div style={{ fontSize:11, color:C.d, marginTop:2 }}>{v.label}</div>
+        <div style={{ display:"flex", alignItems:"flex-end", gap:32, flexWrap:"wrap" }}>
+          <div style={{ flexShrink:0 }}>
+            <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
+              <span style={{ fontFamily:"'Syne',sans-serif", fontSize:52, fontWeight:800, color:C.a, lineHeight:1 }}>{(views.today||0).toLocaleString()}</span>
+              {(views.today||0) > 0 && <span style={{ fontSize:12, fontWeight:600, color:"#4ADE80", background:"rgba(74,222,128,0.1)", padding:"3px 8px", borderRadius:6 }}>↑ hoy</span>}
             </div>
-          ))}
-        </div>
-        {views.topReferrers?.length>0 && (
-          <div>
-            <div style={{ fontSize:11, color:C.d, marginBottom:6 }}>Top fuentes este mes</div>
-            {views.topReferrers.map((r,i)=>(
-              <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:12, padding:"3px 0", borderBottom:"1px solid "+C.b }}>
-                <span style={{ color:C.t }}>{r.source||"Directo"}</span>
-                <span style={{ color:C.a, fontWeight:600 }}>{r.count}</span>
+            <div style={{ fontSize:12, color:C.d, marginTop:6 }}>visitas hoy</div>
+          </div>
+          <div style={{ width:1, height:52, background:C.b, flexShrink:0 }}/>
+          <div style={{ display:"flex", gap:32, flex:1, flexWrap:"wrap" }}>
+            {[{label:"7 días",value:views.week},{label:"Este mes",value:views.month},{label:"Total",value:views.total}].map((v,i)=>(
+              <div key={i}>
+                <div style={{ fontSize:22, fontWeight:700, color:C.t }}>{(v.value||0).toLocaleString()}</div>
+                <div style={{ fontSize:11, color:C.d, marginTop:3 }}>{v.label}</div>
               </div>
             ))}
           </div>
-        )}
+          {views.topReferrers?.length>0 && (
+            <div style={{ flexShrink:0, minWidth:130 }}>
+              <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Top fuentes</div>
+              {views.topReferrers.slice(0,3).map((r,i)=>(
+                <div key={i} style={{ display:"flex", justifyContent:"space-between", gap:12, marginBottom:5 }}>
+                  <span style={{ fontSize:12, color:C.t, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:90 }}>{r.source||"Directo"}</span>
+                  <span style={{ fontSize:11, fontWeight:600, color:C.a }}>{r.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16 }}>
