@@ -1281,6 +1281,35 @@ export default function CleoAdmin() {
   return (
     <div style={{ fontFamily:"'DM Sans',sans-serif",background:C.bg,color:C.t,minHeight:"100vh",display:"flex",flexDirection:mob?"column":"row",overflowX:"hidden",maxWidth:"100vw" }}>
 
+    {logoutModal && (
+      <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20 }}>
+        <div style={{ background:"#0D0D0D",border:"1px solid #1A1A1A",borderRadius:16,padding:32,maxWidth:340,width:"100%",textAlign:"center" }}>
+          <LogOut size={28} color="#4ADE80" style={{ marginBottom:12 }}/>
+          <h3 style={{ fontFamily:"'Syne',sans-serif",fontSize:17,fontWeight:800,color:"#F9FAFB",marginBottom:8 }}>¿Cerrar sesión?</h3>
+          <p style={{ fontSize:13,color:"#6B7280",marginBottom:24,lineHeight:1.5 }}>Tu sesión se cerrará y tendrás que volver a ingresar.</p>
+          <div style={{ display:"flex",gap:10 }}>
+            <button onClick={()=>{ setLogoutModal(false); localStorage.removeItem("adminToken"); setAuthed(false); }} style={{ flex:1,padding:12,borderRadius:10,border:"none",background:"#4ADE80",color:"#080808",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Sí</button>
+            <button onClick={()=>setLogoutModal(false)} style={{ flex:1,padding:12,borderRadius:10,border:"1px solid #1A1A1A",background:"transparent",color:"#6B7280",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>No</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {sessionExpired && (
+      <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20 }}>
+        <div style={{ background:"#0D0D0D",border:"1px solid #1A1A1A",borderRadius:16,padding:36,maxWidth:360,width:"100%",textAlign:"center" }}>
+          <div style={{ width:56,height:56,borderRadius:"50%",background:"rgba(74,222,128,0.1)",border:"1px solid rgba(74,222,128,0.2)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px" }}>
+            <Shield size={24} color="#4ADE80"/>
+          </div>
+          <h3 style={{ fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,color:"#F9FAFB",marginBottom:8 }}>Sesión cerrada</h3>
+          <p style={{ fontSize:13,color:"#6B7280",marginBottom:24,lineHeight:1.6 }}>Tu sesión fue cerrada por inactividad. Inicia sesión nuevamente para continuar.</p>
+          <button onClick={()=>setSessionExpired(false)} style={{ width:"100%",padding:14,borderRadius:12,border:"none",background:"#4ADE80",color:"#080808",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+            <LogOut size={16}/> Iniciar sesión
+          </button>
+        </div>
+      </div>
+    )}
+
       {/* Sidebar desktop */}
       {!mob && (
         <div style={{ width:220,borderRight:"1px solid "+C.b,padding:"20px 12px",flexShrink:0,position:"sticky",top:0,height:"100vh",overflowY:"auto" }}>
