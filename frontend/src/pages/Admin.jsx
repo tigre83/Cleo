@@ -736,130 +736,6 @@ function Finanzas({ users, expenses, setExpenses, stats, loading, authFetch }) {
 }
 
 
-function Expenses({ expenses, setExpenses, loading, authFetch }) {
-  const [showForm,  setShowForm]  = useState(false);
-  const [cat,       setCat]       = useState("infra");
-  const [desc,      setDesc]      = useState("");
-  const [amount,    setAmount]    = useState("");
-  const [date,      setDate]      = useState(new Date().toISOString().split("T")[0]);
-  const [recurring, setRecurring] = useState(false);
-  const [notes,     setNotes]     = useState("");
-  const [saving,    setSaving]    = useState(false);
-
-  const total = expenses.reduce((s,e)=>s+(e.amount||0),0);
-  const card  = { background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"14px 16px" };
-  const fi    = { width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",marginBottom:8 };
-
-  const addExpense = async () => {
-    if (!desc||!amount) return;
-    setSaving(true);
-    try {
-      const data = await authFetch("/api/admin/expenses", {
-        method:"POST",
-        body:JSON.stringify({ category:cat, description:desc, amount:parseFloat(amount), date, recurring, notes }),
-      });
-      setExpenses(prev=>[data,...prev]);
-      setDesc(""); setAmount(""); setNotes(""); setShowForm(false);
-    } catch(err) { console.error(err); }
-    setSaving(false);
-  };
-
-  const deleteExpense = async (id) => {
-    try {
-      await authFetch(`/api/admin/expenses/${id}`, { method:"DELETE" });
-      setExpenses(prev=>prev.filter(e=>e.id!==id));
-    } catch(err) { console.error(err); }
-  };
-
-  if (loading) return <Spinner />;
-
-  return (
-    <div>
-      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16 }}>
-        <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800 }}>Egresos</h2>
-        <button onClick={()=>setShowForm(!showForm)}
-          style={{ padding:"6px 12px",borderRadius:8,border:"1px solid "+C.a+"40",background:C.glow,color:C.a,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>+ Registrar</button>
-      </div>
-
-      <div style={{ ...card,marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-        <span style={{ fontSize:13, color:C.d }}>Total egresos registrados</span>
-        <span style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:C.r }}>${total.toFixed(2)}</span>
-      </div>
-
-      {showForm && (
-        <div style={{ ...card, marginBottom:16 }}>
-          <div style={{ fontSize:13, fontWeight:600, marginBottom:10 }}>Nuevo egreso</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, marginBottom:8 }}>
-            {EXP_CATS.map(c=>(
-              <button key={c.v} onClick={()=>setCat(c.v)}
-                style={{ padding:"8px",borderRadius:8,border:"1.5px solid "+(cat===c.v?C.a:C.b),background:cat===c.v?C.glow:"transparent",color:cat===c.v?C.a:C.t,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:5 }}>
-                <c.Icon size={13} color={cat===c.v?C.a:C.d}/> {c.l}
-              </button>
-            ))}
-          </div>
-          <input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Descripción" style={fi}/>
-          <div style={{ display:"flex", gap:6 }}>
-            <div style={{ flex:1, position:"relative" }}>
-              <span style={{ position:"absolute",left:12,top:10,color:C.d,fontSize:13 }}>$</span>
-              <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00" style={{...fi,paddingLeft:24}}/>
-            </div>
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...fi,flex:1}}/>
-          </div>
-          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
-            <div style={{ display:"flex",alignItems:"center",gap:6 }}><RefreshCw size={12} color={C.d}/><span style={{ fontSize:12 }}>Recurrente</span></div>
-            <button onClick={()=>setRecurring(!recurring)} style={{ width:36,height:20,borderRadius:10,border:"none",cursor:"pointer",background:recurring?C.a:"#333",position:"relative" }}>
-              <div style={{ width:16,height:16,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:recurring?18:2,transition:"left 0.2s" }}/>
-            </button>
-          </div>
-          <input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Notas (opcional)" style={fi}/>
-          <button onClick={addExpense} disabled={!desc||!amount||saving}
-            style={{ width:"100%",padding:10,borderRadius:8,border:"none",background:desc&&amount?C.a:C.b,color:desc&&amount?C.bg:C.d,fontSize:13,fontWeight:600,cursor:desc&&amount?"pointer":"default",fontFamily:"inherit" }}>
-            {saving?"Guardando...":"Guardar egreso"}
-          </button>
-        </div>
-      )}
-
-      {expenses.length===0
-        ? <EmptyState icon={Minus} text="Sin egresos registrados. Agrega el primero." />
-        : (
-          <div>
-            <div style={{ ...card, marginBottom:12 }}>
-              <div style={{ fontSize:12, color:C.d, marginBottom:8 }}>Por categoría</div>
-              {EXP_CATS.map(c=>{
-                const items    = expenses.filter(e=>e.category===c.v);
-                if(!items.length) return null;
-                const catTotal = items.reduce((s,e)=>s+(e.amount||0),0);
-                return (
-                  <div key={c.v} style={{ marginBottom:8 }}>
-                    <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4 }}>
-                      <span style={{ fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:4 }}><c.Icon size={12} color={C.d}/> {c.l}</span>
-                      <span style={{ fontSize:12,fontWeight:600 }}>${catTotal.toFixed(2)}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10 }}>Todos los egresos</div>
-            {expenses.map(e=>{
-              const ci = EXP_CATS.find(c=>c.v===e.category);
-              return (
-                <div key={e.id} style={{ background:C.s,border:"1px solid "+C.b,borderRadius:10,padding:"10px 14px",marginBottom:4,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:4 }}>{e.recurring&&<RefreshCw size={10} color={C.a}/>}{e.description}</div>
-                    <div style={{ fontSize:10,color:C.d,display:"flex",alignItems:"center",gap:3 }}>{ci?<ci.Icon size={10}/>:null} {ci?ci.l:""} · {e.date}</div>
-                  </div>
-                  <div style={{ display:"flex",alignItems:"center",gap:8,flexShrink:0 }}>
-                    <span style={{ fontSize:13,fontWeight:700 }}>${(e.amount||0).toFixed(2)}</span>
-                    <button onClick={()=>deleteExpense(e.id)} style={{ background:"none",border:"none",cursor:"pointer",color:C.d,padding:4 }}><Trash2 size={13}/></button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-    </div>
-  );
-}
 
 // ── SISTEMA ───────────────────────────────────────────────────────────────────
 function SystemStatus({ systemStatus, setSystemStatus, loading, authFetch }) {
@@ -1447,7 +1323,7 @@ export default function CleoAdmin() {
     {id:"overview", label:"Resumen",  Icon:BarChart3,   roles:["owner"]},
     {id:"users",    label:"Usuarios", Icon:Users,       roles:["owner","soporte"]},
     {id:"finanzas", label:"Finanzas", Icon:DollarSign,  roles:["owner"]},
-    {id:"expenses", label:"Egresos",  Icon:Minus,       roles:["owner"]},
+
     {id:"sistema",  label:"Sistema",  Icon:Activity,    roles:["owner","soporte"]},
     {id:"config",   label:"Config",   Icon:Settings,    roles:["owner","soporte"]},
   ];
@@ -1532,7 +1408,7 @@ export default function CleoAdmin() {
         {tab==="users"    && !selectedUser && <UsersSection users={users} loading={loading} onSelect={setSelectedUser}/>}
         {tab==="users"    && selectedUser  && <UserDetail user={selectedUser} onBack={()=>setSelectedUser(null)} onUpdate={updateUser}/>}
         {tab==="finanzas" && <Finanzas users={users} expenses={expenses} setExpenses={setExpenses} stats={stats} loading={loading} authFetch={authFetch}/>}
-        {tab==="expenses" && <Expenses expenses={expenses} setExpenses={setExpenses} loading={loading} authFetch={authFetch}/>}
+        
         {tab==="sistema"  && <SystemStatus systemStatus={systemStatus} setSystemStatus={setSystemStatus} loading={loading} authFetch={authFetch}/>}
         {tab==="config"   && <SysConfig authFetch={authFetch} adminRole={adminRole}/>}
       </div>
