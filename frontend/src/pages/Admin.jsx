@@ -272,44 +272,57 @@ function Overview({ stats, users, loading, views }) {
     <div>
       <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, marginBottom:16 }}>Resumen</h2>
       {/* Card Visitas */}
-      <div style={{ background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"20px 24px", marginBottom:16 }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <Activity size={13} color={C.a}/>
-            <span style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d }}>Visitas al sitio web</span>
-          </div>
-          <span style={{ fontSize:11, color:C.d }}>Auto · cada 30s</span>
-        </div>
-        <div style={{ display:"flex", alignItems:"flex-end", gap:32, flexWrap:"wrap" }}>
-          <div style={{ flexShrink:0 }}>
-            <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
-              <span style={{ fontFamily:"'Syne',sans-serif", fontSize:52, fontWeight:800, color:C.a, lineHeight:1 }}>{(views.today||0).toLocaleString()}</span>
-              {(views.today||0) > 0 && <span style={{ fontSize:12, fontWeight:600, color:"#4ADE80", background:"rgba(74,222,128,0.1)", padding:"3px 8px", borderRadius:6 }}>↑ hoy</span>}
+      {(()=>{
+        const spark = views.sparkline||[0,0,0,0,0,0,0];
+        const maxS = Math.max(...spark,1);
+        const tod = views.today||0;
+        const yest = views.yesterday||0;
+        const diff = yest===0 ? null : Math.round(((tod-yest)/yest)*100);
+        const up = diff===null ? null : diff>=0;
+        return (
+        <div style={{ background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"18px 22px", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <Activity size={12} color={C.a}/>
+              <span style={{ fontSize:10, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", color:C.d }}>Visitas al sitio web</span>
             </div>
-            <div style={{ fontSize:12, color:C.d, marginTop:6 }}>visitas hoy</div>
+            <span style={{ fontSize:10, color:C.d, opacity:0.5 }}>auto · 30s</span>
           </div>
-          <div style={{ width:1, height:52, background:C.b, flexShrink:0 }}/>
-          <div style={{ display:"flex", gap:32, flex:1, flexWrap:"wrap" }}>
-            {[{label:"7 días",value:views.week},{label:"Este mes",value:views.month},{label:"Total",value:views.total}].map((v,i)=>(
-              <div key={i}>
-                <div style={{ fontSize:22, fontWeight:700, color:C.t }}>{(v.value||0).toLocaleString()}</div>
-                <div style={{ fontSize:11, color:C.d, marginTop:3 }}>{v.label}</div>
+
+          <div style={{ display:"flex", alignItems:"center", gap:0 }}>
+            {/* KPI principal */}
+            <div style={{ minWidth:140 }}>
+              <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
+                <span style={{ fontFamily:"'Syne',sans-serif", fontSize:46, fontWeight:800, color:C.a, lineHeight:1 }}>{tod.toLocaleString()}</span>
+                {diff!==null && (
+                  <span style={{ fontSize:11, fontWeight:600, color:up?"#4ADE80":"#F87171", background:up?"rgba(74,222,128,0.1)":"rgba(248,113,113,0.1)", padding:"2px 7px", borderRadius:5 }}>
+                    {up?"↑":"↓"} {Math.abs(diff)}%
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
-          {views.topReferrers?.length>0 && (
-            <div style={{ flexShrink:0, minWidth:130 }}>
-              <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Top fuentes</div>
-              {views.topReferrers.slice(0,3).map((r,i)=>(
-                <div key={i} style={{ display:"flex", justifyContent:"space-between", gap:12, marginBottom:5 }}>
-                  <span style={{ fontSize:12, color:C.t, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:90 }}>{r.source||"Directo"}</span>
-                  <span style={{ fontSize:11, fontWeight:600, color:C.a }}>{r.count}</span>
-                </div>
+              <div style={{ fontSize:11, color:C.d, marginTop:5 }}>Hoy</div>
+
+              {/* Métricas secundarias en una línea */}
+              <div style={{ display:"flex", gap:16, marginTop:14 }}>
+                {[{l:"7d",v:views.week},{l:"Mes",v:views.month},{l:"Total",v:views.total}].map((m,i)=>(
+                  <div key={i}>
+                    <span style={{ fontSize:13, fontWeight:600, color:C.t, opacity:0.7 }}>{(m.v||0).toLocaleString()}</span>
+                    <span style={{ fontSize:10, color:C.d, marginLeft:4 }}>{m.l}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sparkline */}
+            <div style={{ flex:1, display:"flex", alignItems:"flex-end", justifyContent:"flex-end", height:56, gap:3, paddingLeft:24 }}>
+              {spark.map((v,i)=>(
+                <div key={i} style={{ flex:1, maxWidth:18, borderRadius:3, background: i===6 ? C.a : `rgba(74,222,128,${0.15+(v/maxS)*0.35})`, height: `${Math.max(4,(v/maxS)*100)}%`, transition:"height 0.3s" }}/>
               ))}
             </div>
-          )}
+          </div>
         </div>
-      </div>
+        );
+      })()}
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16 }}>
         <div style={card}><div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:C.a }}>{stats?.totalUsers ?? 0}</div><div style={lbl}>Total usuarios</div></div>

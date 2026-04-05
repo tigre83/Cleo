@@ -833,7 +833,21 @@ router.get('/views-stats', adminAuthMiddleware, async (_req: AdminRequest, res: 
       .sort((a, b) => b[1] - a[1]).slice(0, 5)
       .map(([source, count]) => ({ source, count }));
 
-    res.json({ total: total.count||0, today: today.count||0, week: week.count||0, month: month.count||0, topReferrers });
+    // Ayer
+    const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString();
+    const { count: yesterdayCount } = await supabase.from("page_views").select("id", { count:"exact", head:true })
+      .gte("created_at", yesterdayStart).lt("created_at", todayStart).then(r => r);
+
+    // Últimos 7 días para sparkline
+    const sparkDays = await Promise.all(Array.from({length:7},(_,i)=>{
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6-i));
+      const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (5-i));
+      return supabase.from("page_views").select("id",{count:"exact",head:true})
+        .gte("created_at", d.toISOString()).lt("created_at", next.toISOString())
+        .then(r => r.count||0);
+    }));
+
+    res.json({ total: total.count||0, today: today.count||0, yesterday: yesterdayCount||0, week: week.count||0, month: month.count||0, topReferrers, sparkline: sparkDays });
   } catch (err) {
     res.status(500).json({ error: "Error interno" });
   }
