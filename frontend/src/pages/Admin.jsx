@@ -545,7 +545,7 @@ function UserDetail({ user, onBack, onUpdate }) {
 
 // ── FINANZAS ──────────────────────────────────────────────────────────────────
 function Finanzas({ users, expenses, stats, loading }) {
-  const [view, setView] = useState("ambos");
+  const [view, setView] = useState("todos");
   if (loading) return <Spinner />;
 
   const mrrRows = [];
@@ -554,133 +554,113 @@ function Finanzas({ users, expenses, stats, loading }) {
     const annual  = users.filter(u=>u.plan===p&&u.billing_cycle==="annual"&&u.status==="active").length;
     const mEq     = +(PLAN_ANNUAL[p]/12).toFixed(2);
     const col     = p==="basico"?"#3B82F6":p==="negocio"?C.a:"#F59E0B";
-    if(monthly) mrrRows.push({label:PLAN_LABEL[p]+" Mensual",count:monthly,unit:PLAN_PRICES[p],total:monthly*PLAN_PRICES[p],color:col});
-    if(annual)  mrrRows.push({label:PLAN_LABEL[p]+" Anual",  count:annual, unit:mEq, total:+(annual*mEq).toFixed(2),color:col});
+    if(monthly) mrrRows.push({label:PLAN_LABEL[p],cycle:"Mensual",count:monthly,unit:PLAN_PRICES[p],total:monthly*PLAN_PRICES[p],color:col});
+    if(annual)  mrrRows.push({label:PLAN_LABEL[p],cycle:"Anual",count:annual,unit:mEq,total:+(annual*mEq).toFixed(2),color:col});
   });
 
   const mrr           = mrrRows.reduce((s,r)=>s+r.total,0);
   const totalExpenses = expenses.reduce((s,e)=>s+(e.amount||0),0);
   const net           = mrr - totalExpenses;
-  const card          = { background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"14px 16px" };
+  const activeUsers   = users.filter(u=>u.status==="active"&&u.plan!=="trial").length;
+  const card          = { background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"16px 18px" };
+
+  // Movimientos combinados para tabla
+  const ingresos = mrrRows.map((m,i)=>({ id:"i"+i, type:"ingreso", desc:`${m.label} ${m.cycle}`, amount:m.total, color:m.color, cat:"Suscripción" }));
+  const egresos  = expenses.map(e=>({ id:"e"+e.id, type:"egreso", desc:e.description||e.category, amount:e.amount, color:C.r, cat:e.category, date:e.date }));
+  const allMovs  = [...ingresos, ...egresos];
+  const filtered = view==="todos"?allMovs:view==="ingresos"?ingresos:egresos;
 
   return (
     <div>
-      <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, marginBottom:12 }}>Finanzas</h2>
+      <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, marginBottom:20 }}>Finanzas</h2>
 
-      {/* Toggle */}
-      <div style={{ display:"flex",borderRadius:8,overflow:"hidden",border:"1px solid "+C.b,marginBottom:16 }}>
-        {["ingresos","egresos","ambos"].map(v=>(
-          <button key={v} onClick={()=>setView(v)}
-            style={{ flex:1,padding:"8px 0",border:"none",background:view===v?C.glow:"transparent",color:view===v?C.a:C.d,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",borderRight:v!=="ambos"?"1px solid "+C.b:"none",textTransform:"capitalize" }}>{v}</button>
-        ))}
+      {/* KPIs principales */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:10 }}>
+        <div style={{ ...card, gridColumn:"1/2" }}>
+          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Ingresos del mes</div>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:C.a }}>${mrr.toFixed(0)}</div>
+          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>MRR · {activeUsers} usuarios activos</div>
+        </div>
+        <div style={{ ...card }}>
+          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Gastos del mes</div>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:totalExpenses>0?C.r:C.t }}>${totalExpenses.toFixed(0)}</div>
+          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>{expenses.length} registro{expenses.length!==1?"s":""}</div>
+        </div>
+        <div style={{ ...card, background:net>=0?`rgba(74,222,128,0.06)`:C.r+"08", border:`1px solid ${net>=0?C.a+"25":C.r+"25"}` }}>
+          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Ganancia neta</div>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:net>=0?C.a:C.r }}>${net.toFixed(0)}</div>
+          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>{net>=0?"Resultado positivo":"Resultado negativo"}</div>
+        </div>
       </div>
 
-      {/* Tus ingresos este mes */}
-      <div style={{ ...card, textAlign:"center", marginBottom:16, background:net>=0?C.glow:C.r+"08", border:"1px solid "+(net>=0?C.a+"25":C.r+"25") }}>
-        <div style={{ fontSize:11, color:C.d, marginBottom:4 }}>Tus ingresos este mes</div>
-        <div style={{ fontFamily:"'Syne',sans-serif", fontSize:36, fontWeight:800, color:net>=0?C.a:C.r }}>${net.toFixed(0)}</div>
-        {mrr===0 ? (
-          <div>
-            <div style={{ fontSize:12, color:C.d, marginTop:4, marginBottom:12 }}>Aún no tienes clientes activos</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:8, textAlign:"left", marginBottom:12, padding:"12px", background:"rgba(74,222,128,0.05)", borderRadius:10, border:"1px solid "+C.a+"15" }}>
-              <div style={{ fontSize:12, color:C.d }}>→ Activa tu primer cliente</div>
-              <div style={{ fontSize:12, color:C.d }}>→ Comparte tu link de pago</div>
-              <div style={{ fontSize:12, color:C.d }}>→ Empieza a monetizar Cleo</div>
-            </div>
-            <button onClick={()=>{}} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:C.a, color:C.bg, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-              Empieza a monetizar Cleo →
-            </button>
+      {/* Segunda fila KPIs */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:10, marginBottom:20 }}>
+        <div style={card}>
+          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>MRR actual</div>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:C.a }}>${mrr.toFixed(0)}</div>
+          <div style={{ display:"flex", gap:8, marginTop:8 }}>
+            {["basico","negocio","pro"].map(p=>{
+              const n=users.filter(u=>u.plan===p&&u.status==="active").length;
+              const col=p==="basico"?"#3B82F6":p==="negocio"?C.a:"#F59E0B";
+              return <div key={p} style={{ display:"flex", alignItems:"center", gap:3 }}>
+                <div style={{ width:6,height:6,borderRadius:2,background:col }}/>
+                <span style={{ fontSize:10,color:C.d }}>{PLAN_LABEL[p]} <span style={{ color:C.t,fontWeight:600 }}>{n}</span></span>
+              </div>;
+            })}
+          </div>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Usuarios activos de pago</div>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:C.t }}>{activeUsers}</div>
+          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>
+            {users.filter(u=>u.status==="active"&&u.billing_cycle==="annual").length} anuales · {users.filter(u=>u.status==="active"&&u.billing_cycle!=="annual"&&u.plan!=="trial").length} mensuales
+          </div>
+        </div>
+      </div>
+
+      {/* Movimientos */}
+      <div style={{ ...card }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700 }}>Movimientos</div>
+          <div style={{ display:"flex", gap:4, background:C.s2, borderRadius:8, padding:4 }}>
+            {["todos","ingresos","egresos"].map(v=>(
+              <button key={v} onClick={()=>setView(v)}
+                style={{ padding:"5px 12px", borderRadius:6, border:"none", background:view===v?C.bg:"transparent", color:view===v?C.t:C.d, fontSize:11, fontWeight:view===v?600:400, cursor:"pointer", fontFamily:"inherit", textTransform:"capitalize", transition:"all 0.15s" }}>
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {filtered.length===0 ? (
+          <div style={{ textAlign:"center", padding:"24px 0", color:C.d, fontSize:13 }}>
+            Sin {view==="todos"?"movimientos":view} registrados
           </div>
         ) : (
-          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>${mrr.toFixed(0)} MRR − ${totalExpenses.toFixed(0)} egresos</div>
+          <div>
+            {filtered.map((m,i)=>(
+              <div key={m.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:i<filtered.length-1?"1px solid "+C.b:"none" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ width:32, height:32, borderRadius:8, background:`${m.color}15`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    {m.type==="ingreso" ? <TrendingUp size={14} color={m.color}/> : <TrendingDown size={14} color={m.color}/>}
+                  </div>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:500, color:C.t }}>{m.desc}</div>
+                    <div style={{ fontSize:10, color:C.d, marginTop:1 }}>{m.cat}{m.date?` · ${m.date}`:""}</div>
+                  </div>
+                </div>
+                <span style={{ fontSize:14, fontWeight:700, color:m.type==="ingreso"?C.a:C.r }}>
+                  {m.type==="ingreso"?"+":"-"}${m.amount.toFixed(0)}
+                </span>
+              </div>
+            ))}
+          </div>
         )}
       </div>
-
-      {/* Potencial de ingresos */}
-      {mrr===0 && (
-        <div style={{ ...card, marginBottom:16, border:"1px solid "+C.a+"20", background:"rgba(74,222,128,0.03)" }}>
-          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:10 }}>Potencial estimado</div>
-          <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:4 }}>
-            <span style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:C.a }}>$435</span>
-            <span style={{ fontSize:12, color:C.d }}>/mes</span>
-          </div>
-          <div style={{ fontSize:12, color:C.d, marginBottom:12 }}>Si activas 15 clientes en plan Básico</div>
-          <div style={{ fontSize:11, color:C.d, padding:"8px 10px", background:C.s2, borderRadius:8, fontStyle:"italic" }}>
-            "Si Cleo te consigue 1 cliente más, ya se paga solo."
-          </div>
-        </div>
-      )}
-
-      {/* Planes activos */}
-      {(view==="ingresos"||view==="ambos") && (
-        <div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10 }}>Ingresos</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
-            <div style={card}><div style={{ fontSize:10, color:C.d }}>MRR actual</div><div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:C.a, marginTop:2 }}>${mrr.toFixed(0)}</div></div>
-            <div style={card}><div style={{ fontSize:10, color:C.d }}>Usuarios activos</div><div style={{ fontSize:22, fontWeight:800, color:C.a, marginTop:2 }}>{stats?.activeUsers??0}</div></div>
-          </div>
-
-          {/* Planes activos */}
-          <div style={{ ...card, marginBottom:8 }}>
-            <div style={{ fontSize:11, fontWeight:600, color:C.d, marginBottom:10, letterSpacing:"0.06em", textTransform:"uppercase" }}>Planes activos</div>
-            {[{l:"Básico",p:"basico",c:"#3B82F6",sub:"Ideal para empezar"},{l:"Negocio",p:"negocio",c:C.a,sub:"Automatiza ventas y agenda"},{l:"Pro",p:"pro",c:"#F59E0B",sub:"Escala sin contratar personal"}].map(({l,p,c:col,sub})=>{
-              const count = users.filter(u=>u.plan===p&&u.status==="active").length;
-              return (
-                <div key={p} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid "+C.b }}>
-                  <div>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <div style={{ width:7, height:7, borderRadius:2, background:col }}/>
-                      <span style={{ fontSize:13, fontWeight:600, color:C.t }}>{l}</span>
-                      <span style={{ fontSize:11, color:C.d }}>{count} cliente{count!==1?"s":""}</span>
-                    </div>
-                    <div style={{ fontSize:10, color:C.d, marginLeft:13, marginTop:2 }}>{sub}</div>
-                  </div>
-                  <span style={{ fontSize:12, fontWeight:600, color:count>0?col:C.d }}>${(count*(p==="basico"?29:p==="negocio"?59:99)).toFixed(0)}/mes</span>
-                </div>
-              );
-            })}
-            <button onClick={()=>{}} style={{ width:"100%", marginTop:12, padding:"9px 0", borderRadius:10, border:"1px solid "+C.a+"30", background:C.glow, color:C.a, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-              Ver planes y vender →
-            </button>
-          </div>
-
-          {mrrRows.length>0 && (
-            <div style={{ ...card, marginBottom:16 }}>
-              <div style={{ fontSize:11, color:C.d, marginBottom:4 }}>MRR por plan</div>
-              {mrrRows.map((m,i)=>(
-                <div key={i} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0",borderBottom:i<mrrRows.length-1?"1px solid "+C.b:"none" }}>
-                  <div style={{ display:"flex",alignItems:"center",gap:6 }}><div style={{ width:8,height:8,borderRadius:2,background:m.color }}/><span style={{ fontSize:12,fontWeight:600 }}>{m.label}</span><span style={{ fontSize:10,color:C.d }}>{m.count}×${m.unit}</span></div>
-                  <span style={{ fontSize:13,fontWeight:700,color:C.a }}>${m.total}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Egresos */}
-      {(view==="egresos"||view==="ambos") && (
-        <div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10 }}>Egresos</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
-            <div style={card}><div style={{ fontSize:10, color:C.d }}>Total este mes</div><div style={{ fontSize:22, fontWeight:800, color:C.r, marginTop:2 }}>${totalExpenses.toFixed(0)}</div></div>
-            <div style={card}><div style={{ fontSize:10, color:C.d }}>Registros</div><div style={{ fontSize:22, fontWeight:800, marginTop:2 }}>{expenses.length}</div></div>
-          </div>
-          {totalExpenses>0 && (
-            <div style={{ ...card, marginBottom:16 }}>
-              <div style={{ fontSize:11, color:C.d, marginBottom:6 }}>Por categoría</div>
-              {EXP_CATS.map(cat=>{
-                const t = expenses.filter(e=>e.category===cat.v).reduce((s,e)=>s+(e.amount||0),0);
-                if(!t) return null;
-                return <div key={cat.v} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"4px 0" }}><span style={{ fontSize:12,display:"flex",alignItems:"center",gap:4 }}><cat.Icon size={12} color={C.d}/> {cat.l}</span><span style={{ fontSize:13,fontWeight:600 }}>${t.toFixed(2)}</span></div>;
-              })}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
+
 
 // ── EGRESOS ───────────────────────────────────────────────────────────────────
 function Expenses({ expenses, setExpenses, loading, authFetch }) {
