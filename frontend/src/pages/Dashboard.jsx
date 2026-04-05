@@ -983,9 +983,10 @@ export default function CleoDashboard() {
     if (!dirMain) return;
     setDirSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user && !authed) setAuthed(true);
-      setInitializing(false);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) setAuthed(true);
+      } catch(e) { console.error(e); } finally { setInitializing(false); }
       const token = session?.access_token;
       const API = import.meta.env.VITE_API_URL;
       await fetch(`${API}/api/business/me`, {
