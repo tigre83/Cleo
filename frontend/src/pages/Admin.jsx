@@ -140,21 +140,6 @@ function AdminLogin({ onLogin }) {
   const [resends, setResends]     = useState(0);
   const [isMember, setIsMember]   = useState(false); // true = miembro invitado
   const cRefs = useRef([]);
-  // Verificar token al cargar
-  useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-    if (!token) return;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (payload.exp * 1000 > Date.now()) {
-        setAuthed(true);
-        setAdminRole(payload.role || 'owner');
-        setAdminEmail(payload.email || '');
-      } else {
-        localStorage.removeItem("adminToken");
-      }
-    } catch { localStorage.removeItem("adminToken"); }
-  }, []);
 
   const API = import.meta.env.VITE_API_URL;
 
@@ -1170,6 +1155,22 @@ export default function CleoAdmin() {
   const [authed,       setAuthed]       = useState(false);
   const [adminRole,    setAdminRole]    = useState('owner');
   const [adminEmail,   setAdminEmail]   = useState('');
+
+  // Auto-login si hay token válido en localStorage
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    if (!token) return;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.exp * 1000 > Date.now()) {
+        setAuthed(true);
+        setAdminRole(payload.role || 'owner');
+        setAdminEmail(payload.email || '');
+      } else {
+        localStorage.removeItem("adminToken");
+      }
+    } catch { localStorage.removeItem("adminToken"); }
+  }, []);
 
   const [tab,          setTab]          = useState("overview");
   const [selectedUser, setSelectedUser] = useState(null);
