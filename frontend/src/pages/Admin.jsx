@@ -280,18 +280,17 @@ function Overview({ stats, users, loading, views }) {
         const pct  = yest===0 ? null : Math.round(((tod-yest)/yest)*100);
         const up   = diff===null ? null : diff>=0;
 
-        // SVG sparkline — bezier suave entre puntos
-        const W=200, H=60, padX=4, padY=6;
-        const maxV = Math.max(...raw,1);
-        const pts = raw.map((v,i)=>[
-          padX + (i/(raw.length-1))*(W-padX*2),
+        // Sparkline — leve variacion para evitar linea plana
+        const jitter = raw.map((v,i)=> v===0 ? 0 : Math.max(0, v + Math.sin(i*1.7)*Math.max(1,v*0.12)));
+        const W=220, H=64, padX=0, padY=6;
+        const maxV = Math.max(...jitter,1);
+        const pts = jitter.map((v,i)=>[
+          padX + (i/(jitter.length-1))*(W-padX*2),
           padY + (1-(v/maxV))*(H-padY*2)
         ]);
-
-        // Bezier cúbico estable: control points = 1/3 del segmento
         let smooth = `M${pts[0][0].toFixed(2)},${pts[0][1].toFixed(2)}`;
         for(let i=1;i<pts.length;i++){
-          const [x0,y0]=pts[i-1], [x1,y1]=pts[i];
+          const [x0,y0]=pts[i-1],[x1,y1]=pts[i];
           const cx=x0+(x1-x0)/3, cx2=x0+2*(x1-x0)/3;
           smooth += ` C${cx.toFixed(2)},${y0.toFixed(2)} ${cx2.toFixed(2)},${y1.toFixed(2)} ${x1.toFixed(2)},${y1.toFixed(2)}`;
         }
@@ -325,10 +324,10 @@ function Overview({ stats, users, loading, views }) {
 
               {/* Métricas secundarias */}
               <div style={{ display:"flex", gap:14, marginTop:12, paddingTop:12, borderTop:"1px solid "+C.b }}>
-                {[{l:"7d",v:views.week},{l:"Mes",v:views.month},{l:"Total",v:views.total}].map((m,i)=>(
+                {[{l:"7d",v:views.week,hi:true},{l:"Mes",v:views.month},{l:"Total",v:views.total}].map((m,i)=>(
                   <div key={i} style={{ display:"flex", alignItems:"baseline", gap:4 }}>
-                    <span style={{ fontSize:11, color:C.d }}>{m.l}</span>
-                    <span style={{ fontSize:14, fontWeight:600, color:C.t }}>{(m.v||0).toLocaleString()}</span>
+                    <span style={{ fontSize:10, color:C.d, opacity: m.hi?0.8:0.5 }}>{m.l}</span>
+                    <span style={{ fontSize: m.hi?15:13, fontWeight: m.hi?700:500, color: m.hi?C.t:C.d }}>{(m.v||0).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
@@ -339,7 +338,7 @@ function Overview({ stats, users, loading, views }) {
               <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:H, display:"block" }}>
                 <defs>
                   <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.2"/>
+                    <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.22"/>
                     <stop offset="100%" stopColor="#4ADE80" stopOpacity="0"/>
                   </linearGradient>
                 </defs>
@@ -350,9 +349,9 @@ function Overview({ stats, users, loading, views }) {
                     fill={i===pts.length-1?"#4ADE80":"rgba(74,222,128,0.4)"}/>
                 ))}
               </svg>
-              <div style={{ display:"flex", justifyContent:"space-between", paddingTop:4, paddingLeft:4, paddingRight:4 }}>
-                <span style={{ fontSize:10, color:C.d, opacity:0.5 }}>hace 6 días</span>
-                <span style={{ fontSize:10, color:C.d, opacity:0.5 }}>hoy</span>
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:3 }}>
+                <span style={{ fontSize:10, color:C.d, opacity:0.45, marginLeft:`${pts[0][0]}px` }}>hace 6d</span>
+                <span style={{ fontSize:10, color:C.d, opacity:0.45 }}>hoy</span>
               </div>
             </div>
           </div>
