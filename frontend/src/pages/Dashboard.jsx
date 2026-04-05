@@ -1045,8 +1045,8 @@ export default function CleoDashboard() {
           <h3 style={{ fontFamily:"'Syne',sans-serif",fontSize:17,fontWeight:800,marginBottom:8,color:C.text }}>¿Cerrar sesión?</h3>
           <p style={{ fontSize:13,color:C.dim,marginBottom:24,lineHeight:1.5 }}>Tu sesión se cerrará y tendrás que volver a ingresar.</p>
           <div style={{ display:"flex",gap:10 }}>
-            <button onClick={()=>setLogoutModal(false)} style={{ flex:1,padding:12,borderRadius:10,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancelar</button>
-            <button onClick={()=>{ setLogoutModal(false); handleLogout(); }} style={{ flex:1,padding:12,borderRadius:10,border:"none",background:C.accent,color:C.bg,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Cerrar sesión</button>
+            <button onClick={()=>{ setLogoutModal(false); handleLogout(); }} style={{ flex:1,padding:12,borderRadius:10,border:"none",background:C.accent,color:C.bg,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Sí</button>
+            <button onClick={()=>setLogoutModal(false)} style={{ flex:1,padding:12,borderRadius:10,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>No</button>
           </div>
         </div>
       </div>
