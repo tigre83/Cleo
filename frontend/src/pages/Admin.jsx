@@ -1284,7 +1284,7 @@ export default function CleoAdmin() {
     {logoutModal && (
       <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20 }}>
         <div style={{ background:"#0D0D0D",border:"1px solid #1A1A1A",borderRadius:16,padding:32,maxWidth:340,width:"100%",textAlign:"center" }}>
-          <LogOut size={28} color="#4ADE80" style={{ marginBottom:12 }}/>
+          
           <h3 style={{ fontFamily:"'Syne',sans-serif",fontSize:17,fontWeight:800,color:"#F9FAFB",marginBottom:8 }}>¿Cerrar sesión?</h3>
           <p style={{ fontSize:13,color:"#6B7280",marginBottom:24,lineHeight:1.5 }}>Tu sesión se cerrará y tendrás que volver a ingresar.</p>
           <div style={{ display:"flex",gap:10 }}>
@@ -1304,7 +1304,7 @@ export default function CleoAdmin() {
           <h3 style={{ fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,color:"#F9FAFB",marginBottom:8 }}>Sesión cerrada</h3>
           <p style={{ fontSize:13,color:"#6B7280",marginBottom:24,lineHeight:1.6 }}>Tu sesión fue cerrada por inactividad. Inicia sesión nuevamente para continuar.</p>
           <button onClick={()=>setSessionExpired(false)} style={{ width:"100%",padding:14,borderRadius:12,border:"none",background:"#4ADE80",color:"#080808",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
-            <LogOut size={16}/> Iniciar sesión
+            Iniciar sesión
           </button>
         </div>
       </div>
