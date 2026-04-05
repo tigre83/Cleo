@@ -283,7 +283,7 @@ function Overview({ stats, users, loading, views }) {
         const W=220, H=64, padX=0, padY=6;
         const maxV = Math.max(...raw,1);
         const pts = raw.map((v,i)=>[
-          padX + (i/(jitter.length-1))*(W-padX*2),
+          padX + (i/(raw.length-1))*(W-padX*2),
           padY + (1-(v/maxV))*(H-padY*2)
         ]);
         let smooth = `M${pts[0][0].toFixed(2)},${pts[0][1].toFixed(2)}`;
