@@ -280,11 +280,9 @@ function Overview({ stats, users, loading, views }) {
         const pct  = yest===0 ? null : Math.round(((tod-yest)/yest)*100);
         const up   = diff===null ? null : diff>=0;
 
-        // Sparkline — leve variacion para evitar linea plana
-        const jitter = raw.map((v,i)=> v===0 ? 0 : Math.max(0, v + Math.sin(i*1.7)*Math.max(1,v*0.12)));
         const W=220, H=64, padX=0, padY=6;
-        const maxV = Math.max(...jitter,1);
-        const pts = jitter.map((v,i)=>[
+        const maxV = Math.max(...raw,1);
+        const pts = raw.map((v,i)=>[
           padX + (i/(jitter.length-1))*(W-padX*2),
           padY + (1-(v/maxV))*(H-padY*2)
         ]);
