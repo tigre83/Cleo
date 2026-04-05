@@ -544,8 +544,17 @@ function UserDetail({ user, onBack, onUpdate }) {
 }
 
 // ── FINANZAS ──────────────────────────────────────────────────────────────────
-function Finanzas({ users, expenses, stats, loading }) {
-  const [view, setView] = useState("todos");
+function Finanzas({ users, expenses, setExpenses, stats, loading, authFetch }) {
+  const [view,      setView]      = useState("movimientos");
+  const [cat,       setCat]       = useState("infra");
+  const [desc,      setDesc]      = useState("");
+  const [amount,    setAmount]    = useState("");
+  const [date,      setDate]      = useState(new Date().toISOString().split("T")[0]);
+  const [recurring, setRecurring] = useState(false);
+  const [notes,     setNotes]     = useState("");
+  const [saving,    setSaving]    = useState(false);
+  const [movFilter, setMovFilter] = useState("todos");
+
   if (loading) return <Spinner />;
 
   const mrrRows = [];
@@ -563,46 +572,64 @@ function Finanzas({ users, expenses, stats, loading }) {
   const net           = mrr - totalExpenses;
   const activeUsers   = users.filter(u=>u.status==="active"&&u.plan!=="trial").length;
   const card          = { background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"16px 18px" };
+  const fi            = { width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+C.b,background:C.s2,color:C.t,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",marginBottom:8 };
 
-  // Movimientos combinados para tabla
+  const addExpense = async () => {
+    if (!desc||!amount) return;
+    setSaving(true);
+    try {
+      const data = await authFetch("/api/admin/expenses", {
+        method:"POST",
+        body:JSON.stringify({ category:cat, description:desc, amount:parseFloat(amount), date, recurring, notes }),
+      });
+      setExpenses(prev=>[data,...prev]);
+      setDesc(""); setAmount(""); setNotes(""); setView("movimientos");
+    } catch(err) { console.error(err); }
+    setSaving(false);
+  };
+
+  const deleteExpense = async (id) => {
+    try {
+      await authFetch(`/api/admin/expenses/${id}`, { method:"DELETE" });
+      setExpenses(prev=>prev.filter(e=>e.id!==id));
+    } catch(err) { console.error(err); }
+  };
+
   const ingresos = mrrRows.map((m,i)=>({ id:"i"+i, type:"ingreso", desc:`${m.label} ${m.cycle}`, amount:m.total, color:m.color, cat:"Suscripción" }));
-  const egresos  = expenses.map(e=>({ id:"e"+e.id, type:"egreso", desc:e.description||e.category, amount:e.amount, color:C.r, cat:e.category, date:e.date }));
-  const allMovs  = [...ingresos, ...egresos];
-  const filtered = view==="todos"?allMovs:view==="ingresos"?ingresos:egresos;
+  const egresos  = expenses.map(e=>({ id:"e"+e.id, type:"egreso", desc:e.description, amount:e.amount||0, color:C.r, cat:e.category, date:e.date, raw:e }));
+  const movs     = movFilter==="todos"?[...ingresos,...egresos]:movFilter==="ingresos"?ingresos:egresos;
 
   return (
     <div>
       <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, marginBottom:20 }}>Finanzas</h2>
 
-      {/* KPIs principales */}
+      {/* KPIs */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:10 }}>
-        <div style={{ ...card, gridColumn:"1/2" }}>
+        <div style={card}>
           <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Ingresos del mes</div>
           <div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:C.a }}>${mrr.toFixed(0)}</div>
-          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>MRR · {activeUsers} usuarios activos</div>
+          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>{activeUsers} usuarios activos</div>
         </div>
-        <div style={{ ...card }}>
+        <div style={card}>
           <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Gastos del mes</div>
           <div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:totalExpenses>0?C.r:C.t }}>${totalExpenses.toFixed(0)}</div>
-          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>{expenses.length} registro{expenses.length!==1?"s":""}</div>
+          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>{expenses.length} registros</div>
         </div>
-        <div style={{ ...card, background:net>=0?`rgba(74,222,128,0.06)`:C.r+"08", border:`1px solid ${net>=0?C.a+"25":C.r+"25"}` }}>
+        <div style={{ ...card, background:net>=0?"rgba(74,222,128,0.06)":C.r+"08", border:`1px solid ${net>=0?C.a+"25":C.r+"25"}` }}>
           <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Ganancia neta</div>
           <div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:net>=0?C.a:C.r }}>${net.toFixed(0)}</div>
           <div style={{ fontSize:11, color:C.d, marginTop:4 }}>{net>=0?"Resultado positivo":"Resultado negativo"}</div>
         </div>
       </div>
-
-      {/* Segunda fila KPIs */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:10, marginBottom:20 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:24 }}>
         <div style={card}>
-          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>MRR actual</div>
+          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>MRR</div>
           <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:C.a }}>${mrr.toFixed(0)}</div>
-          <div style={{ display:"flex", gap:8, marginTop:8 }}>
+          <div style={{ display:"flex", gap:8, marginTop:6 }}>
             {["basico","negocio","pro"].map(p=>{
               const n=users.filter(u=>u.plan===p&&u.status==="active").length;
               const col=p==="basico"?"#3B82F6":p==="negocio"?C.a:"#F59E0B";
-              return <div key={p} style={{ display:"flex", alignItems:"center", gap:3 }}>
+              return <div key={p} style={{ display:"flex",alignItems:"center",gap:3 }}>
                 <div style={{ width:6,height:6,borderRadius:2,background:col }}/>
                 <span style={{ fontSize:10,color:C.d }}>{PLAN_LABEL[p]} <span style={{ color:C.t,fontWeight:600 }}>{n}</span></span>
               </div>;
@@ -610,59 +637,105 @@ function Finanzas({ users, expenses, stats, loading }) {
           </div>
         </div>
         <div style={card}>
-          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Usuarios activos de pago</div>
+          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:8 }}>Usuarios de pago</div>
           <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:C.t }}>{activeUsers}</div>
-          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>
+          <div style={{ fontSize:11, color:C.d, marginTop:6 }}>
             {users.filter(u=>u.status==="active"&&u.billing_cycle==="annual").length} anuales · {users.filter(u=>u.status==="active"&&u.billing_cycle!=="annual"&&u.plan!=="trial").length} mensuales
           </div>
         </div>
       </div>
 
-      {/* Movimientos */}
-      <div style={{ ...card }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700 }}>Movimientos</div>
-          <div style={{ display:"flex", gap:4, background:C.s2, borderRadius:8, padding:4 }}>
-            {["todos","ingresos","egresos"].map(v=>(
-              <button key={v} onClick={()=>setView(v)}
-                style={{ padding:"5px 12px", borderRadius:6, border:"none", background:view===v?C.bg:"transparent", color:view===v?C.t:C.d, fontSize:11, fontWeight:view===v?600:400, cursor:"pointer", fontFamily:"inherit", textTransform:"capitalize", transition:"all 0.15s" }}>
-                {v}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* Tabs */}
+      <div style={{ display:"flex", gap:4, background:C.s2, borderRadius:10, padding:4, marginBottom:20, width:"fit-content" }}>
+        {[{v:"movimientos",l:"Movimientos"},{v:"registrar",l:"+ Registrar gasto"}].map(t=>(
+          <button key={t.v} onClick={()=>setView(t.v)}
+            style={{ padding:"7px 16px", borderRadius:8, border:"none", background:view===t.v?C.bg:"transparent", color:view===t.v?C.t:C.d, fontSize:12, fontWeight:view===t.v?600:400, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>
+            {t.l}
+          </button>
+        ))}
+      </div>
 
-        {filtered.length===0 ? (
-          <div style={{ textAlign:"center", padding:"24px 0", color:C.d, fontSize:13 }}>
-            Sin {view==="todos"?"movimientos":view} registrados
+      {/* Movimientos */}
+      {view==="movimientos" && (
+        <div style={card}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:700 }}>Movimientos</div>
+            <div style={{ display:"flex", gap:4, background:C.s2, borderRadius:8, padding:3 }}>
+              {["todos","ingresos","egresos"].map(v=>(
+                <button key={v} onClick={()=>setMovFilter(v)}
+                  style={{ padding:"4px 10px", borderRadius:6, border:"none", background:movFilter===v?C.bg:"transparent", color:movFilter===v?C.t:C.d, fontSize:11, fontWeight:movFilter===v?600:400, cursor:"pointer", fontFamily:"inherit", textTransform:"capitalize" }}>
+                  {v}
+                </button>
+              ))}
+            </div>
           </div>
-        ) : (
-          <div>
-            {filtered.map((m,i)=>(
-              <div key={m.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:i<filtered.length-1?"1px solid "+C.b:"none" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                  <div style={{ width:32, height:32, borderRadius:8, background:`${m.color}15`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                    {m.type==="ingreso" ? <TrendingUp size={14} color={m.color}/> : <TrendingDown size={14} color={m.color}/>}
-                  </div>
-                  <div>
-                    <div style={{ fontSize:13, fontWeight:500, color:C.t }}>{m.desc}</div>
-                    <div style={{ fontSize:10, color:C.d, marginTop:1 }}>{m.cat}{m.date?` · ${m.date}`:""}</div>
+          {movs.length===0 ? (
+            <div style={{ textAlign:"center", padding:"20px 0", color:C.d, fontSize:13 }}>Sin movimientos</div>
+          ) : movs.map((m,i)=>(
+            <div key={m.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:i<movs.length-1?"1px solid "+C.b:"none" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:32, height:32, borderRadius:8, background:`${m.color}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  {m.type==="ingreso" ? <TrendingUp size={14} color={m.color}/> : <TrendingDown size={14} color={m.color}/>}
+                </div>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:500, color:C.t }}>{m.desc}</div>
+                  <div style={{ fontSize:10, color:C.d, marginTop:1 }}>
+                    {m.cat}{m.date?" · "+m.date:""}
+                    {m.raw?.recurring && <span style={{ marginLeft:4, color:C.a }}>↻</span>}
                   </div>
                 </div>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontSize:14, fontWeight:700, color:m.type==="ingreso"?C.a:C.r }}>
                   {m.type==="ingreso"?"+":"-"}${m.amount.toFixed(0)}
                 </span>
+                {m.type==="egreso" && (
+                  <button onClick={()=>deleteExpense(m.raw.id)} style={{ background:"none",border:"none",cursor:"pointer",color:C.d,padding:4 }}><Trash2 size={13}/></button>
+                )}
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Registrar gasto */}
+      {view==="registrar" && (
+        <div style={card}>
+          <div style={{ fontSize:13, fontWeight:600, marginBottom:14 }}>Nuevo egreso</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, marginBottom:12 }}>
+            {EXP_CATS.map(ct=>(
+              <button key={ct.v} onClick={()=>setCat(ct.v)}
+                style={{ padding:"8px",borderRadius:8,border:"1.5px solid "+(cat===ct.v?C.a:C.b),background:cat===ct.v?C.glow:"transparent",color:cat===ct.v?C.a:C.t,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:5 }}>
+                <ct.Icon size={13} color={cat===ct.v?C.a:C.d}/> {ct.l}
+              </button>
             ))}
           </div>
-        )}
-      </div>
+          <input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Descripción" style={fi}/>
+          <div style={{ display:"flex", gap:6 }}>
+            <div style={{ flex:1, position:"relative" }}>
+              <span style={{ position:"absolute",left:12,top:10,color:C.d,fontSize:13 }}>$</span>
+              <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00" style={{...fi,paddingLeft:24}}/>
+            </div>
+            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...fi,flex:1}}/>
+          </div>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
+            <div style={{ display:"flex",alignItems:"center",gap:6 }}><RefreshCw size={12} color={C.d}/><span style={{ fontSize:12,color:C.d }}>Recurrente</span></div>
+            <button onClick={()=>setRecurring(!recurring)} style={{ width:36,height:20,borderRadius:10,border:"none",cursor:"pointer",background:recurring?C.a:"#333",position:"relative" }}>
+              <div style={{ width:16,height:16,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:recurring?18:2,transition:"left 0.2s" }}/>
+            </button>
+          </div>
+          <input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Notas (opcional)" style={fi}/>
+          <button onClick={addExpense} disabled={!desc||!amount||saving}
+            style={{ width:"100%",padding:10,borderRadius:8,border:"none",background:desc&&amount?C.a:C.b,color:desc&&amount?C.bg:C.d,fontSize:13,fontWeight:600,cursor:desc&&amount?"pointer":"default",fontFamily:"inherit" }}>
+            {saving?"Guardando...":"Guardar egreso"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 
-// ── EGRESOS ───────────────────────────────────────────────────────────────────
 function Expenses({ expenses, setExpenses, loading, authFetch }) {
   const [showForm,  setShowForm]  = useState(false);
   const [cat,       setCat]       = useState("infra");
@@ -1458,7 +1531,7 @@ export default function CleoAdmin() {
         {tab==="overview" && <Overview stats={stats} users={users} loading={loading} views={views}/>}
         {tab==="users"    && !selectedUser && <UsersSection users={users} loading={loading} onSelect={setSelectedUser}/>}
         {tab==="users"    && selectedUser  && <UserDetail user={selectedUser} onBack={()=>setSelectedUser(null)} onUpdate={updateUser}/>}
-        {tab==="finanzas" && <Finanzas users={users} expenses={expenses} stats={stats} loading={loading}/>}
+        {tab==="finanzas" && <Finanzas users={users} expenses={expenses} setExpenses={setExpenses} stats={stats} loading={loading} authFetch={authFetch}/>}
         {tab==="expenses" && <Expenses expenses={expenses} setExpenses={setExpenses} loading={loading} authFetch={authFetch}/>}
         {tab==="sistema"  && <SystemStatus systemStatus={systemStatus} setSystemStatus={setSystemStatus} loading={loading} authFetch={authFetch}/>}
         {tab==="config"   && <SysConfig authFetch={authFetch} adminRole={adminRole}/>}
