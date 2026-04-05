@@ -274,50 +274,82 @@ function Overview({ stats, users, loading, views }) {
       {/* Card Visitas */}
       {(()=>{
         const spark = views.sparkline||[0,0,0,0,0,0,0];
-        const maxS = Math.max(...spark,1);
         const tod = views.today||0;
         const yest = views.yesterday||0;
         const diff = yest===0 ? null : Math.round(((tod-yest)/yest)*100);
+        const absDiff = yest===0 ? null : tod - yest;
         const up = diff===null ? null : diff>=0;
+
+        // SVG sparkline — línea continua
+        const H=64, W=180, pad=4;
+        const maxV = Math.max(...spark,1);
+        const pts = spark.map((v,i)=>{
+          const x = pad + (i/(spark.length-1))*(W-pad*2);
+          const y = H - pad - ((v/maxV)*(H-pad*2));
+          return [x,y];
+        });
+        const linePath = pts.map((p,i)=>(i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`)).join(" ");
+        const areaPath = `${linePath} L${pts[pts.length-1][0]},${H} L${pts[0][0]},${H} Z`;
+
         return (
         <div style={{ background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"18px 22px", marginBottom:16 }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <Activity size={12} color={C.a}/>
-              <span style={{ fontSize:10, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", color:C.d }}>Visitas al sitio web</span>
-            </div>
-            <span style={{ fontSize:10, color:C.d, opacity:0.5 }}>auto · 30s</span>
+          {/* Header */}
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:16, opacity:0.6 }}>
+            <Activity size={11} color={C.a}/>
+            <span style={{ fontSize:10, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", color:C.d }}>Visitas al sitio web</span>
           </div>
 
-          <div style={{ display:"flex", alignItems:"center", gap:0 }}>
-            {/* KPI principal */}
-            <div style={{ minWidth:140 }}>
-              <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
-                <span style={{ fontFamily:"'Syne',sans-serif", fontSize:46, fontWeight:800, color:C.a, lineHeight:1 }}>{tod.toLocaleString()}</span>
-                {diff!==null && (
-                  <span style={{ fontSize:11, fontWeight:600, color:up?"#4ADE80":"#F87171", background:up?"rgba(74,222,128,0.1)":"rgba(248,113,113,0.1)", padding:"2px 7px", borderRadius:5 }}>
-                    {up?"↑":"↓"} {Math.abs(diff)}%
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:24 }}>
+            {/* Left — KPI */}
+            <div style={{ flexShrink:0 }}>
+              {/* Número + label inline */}
+              <div style={{ display:"flex", alignItems:"flex-end", gap:10 }}>
+                <span style={{ fontFamily:"'Syne',sans-serif", fontSize:44, fontWeight:800, color:C.a, lineHeight:1 }}>{tod.toLocaleString()}</span>
+                <span style={{ fontSize:12, color:C.d, paddingBottom:4 }}>hoy</span>
+              </div>
+
+              {/* Tendencia */}
+              <div style={{ marginTop:6, height:20 }}>
+                {diff!==null ? (
+                  <span style={{ fontSize:12, fontWeight:600, color:up?"#4ADE80":"#F87171", display:"flex", alignItems:"center", gap:4 }}>
+                    {up?"↑":"↓"} {up?"+":""}{absDiff} vs ayer
+                    <span style={{ fontSize:11, opacity:0.6, fontWeight:400 }}>({up?"+":""}{diff}%)</span>
                   </span>
+                ) : (
+                  <span style={{ fontSize:11, color:C.d }}>Sin datos de ayer</span>
                 )}
               </div>
-              <div style={{ fontSize:11, color:C.d, marginTop:5 }}>Hoy</div>
 
-              {/* Métricas secundarias en una línea */}
-              <div style={{ display:"flex", gap:16, marginTop:14 }}>
+              {/* Métricas secundarias compactas */}
+              <div style={{ display:"flex", gap:16, marginTop:14, paddingTop:14, borderTop:"1px solid "+C.b }}>
                 {[{l:"7d",v:views.week},{l:"Mes",v:views.month},{l:"Total",v:views.total}].map((m,i)=>(
-                  <div key={i}>
-                    <span style={{ fontSize:13, fontWeight:600, color:C.t, opacity:0.7 }}>{(m.v||0).toLocaleString()}</span>
-                    <span style={{ fontSize:10, color:C.d, marginLeft:4 }}>{m.l}</span>
+                  <div key={i} style={{ display:"flex", alignItems:"baseline", gap:5 }}>
+                    <span style={{ fontSize:14, fontWeight:600, color:C.t }}>{(m.v||0).toLocaleString()}</span>
+                    <span style={{ fontSize:10, color:C.d }}>{m.l}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Sparkline */}
-            <div style={{ flex:1, display:"flex", alignItems:"flex-end", justifyContent:"flex-end", height:56, gap:3, paddingLeft:24 }}>
-              {spark.map((v,i)=>(
-                <div key={i} style={{ flex:1, maxWidth:18, borderRadius:3, background: i===6 ? C.a : `rgba(74,222,128,${0.15+(v/maxS)*0.35})`, height: `${Math.max(4,(v/maxS)*100)}%`, transition:"height 0.3s" }}/>
-              ))}
+            {/* Right — Sparkline SVG */}
+            <div style={{ flex:1, maxWidth:200 }}>
+              <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:H, overflow:"visible" }}>
+                <defs>
+                  <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.3"/>
+                    <stop offset="100%" stopColor="#4ADE80" stopOpacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d={areaPath} fill="url(#sparkGrad)"/>
+                <path d={linePath} fill="none" stroke="#4ADE80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                {pts.map((p,i)=> i===pts.length-1 && (
+                  <circle key={i} cx={p[0]} cy={p[1]} r="3" fill="#4ADE80"/>
+                ))}
+              </svg>
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+                <span style={{ fontSize:9, color:C.d, opacity:0.5 }}>hace 6 días</span>
+                <span style={{ fontSize:9, color:C.d, opacity:0.5 }}>hoy</span>
+              </div>
             </div>
           </div>
         </div>
