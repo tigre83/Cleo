@@ -280,22 +280,21 @@ function Overview({ stats, users, loading, views }) {
         const pct  = yest===0 ? null : Math.round(((tod-yest)/yest)*100);
         const up   = diff===null ? null : diff>=0;
 
-        // SVG sparkline con curva suave
-        const W=200, H=56, pad=6;
+        // SVG sparkline — bezier suave entre puntos
+        const W=200, H=60, padX=4, padY=6;
         const maxV = Math.max(...raw,1);
         const pts = raw.map((v,i)=>[
-          pad + (i/(raw.length-1))*(W-pad*2),
-          H - pad - ((v/maxV)*(H-pad*2))
+          padX + (i/(raw.length-1))*(W-padX*2),
+          padY + (1-(v/maxV))*(H-padY*2)
         ]);
 
-        // Catmull-Rom smooth path
-        const smooth = pts.map((p,i,a)=>{
-          if(i===0) return `M${p[0].toFixed(1)},${p[1].toFixed(1)}`;
-          const p0=a[Math.max(0,i-1)], p1=a[i], p2=a[Math.min(a.length-1,i+1)];
-          const cp1x=(p0[0]+p1[0])/2, cp1y=(p0[1]+p1[1])/2;
-          const cp2x=(p1[0]+p2[0])/2, cp2y=(p1[1]+p2[1])/2;
-          return `C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p1[0].toFixed(1)},${p1[1].toFixed(1)}`;
-        }).join(" ");
+        // Bezier cúbico estable: control points = 1/3 del segmento
+        let smooth = `M${pts[0][0].toFixed(2)},${pts[0][1].toFixed(2)}`;
+        for(let i=1;i<pts.length;i++){
+          const [x0,y0]=pts[i-1], [x1,y1]=pts[i];
+          const cx=x0+(x1-x0)/3, cx2=x0+2*(x1-x0)/3;
+          smooth += ` C${cx.toFixed(2)},${y0.toFixed(2)} ${cx2.toFixed(2)},${y1.toFixed(2)} ${x1.toFixed(2)},${y1.toFixed(2)}`;
+        }
         const area = `${smooth} L${pts[pts.length-1][0]},${H} L${pts[0][0]},${H} Z`;
 
         return (
@@ -337,24 +336,23 @@ function Overview({ stats, users, loading, views }) {
 
             {/* Sparkline */}
             <div style={{ flex:1 }}>
-              <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:H, display:"block", overflow:"visible" }}>
+              <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:H, display:"block" }}>
                 <defs>
                   <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.25"/>
-                    <stop offset="100%" stopColor="#4ADE80" stopOpacity="0.02"/>
+                    <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.2"/>
+                    <stop offset="100%" stopColor="#4ADE80" stopOpacity="0"/>
                   </linearGradient>
                 </defs>
-                <path d={area} fill="url(#sg)" style={{ transition:"d 0.5s ease" }}/>
-                <path d={smooth} fill="none" stroke="#4ADE80" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ transition:"d 0.5s ease" }}/>
+                <path d={area} fill="url(#sg)"/>
+                <path d={smooth} fill="none" stroke="#4ADE80" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                 {pts.map((p,i)=>(
-                  <circle key={i} cx={p[0]} cy={p[1]} r={i===pts.length-1?3:1.5}
-                    fill={i===pts.length-1?"#4ADE80":"rgba(74,222,128,0.5)"}
-                    style={{ transition:"all 0.3s" }}/>
+                  <circle key={i} cx={p[0]} cy={p[1]} r={i===pts.length-1?2.5:1.5}
+                    fill={i===pts.length-1?"#4ADE80":"rgba(74,222,128,0.4)"}/>
                 ))}
               </svg>
-              <div style={{ display:"flex", justifyContent:"space-between", marginTop:5 }}>
-                <span style={{ fontSize:10, color:C.d, opacity:0.45 }}>−6 días</span>
-                <span style={{ fontSize:10, color:C.d, opacity:0.45 }}>hoy</span>
+              <div style={{ display:"flex", justifyContent:"space-between", paddingTop:4, paddingLeft:4, paddingRight:4 }}>
+                <span style={{ fontSize:10, color:C.d, opacity:0.5 }}>hace 6 días</span>
+                <span style={{ fontSize:10, color:C.d, opacity:0.5 }}>hoy</span>
               </div>
             </div>
           </div>
