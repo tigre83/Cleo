@@ -1328,26 +1328,61 @@ export default function CleoDashboard() {
               <div style={st}>Mi negocio</div>
 
               <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-                {/* CARD 1: Logo + Subir */}
-                <div style={{ flex:1, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", display:"flex", alignItems:"center", gap:12 }}>
+
+                {/* CARD 1: Logo */}
+                <div style={{ flex:"0 0 auto", background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", display:"flex", flexDirection:"column", alignItems:"center", gap:8 }}>
                   <input ref={logoInputRef} type="file" accept="image/png,image/jpeg" style={{ display:"none" }} onChange={e => { const f=e.target.files?.[0]; if(!f) return; if(f.size>2*1024*1024){showToast("Máximo 2MB");return;} if(!["image/png","image/jpeg"].includes(f.type)){showToast("Solo PNG o JPG");return;} const r=new FileReader(); r.onload=ev=>{setBiz({...biz,logo:ev.target.result});showToast("Logo actualizado ✓");}; r.readAsDataURL(f); }} />
-                  <div onClick={() => logoInputRef.current?.click()} style={{ width:80, height:80, borderRadius:14, overflow:"hidden", background:biz.logo?"transparent":`${C.accent}10`, border:`1.5px solid ${biz.logo?C.border:C.accent+"25"}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+                  <div onClick={() => logoInputRef.current?.click()} style={{ width:80, height:80, borderRadius:14, overflow:"hidden", background:biz.logo?"transparent":`${C.accent}10`, border:`1.5px solid ${biz.logo?C.border:C.accent+"25"}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
                     {biz.logo ? <img src={biz.logo} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:`${C.accent}60` }}>{initial}</span>}
                   </div>
+                  <button onClick={() => logoInputRef.current?.click()} style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${C.accent}40`, background:C.accentGlow, color:C.accent, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Subir</button>
+                  {biz.logo && <button onClick={() => {setBiz({...biz,logo:null});showToast("Logo eliminado");}} style={{ padding:"4px 8px", borderRadius:6, border:`1px solid ${C.border}`, background:"transparent", color:C.dim, fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>Quitar</button>}
+                  <div style={{ fontSize:9, color:C.dim, textAlign:"center", lineHeight:1.5 }}>PNG o JPG<br/>400×400px · 2MB</div>
+                </div>
+
+                {/* CARD 2: Nombre + RUC/CI */}
+                <div style={{ flex:1, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", display:"flex", flexDirection:"column", justifyContent:"center", gap:14 }}>
                   <div>
-                    <div style={{ display:"flex", gap:6, marginBottom:5 }}>
-                      <button onClick={() => logoInputRef.current?.click()} style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${C.accent}40`, background:C.accentGlow, color:C.accent, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Subir foto</button>
-                      {biz.logo && <button onClick={() => {setBiz({...biz,logo:null});showToast("Logo eliminado");}} style={{ padding:"5px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:"transparent", color:C.dim, fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>Quitar</button>}
-                    </div>
-                    <div style={{ fontSize:10, color:C.dim }}>PNG o JPG · 400×400px · 2MB máx</div>
+                    <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase", marginBottom:4 }}>Nombre del negocio</div>
+                    <div style={{ fontSize:15, fontWeight:600, color:C.text }}>{biz.name}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase", marginBottom:4 }}>RUC o Cédula</div>
+                    <input value={rucCi} onChange={e=>setRucCi(e.target.value)} onBlur={()=>rucCi&&showToast("Guardado ✓")} placeholder="Ej: 1234567890001" style={{...fi, width:"100%", boxSizing:"border-box", fontSize:13}}/>
                   </div>
                 </div>
-                {/* CARD 2: Nombre */}
-                <div style={{ flex:1, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", display:"flex", flexDirection:"column", justifyContent:"center" }}>
-                  <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase", marginBottom:6 }}>Nombre del negocio</div>
-                  <div style={{ fontSize:15, fontWeight:600, color:C.text }}>{biz.name}</div>
+
+                {/* CARD 3: Dirección */}
+                <div style={{ flex:1, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px" }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                    <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase" }}>Dirección del negocio</div>
+                    {dirSaved && <span style={{ fontSize:10, color:C.accent, display:"flex", alignItems:"center", gap:4 }}><Check size={10}/> Guardada</span>}
+                  </div>
+                  {dirSaved ? (
+                    <div style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>{dirMain} {dirNum}{dirCross?`, ${dirCross}`:""}</div>
+                  ) : (<>
+                    <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+                      <div style={{ flex:2 }}>
+                        <div style={{ fontSize:11, color:C.dim, marginBottom:4 }}>Calle principal</div>
+                        <input value={dirMain} onChange={e=>setDirMain(e.target.value)} placeholder="Ej: Av. 6 de Diciembre" style={{...fi, width:"100%", boxSizing:"border-box"}}/>
+                      </div>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:11, color:C.dim, marginBottom:4 }}>Numeración</div>
+                        <input value={dirNum} onChange={e=>setDirNum(e.target.value)} placeholder="Ej: N81-18" style={{...fi, width:"100%", boxSizing:"border-box"}}/>
+                      </div>
+                    </div>
+                    <div style={{ marginBottom:10 }}>
+                      <div style={{ fontSize:11, color:C.dim, marginBottom:4 }}>Calle secundaria / Referencia</div>
+                      <input value={dirCross} onChange={e=>setDirCross(e.target.value)} placeholder="Ej: y Diego de Almagro" style={{...fi, width:"100%", boxSizing:"border-box"}}/>
+                    </div>
+                    <button onClick={saveDir} disabled={!dirMain||dirSaving}
+                      style={{ width:"100%", padding:9, borderRadius:10, border:"none", background:dirMain?C.accent:C.border, color:dirMain?C.bg:C.dim, fontSize:12, fontWeight:600, cursor:dirMain?"pointer":"default", fontFamily:"inherit" }}>
+                      {dirSaving?"Guardando...":"Guardar dirección"}
+                    </button>
+                  </>)}
                 </div>
-                {/* CARD 3: Duracion */}
+
+                {/* CARD 4: Duración de cita */}
                 <div style={{ flex:1, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px" }}>
                   <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase", marginBottom:8 }}>Duración de cita</div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:4 }}>
@@ -1356,43 +1391,8 @@ export default function CleoDashboard() {
                   </div>
                   {biz.customDuration && <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:6 }}><input type="number" min="5" max="480" value={biz.duration} onChange={e => setBiz({...biz,duration:Math.max(5,Math.min(480,parseInt(e.target.value)||5))})} onBlur={() => showToast("Guardado ✓")} style={{ ...fi, width:60, textAlign:"center", padding:"4px 6px" }} /><span style={{ fontSize:11, color:C.dim }}>min</span></div>}
                 </div>
-              </div>
 
-              {/* CARD 4: Dirección */}
-              {
-                  <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", marginBottom:8 }}>
-                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-                      <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase" }}>Dirección del negocio</div>
-                      {dirSaved && <span style={{ fontSize:10, color:C.accent, display:"flex", alignItems:"center", gap:4 }}><Check size={10}/> Guardada</span>}
-                    </div>
-                    {dirSaved ? (
-                      <div style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>
-                        {dirMain} {dirNum}{dirCross ? `, ${dirCross}` : ""}
-                      </div>
-                    ) : (
-                      <>
-                        <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-                          <div style={{ flex:2 }}>
-                            <div style={{ fontSize:11, color:C.dim, marginBottom:4 }}>Calle principal</div>
-                            <input value={dirMain} onChange={e=>setDirMain(e.target.value)} placeholder="Ej: Av. 6 de Diciembre" style={{...fi, width:"100%", boxSizing:"border-box"}}/>
-                          </div>
-                          <div style={{ flex:1 }}>
-                            <div style={{ fontSize:11, color:C.dim, marginBottom:4 }}>Numeración</div>
-                            <input value={dirNum} onChange={e=>setDirNum(e.target.value)} placeholder="Ej: N81-18" style={{...fi, width:"100%", boxSizing:"border-box"}}/>
-                          </div>
-                        </div>
-                        <div style={{ marginBottom:12 }}>
-                          <div style={{ fontSize:11, color:C.dim, marginBottom:4 }}>Calle secundaria / Referencia</div>
-                          <input value={dirCross} onChange={e=>setDirCross(e.target.value)} placeholder="Ej: y Diego de Almagro, frente al parque" style={{...fi, width:"100%", boxSizing:"border-box"}}/>
-                        </div>
-                        <button onClick={saveDir} disabled={!dirMain||dirSaving}
-                          style={{ width:"100%", padding:10, borderRadius:10, border:"none", background:dirMain?C.accent:C.border, color:dirMain?C.bg:C.dim, fontSize:13, fontWeight:600, cursor:dirMain?"pointer":"default", fontFamily:"inherit" }}>
-                          {dirSaving?"Guardando...":"Guardar dirección"}
-                        </button>
-                      </>
-                    )}
-                  </div>
-              }
+              </div>
 
               <div style={fw}>
                 <div style={fl}>Horarios</div>
