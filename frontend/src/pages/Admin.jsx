@@ -575,14 +575,43 @@ function Finanzas({ users, expenses, stats, loading }) {
         ))}
       </div>
 
-      {/* Ganancia neta */}
-      <div style={{ ...card,textAlign:"center",marginBottom:16,background:net>=0?C.glow:C.r+"08",border:"1px solid "+(net>=0?C.a+"25":C.r+"25") }}>
-        <div style={{ fontSize:11, color:C.d, marginBottom:4 }}>Ganancia neta del mes</div>
+      {/* Tus ingresos este mes */}
+      <div style={{ ...card, textAlign:"center", marginBottom:16, background:net>=0?C.glow:C.r+"08", border:"1px solid "+(net>=0?C.a+"25":C.r+"25") }}>
+        <div style={{ fontSize:11, color:C.d, marginBottom:4 }}>Tus ingresos este mes</div>
         <div style={{ fontFamily:"'Syne',sans-serif", fontSize:36, fontWeight:800, color:net>=0?C.a:C.r }}>${net.toFixed(0)}</div>
-        <div style={{ fontSize:11, color:C.d, marginTop:4 }}>${mrr.toFixed(0)} MRR − ${totalExpenses.toFixed(0)} egresos</div>
+        {mrr===0 ? (
+          <div>
+            <div style={{ fontSize:12, color:C.d, marginTop:4, marginBottom:12 }}>Aún no tienes clientes activos</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8, textAlign:"left", marginBottom:12, padding:"12px", background:"rgba(74,222,128,0.05)", borderRadius:10, border:"1px solid "+C.a+"15" }}>
+              <div style={{ fontSize:12, color:C.d }}>→ Activa tu primer cliente</div>
+              <div style={{ fontSize:12, color:C.d }}>→ Comparte tu link de pago</div>
+              <div style={{ fontSize:12, color:C.d }}>→ Empieza a monetizar Cleo</div>
+            </div>
+            <button onClick={()=>{}} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:C.a, color:C.bg, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+              Empieza a monetizar Cleo →
+            </button>
+          </div>
+        ) : (
+          <div style={{ fontSize:11, color:C.d, marginTop:4 }}>${mrr.toFixed(0)} MRR − ${totalExpenses.toFixed(0)} egresos</div>
+        )}
       </div>
 
-      {/* Ingresos */}
+      {/* Potencial de ingresos */}
+      {mrr===0 && (
+        <div style={{ ...card, marginBottom:16, border:"1px solid "+C.a+"20", background:"rgba(74,222,128,0.03)" }}>
+          <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.d, marginBottom:10 }}>Potencial estimado</div>
+          <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:4 }}>
+            <span style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:C.a }}>$435</span>
+            <span style={{ fontSize:12, color:C.d }}>/mes</span>
+          </div>
+          <div style={{ fontSize:12, color:C.d, marginBottom:12 }}>Si activas 15 clientes en plan Básico</div>
+          <div style={{ fontSize:11, color:C.d, padding:"8px 10px", background:C.s2, borderRadius:8, fontStyle:"italic" }}>
+            "Si Cleo te consigue 1 cliente más, ya se paga solo."
+          </div>
+        </div>
+      )}
+
+      {/* Planes activos */}
       {(view==="ingresos"||view==="ambos") && (
         <div>
           <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:700, marginBottom:10 }}>Ingresos</div>
@@ -590,7 +619,32 @@ function Finanzas({ users, expenses, stats, loading }) {
             <div style={card}><div style={{ fontSize:10, color:C.d }}>MRR actual</div><div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:C.a, marginTop:2 }}>${mrr.toFixed(0)}</div></div>
             <div style={card}><div style={{ fontSize:10, color:C.d }}>Usuarios activos</div><div style={{ fontSize:22, fontWeight:800, color:C.a, marginTop:2 }}>{stats?.activeUsers??0}</div></div>
           </div>
-          {mrrRows.length>0 ? (
+
+          {/* Planes activos */}
+          <div style={{ ...card, marginBottom:8 }}>
+            <div style={{ fontSize:11, fontWeight:600, color:C.d, marginBottom:10, letterSpacing:"0.06em", textTransform:"uppercase" }}>Planes activos</div>
+            {[{l:"Básico",p:"basico",c:"#3B82F6",sub:"Ideal para empezar"},{l:"Negocio",p:"negocio",c:C.a,sub:"Automatiza ventas y agenda"},{l:"Pro",p:"pro",c:"#F59E0B",sub:"Escala sin contratar personal"}].map(({l,p,c:col,sub})=>{
+              const count = users.filter(u=>u.plan===p&&u.status==="active").length;
+              return (
+                <div key={p} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid "+C.b }}>
+                  <div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <div style={{ width:7, height:7, borderRadius:2, background:col }}/>
+                      <span style={{ fontSize:13, fontWeight:600, color:C.t }}>{l}</span>
+                      <span style={{ fontSize:11, color:C.d }}>{count} cliente{count!==1?"s":""}</span>
+                    </div>
+                    <div style={{ fontSize:10, color:C.d, marginLeft:13, marginTop:2 }}>{sub}</div>
+                  </div>
+                  <span style={{ fontSize:12, fontWeight:600, color:count>0?col:C.d }}>${(count*(p==="basico"?29:p==="negocio"?59:99)).toFixed(0)}/mes</span>
+                </div>
+              );
+            })}
+            <button onClick={()=>{}} style={{ width:"100%", marginTop:12, padding:"9px 0", borderRadius:10, border:"1px solid "+C.a+"30", background:C.glow, color:C.a, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+              Ver planes y vender →
+            </button>
+          </div>
+
+          {mrrRows.length>0 && (
             <div style={{ ...card, marginBottom:16 }}>
               <div style={{ fontSize:11, color:C.d, marginBottom:4 }}>MRR por plan</div>
               {mrrRows.map((m,i)=>(
@@ -600,7 +654,7 @@ function Finanzas({ users, expenses, stats, loading }) {
                 </div>
               ))}
             </div>
-          ) : <div style={{ marginBottom:16 }}><EmptyState icon={DollarSign} text="Sin usuarios de pago aún" /></div>}
+          )}
         </div>
       )}
 
