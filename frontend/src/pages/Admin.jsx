@@ -1182,7 +1182,7 @@ export default function CleoAdmin() {
 
   const [tab,          setTab]          = useState("overview");
   const [selectedUser, setSelectedUser] = useState(null);
-  const [mob,          setMob]          = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  const mob = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
   // ── Data real ──
   const [stats,        setStats]        = useState(null);
@@ -1240,11 +1240,6 @@ export default function CleoAdmin() {
   useEffect(()=>{
     if (authed) loadData();
   }, [authed]);
-
-  useEffect(()=>{
-    const c=()=>setMob(window.innerWidth<768);
-    window.addEventListener("resize",c); return()=>window.removeEventListener("resize",c);
-  },[]);
 
   useEffect(()=>{
     const s=document.createElement("style");
