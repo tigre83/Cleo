@@ -220,25 +220,46 @@ function Counter({ target, duration = 1000 }) {
 // ============================================
 // APPOINTMENT CARD
 // ============================================
-function ApptCard({ appt, onCancel }) {
+function ApptCard({ appt, onCancel, isNext }) {
+  const now = new Date();
   const time = appt.datetime.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" });
+  const isPast = appt.datetime < now;
+  const isConfirmed = appt.status === "confirmed";
+  const borderColor = isNext ? C.accent : isPast ? C.border : C.border;
+  const bgColor = isNext ? `${C.accent}08` : isPast ? "transparent" : C.surface2;
+
   return (
-    <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 14px" }}>
+    <div style={{ background: bgColor, border: `1.5px solid ${borderColor}`, borderRadius: 14, padding: "12px 14px", opacity: isPast ? 0.6 : 1, transition: "all 0.2s", position: "relative", overflow: "hidden" }}>
+      {isNext && <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg, ${C.accent}, transparent)` }}/>}
       <div style={{ display: "flex", gap: 10 }}>
-        <div style={{ width: 44, textAlign: "center", flexShrink: 0, paddingTop: 2 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{time}</div>
-          <div style={{ fontSize: 10, color: C.dim }}>{appt.duration_minutes} min</div>
+        {/* Tiempo */}
+        <div style={{ width: 48, textAlign: "center", flexShrink: 0, paddingTop: 2 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: isNext ? C.accent : C.text }}>{time}</div>
+          <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>{appt.duration_minutes}m</div>
+          {isNext && <div style={{ fontSize: 9, fontWeight: 600, color: C.accent, marginTop: 3, letterSpacing: "0.05em" }}>PRÓXIMA</div>}
         </div>
-        <div style={{ width: 1, height: 44, background: C.border, flexShrink: 0 }} />
+        <div style={{ width: 1, background: isNext ? `${C.accent}30` : C.border, flexShrink: 0, alignSelf: "stretch" }} />
+        {/* Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 3 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client_name}</div>
-            <button onClick={() => onCancel(appt)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.red}25`, background: `${C.red}08`, color: C.red, fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}><X size={10} /> Cancelar cita</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+              <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 5, background: isConfirmed ? `${C.accent}15` : `${C.dim}15`, color: isConfirmed ? C.accent : C.dim, letterSpacing: "0.05em" }}>
+                {isConfirmed ? "CONFIRMADA" : "PENDIENTE"}
+              </span>
+              <button onClick={() => onCancel(appt)} style={{ background: "none", border: "none", cursor: "pointer", color: C.dim, padding: 3, opacity: 0.6, display: "flex", alignItems: "center" }} title="Cancelar cita">
+                <X size={13}/>
+              </button>
+            </div>
           </div>
-          <a href={waLink(appt.client_phone)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: C.accent, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, marginTop: 3 }}><Phone size={10} /> {appt.client_phone}</a>
-          <div style={{ fontSize: 12, marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
+          <a href={waLink(appt.client_phone)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: C.accent, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3, marginBottom: 3 }}>
+            <Phone size={10} /> {appt.client_phone}
+          </a>
+          <div style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
             <Briefcase size={10} color={C.dim} />
-            {appt.service_name ? (<><span style={{ color: C.dim }}>{appt.service_name}</span> <span style={{ color: C.accent, fontWeight: 600 }}>· ${appt.service_price}</span></>) : (<span style={{ color: "#555" }}>Servicio no especificado</span>)}
+            {appt.service_name
+              ? <><span style={{ color: C.dim }}>{appt.service_name}</span><span style={{ color: C.accent, fontWeight: 600, marginLeft: 4 }}>· ${appt.service_price}</span></>
+              : <span style={{ color: C.dim, opacity: 0.5 }}>Servicio no especificado</span>}
           </div>
           <ClientLocation appt={appt} />
         </div>
@@ -340,7 +361,7 @@ function WeeklyView({ appointments, onCancel }) {
       {/* Appointments list */}
       {dayAppts.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {dayAppts.map(a => <ApptCard key={a.id} appt={a} onCancel={onCancel} />)}
+          {dayAppts.map((a,i) => <ApptCard key={a.id} appt={a} onCancel={onCancel} isNext={i===0&&a.datetime>new Date()} />)}
         </div>
       ) : (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "36px 20px", textAlign: "center" }}>
@@ -1275,22 +1296,48 @@ export default function CleoDashboard() {
               ))}
             </div>
 
-            {/* Income card — visible for Negocio+ and trial */}
-            {weekIncome > 0 && canUse(biz.plan, "stats") && (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}><DollarSign size={16} color={C.accent} /><span style={{ fontSize: 12, color: C.dim }}>{agendaView === "dia" ? "Ingresos hoy" : "Ingresos esta semana"}</span></div>
-                <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: C.accent }}>${agendaView === "dia" ? todayIncome : weekIncome}</div>
+            {/* KPIs agenda */}
+            {canUse(biz.plan, "stats") && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.dim, marginBottom: 6 }}>Ingresos hoy</div>
+                  <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: C.accent }}>${todayIncome}</div>
+                  <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>{todayAppts.length} cita{todayAppts.length !== 1 ? "s" : ""}</div>
+                </div>
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.dim, marginBottom: 6 }}>Esta semana</div>
+                  <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: C.text }}>${weekIncome}</div>
+                  <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>{appointments.filter(a=>a.status==="confirmed").length} confirmadas</div>
+                </div>
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.dim, marginBottom: 6 }}>Ocupación</div>
+                  {(() => {
+                    const totalSlots = 7 * 8;
+                    const occupied = appointments.filter(a=>a.status==="confirmed").length;
+                    const pct = Math.min(100, Math.round((occupied/totalSlots)*100));
+                    return <>
+                      <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: pct > 60 ? C.accent : C.text }}>{pct}%</div>
+                      <div style={{ height: 3, background: C.border, borderRadius: 2, marginTop: 6, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${pct}%`, background: C.accent, borderRadius: 2, transition: "width 0.5s ease" }}/>
+                      </div>
+                    </>;
+                  })()}
+                </div>
               </div>
             )}
 
             {/* Empty state */}
             {!hasAnyAppts && (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "40px 24px", textAlign: "center", marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 10 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.accent, animation: "pulse 2s infinite" }} />
-                  <span style={{ fontSize: 14, fontWeight: 600, color: C.accent }}>Tu IA está activa</span>
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "36px 24px", textAlign: "center", marginBottom: 20 }}>
+                <div style={{ width: 48, height: 48, borderRadius: "50%", background: `${C.accent}10`, border: `1px solid ${C.accent}25`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.accent }}/>
                 </div>
-                <p style={{ fontSize: 14, color: C.dim, lineHeight: 1.5 }}>Aún no tienes citas. Comparte tu WhatsApp con tus clientes.</p>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 6 }}>Tu IA está activa y esperando</div>
+                <p style={{ fontSize: 13, color: C.dim, lineHeight: 1.6, maxWidth: 280, margin: "0 auto 20px" }}>Comparte tu número de WhatsApp con tus clientes y Cleo agendará automáticamente.</p>
+                <a href={`https://wa.me/${biz.wa_number}`} target="_blank" rel="noopener noreferrer"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 10, background: C.accentGlow, border: `1px solid ${C.accent}30`, color: C.accent, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+                  <Phone size={13}/> Compartir WhatsApp
+                </a>
               </div>
             )}
 
@@ -1303,7 +1350,7 @@ export default function CleoDashboard() {
                 </div>
                 {todayAppts.length > 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {todayAppts.map(a => <ApptCard key={a.id} appt={a} onCancel={setCancelTarget} />)}
+                    {todayAppts.map((a, i) => <ApptCard key={a.id} appt={a} onCancel={setCancelTarget} isNext={i===0&&a.datetime>new Date()} />)}
                   </div>
                 ) : (
                   <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "30px 20px", textAlign: "center" }}>
