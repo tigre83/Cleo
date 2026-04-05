@@ -1304,7 +1304,7 @@ export default function CleoAdmin() {
             <button onClick={cycleTheme} style={{ width:"100%",padding:10,borderRadius:10,border:"1px solid "+C.b,background:"transparent",color:C.d,fontSize:12,fontWeight:500,cursor:"pointer",fontFamily:"inherit",marginBottom:6,display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
               <TIcon size={13}/> {resolved==="dark"?"Oscuro":resolved==="light"?"Claro":"Sistema"}
             </button>
-            <button onClick={()=>setAuthed(false)} style={{ width:"100%",padding:10,borderRadius:10,border:"1px solid "+C.b,background:"transparent",color:C.d,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cerrar sesión</button>
+            <button onClick={()=>setLogoutModal(true)} style={{ width:"100%",padding:10,borderRadius:10,border:"1px solid "+C.b,background:"transparent",color:C.d,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cerrar sesión</button>
           </div>
         </div>
       )}
