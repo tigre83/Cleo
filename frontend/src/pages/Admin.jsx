@@ -140,6 +140,22 @@ function AdminLogin({ onLogin }) {
   const [resends, setResends]     = useState(0);
   const [isMember, setIsMember]   = useState(false); // true = miembro invitado
   const cRefs = useRef([]);
+  // Verificar token al cargar
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    if (!token) return;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.exp * 1000 > Date.now()) {
+        setAuthed(true);
+        setAdminRole(payload.role || 'owner');
+        setAdminEmail(payload.email || '');
+      } else {
+        localStorage.removeItem("adminToken");
+      }
+    } catch { localStorage.removeItem("adminToken"); }
+  }, []);
+
   const API = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
@@ -1152,6 +1168,8 @@ export default function CleoAdmin() {
   const cycleTheme  = () => setTheme(t=>t==="dark"?"light":t==="light"?"system":"dark");
 
   const [authed,       setAuthed]       = useState(false);
+  const [adminRole,    setAdminRole]    = useState('owner');
+  const [adminEmail,   setAdminEmail]   = useState('');
   const [adminRole,    setAdminRole]    = useState('owner'); // 'owner' | 'soporte'
   const [adminEmail,   setAdminEmail]   = useState('');
   const [tab,          setTab]          = useState("overview");
@@ -1165,6 +1183,22 @@ export default function CleoAdmin() {
   const [systemStatus, setSystemStatus] = useState([]);
   const [views, setViews] = useState({ total:0, today:0, week:0, month:0, topReferrers:[] });
   const [loading,      setLoading]      = useState(false);
+
+  // Verificar token al cargar
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    if (!token) return;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.exp * 1000 > Date.now()) {
+        setAuthed(true);
+        setAdminRole(payload.role || 'owner');
+        setAdminEmail(payload.email || '');
+      } else {
+        localStorage.removeItem("adminToken");
+      }
+    } catch { localStorage.removeItem("adminToken"); }
+  }, []);
 
   const API = import.meta.env.VITE_API_URL;
 
