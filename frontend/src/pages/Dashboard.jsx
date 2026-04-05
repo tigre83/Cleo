@@ -946,6 +946,7 @@ export default function CleoDashboard() {
   const [calMonth, setCalMonth] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
   const [profileOpen, setProfileOpen] = useState(false);
   const [logoutModal, setLogoutModal] = useState(false);
+  const [cfgTab, setCfgTab] = useState("negocio");
   const [away, setAway] = useState({ active: false, message: "", improving: false });
   const [toast, setToast] = useState("");
   const [passwordModal, setPasswordModal] = useState(false);
@@ -1271,7 +1272,6 @@ export default function CleoDashboard() {
             { id:"plan",      label:"Plan",        Icon:DollarSign },
             { id:"cuenta",    label:"Cuenta",      Icon:User },
           ];
-          const [cfgTab, setCfgTab] = useState("negocio");
 
           return (
             <div>
