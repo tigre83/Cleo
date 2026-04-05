@@ -1434,7 +1434,7 @@ export default function CleoDashboard() {
 
               {/* ── 5. AYUDA ── */}              </div>}
 
-              {cfgTab==="plan" && <div>
+              {cfgTab==="cuenta" && <div>
               <div style={st}>Ayuda</div>
               <button onClick={() => setHelpModal(true)} style={{ ...fw, width: "100%", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit", textAlign: "left", marginBottom: 6 }}>
                 <HelpCircle size={15} color={C.accent} /><div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>Preguntas frecuentes</div><div style={{ fontSize: 11, color: C.dim }}>Busca respuestas al instante</div></div><ChevronRight size={16} color={C.dim} />
