@@ -273,82 +273,88 @@ function Overview({ stats, users, loading, views }) {
       <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, marginBottom:16 }}>Resumen</h2>
       {/* Card Visitas */}
       {(()=>{
-        const spark = views.sparkline||[0,0,0,0,0,0,0];
+        const raw = views.sparkline||[0,0,0,0,0,0,0];
         const tod = views.today||0;
         const yest = views.yesterday||0;
-        const diff = yest===0 ? null : Math.round(((tod-yest)/yest)*100);
-        const absDiff = yest===0 ? null : tod - yest;
-        const up = diff===null ? null : diff>=0;
+        const diff = yest===0 ? null : tod - yest;
+        const pct  = yest===0 ? null : Math.round(((tod-yest)/yest)*100);
+        const up   = diff===null ? null : diff>=0;
 
-        // SVG sparkline — línea continua
-        const H=64, W=180, pad=4;
-        const maxV = Math.max(...spark,1);
-        const pts = spark.map((v,i)=>{
-          const x = pad + (i/(spark.length-1))*(W-pad*2);
-          const y = H - pad - ((v/maxV)*(H-pad*2));
-          return [x,y];
-        });
-        const linePath = pts.map((p,i)=>(i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`)).join(" ");
-        const areaPath = `${linePath} L${pts[pts.length-1][0]},${H} L${pts[0][0]},${H} Z`;
+        // SVG sparkline con curva suave
+        const W=200, H=56, pad=6;
+        const maxV = Math.max(...raw,1);
+        const pts = raw.map((v,i)=>[
+          pad + (i/(raw.length-1))*(W-pad*2),
+          H - pad - ((v/maxV)*(H-pad*2))
+        ]);
+
+        // Catmull-Rom smooth path
+        const smooth = pts.map((p,i,a)=>{
+          if(i===0) return `M${p[0].toFixed(1)},${p[1].toFixed(1)}`;
+          const p0=a[Math.max(0,i-1)], p1=a[i], p2=a[Math.min(a.length-1,i+1)];
+          const cp1x=(p0[0]+p1[0])/2, cp1y=(p0[1]+p1[1])/2;
+          const cp2x=(p1[0]+p2[0])/2, cp2y=(p1[1]+p2[1])/2;
+          return `C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p1[0].toFixed(1)},${p1[1].toFixed(1)}`;
+        }).join(" ");
+        const area = `${smooth} L${pts[pts.length-1][0]},${H} L${pts[0][0]},${H} Z`;
 
         return (
-        <div style={{ background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"18px 22px", marginBottom:16 }}>
+        <div style={{ background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"16px 20px", marginBottom:16 }}>
           {/* Header */}
-          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:16, opacity:0.6 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:14, opacity:0.55 }}>
             <Activity size={11} color={C.a}/>
-            <span style={{ fontSize:10, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", color:C.d }}>Visitas al sitio web</span>
+            <span style={{ fontSize:10, fontWeight:600, letterSpacing:"0.09em", textTransform:"uppercase", color:C.d }}>Visitas al sitio web</span>
           </div>
 
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:24 }}>
-            {/* Left — KPI */}
-            <div style={{ flexShrink:0 }}>
-              {/* Número + label inline */}
-              <div style={{ display:"flex", alignItems:"flex-end", gap:10 }}>
-                <span style={{ fontFamily:"'Syne',sans-serif", fontSize:44, fontWeight:800, color:C.a, lineHeight:1 }}>{tod.toLocaleString()}</span>
-                <span style={{ fontSize:12, color:C.d, paddingBottom:4 }}>hoy</span>
+          <div style={{ display:"flex", alignItems:"center", gap:20 }}>
+            {/* KPI */}
+            <div style={{ flexShrink:0, minWidth:150 }}>
+              <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+                <span style={{ fontFamily:"'Syne',sans-serif", fontSize:42, fontWeight:800, color:C.a, lineHeight:1 }}>{tod.toLocaleString()}</span>
+                <span style={{ fontSize:11, color:C.d, paddingBottom:2 }}>hoy</span>
               </div>
 
               {/* Tendencia */}
-              <div style={{ marginTop:6, height:20 }}>
+              <div style={{ marginTop:5, minHeight:18 }}>
                 {diff!==null ? (
-                  <span style={{ fontSize:12, fontWeight:600, color:up?"#4ADE80":"#F87171", display:"flex", alignItems:"center", gap:4 }}>
-                    {up?"↑":"↓"} {up?"+":""}{absDiff} vs ayer
-                    <span style={{ fontSize:11, opacity:0.6, fontWeight:400 }}>({up?"+":""}{diff}%)</span>
+                  <span style={{ fontSize:12, fontWeight:500, color:up?"#4ADE80":"#F87171", display:"inline-flex", alignItems:"center", gap:3 }}>
+                    {up?"↑":"↓"} {up?"+":""}{diff} vs ayer
+                    <span style={{ fontSize:10, opacity:0.55 }}>({up?"+":""}{pct}%)</span>
                   </span>
-                ) : (
-                  <span style={{ fontSize:11, color:C.d }}>Sin datos de ayer</span>
-                )}
+                ) : null}
               </div>
 
-              {/* Métricas secundarias compactas */}
-              <div style={{ display:"flex", gap:16, marginTop:14, paddingTop:14, borderTop:"1px solid "+C.b }}>
+              {/* Métricas secundarias */}
+              <div style={{ display:"flex", gap:14, marginTop:12, paddingTop:12, borderTop:"1px solid "+C.b }}>
                 {[{l:"7d",v:views.week},{l:"Mes",v:views.month},{l:"Total",v:views.total}].map((m,i)=>(
-                  <div key={i} style={{ display:"flex", alignItems:"baseline", gap:5 }}>
+                  <div key={i} style={{ display:"flex", alignItems:"baseline", gap:4 }}>
+                    <span style={{ fontSize:11, color:C.d }}>{m.l}</span>
                     <span style={{ fontSize:14, fontWeight:600, color:C.t }}>{(m.v||0).toLocaleString()}</span>
-                    <span style={{ fontSize:10, color:C.d }}>{m.l}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Right — Sparkline SVG */}
-            <div style={{ flex:1, maxWidth:200 }}>
-              <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:H, overflow:"visible" }}>
+            {/* Sparkline */}
+            <div style={{ flex:1 }}>
+              <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:H, display:"block", overflow:"visible" }}>
                 <defs>
-                  <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.3"/>
-                    <stop offset="100%" stopColor="#4ADE80" stopOpacity="0"/>
+                  <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.25"/>
+                    <stop offset="100%" stopColor="#4ADE80" stopOpacity="0.02"/>
                   </linearGradient>
                 </defs>
-                <path d={areaPath} fill="url(#sparkGrad)"/>
-                <path d={linePath} fill="none" stroke="#4ADE80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                {pts.map((p,i)=> i===pts.length-1 && (
-                  <circle key={i} cx={p[0]} cy={p[1]} r="3" fill="#4ADE80"/>
+                <path d={area} fill="url(#sg)" style={{ transition:"d 0.5s ease" }}/>
+                <path d={smooth} fill="none" stroke="#4ADE80" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ transition:"d 0.5s ease" }}/>
+                {pts.map((p,i)=>(
+                  <circle key={i} cx={p[0]} cy={p[1]} r={i===pts.length-1?3:1.5}
+                    fill={i===pts.length-1?"#4ADE80":"rgba(74,222,128,0.5)"}
+                    style={{ transition:"all 0.3s" }}/>
                 ))}
               </svg>
-              <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
-                <span style={{ fontSize:9, color:C.d, opacity:0.5 }}>hace 6 días</span>
-                <span style={{ fontSize:9, color:C.d, opacity:0.5 }}>hoy</span>
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:5 }}>
+                <span style={{ fontSize:10, color:C.d, opacity:0.45 }}>−6 días</span>
+                <span style={{ fontSize:10, color:C.d, opacity:0.45 }}>hoy</span>
               </div>
             </div>
           </div>
