@@ -190,7 +190,7 @@ function AdminLogin({ onLogin }) {
         const d = await r.json();
         if (!r.ok) { setErr(d.error||"Código inválido"); setLoading(false); return; }
         localStorage.setItem("adminToken", d.token);
-        onLogin(email, isMember ? d.role : 'owner');
+        onLogin(email, isMember ? d.role : (d.role || 'owner'));
       } catch { setErr("Error de conexión"); }
       setLoading(false);
     }
@@ -963,7 +963,7 @@ function SysConfig({ authFetch, adminRole }) {
   const card = { background:C.s,border:"1px solid "+C.b,borderRadius:14,padding:"16px",marginBottom:12 };
 
   useEffect(()=>{
-    if (adminRole==="owner") authFetch("/api/admin/team").then(setTeam).catch(()=>{});
+    if (((adminRole==="owner"||adminRole==="admin")||adminRole==="admin")) authFetch("/api/admin/team").then(setTeam).catch(()=>{});
   },[]);
 
   const changePassword = async () => {
@@ -997,7 +997,7 @@ function SysConfig({ authFetch, adminRole }) {
   };
 
   // Tabs disponibles según rol
-  const tabs = adminRole==="owner"
+  const tabs = ((adminRole==="owner"||adminRole==="admin")||adminRole==="admin")
     ? [{id:"cuenta",label:"Cuenta",Icon:User},{id:"equipo",label:"Equipo",Icon:Users},{id:"sistema",label:"Sistema",Icon:Settings}]
     : [{id:"cuenta",label:"Cuenta",Icon:User}];
 
@@ -1048,7 +1048,7 @@ function SysConfig({ authFetch, adminRole }) {
       )}
 
       {/* ── TAB EQUIPO (owner) ── */}
-      {activeTab==="equipo" && adminRole==="owner" && (
+      {activeTab==="equipo" && ((adminRole==="owner"||adminRole==="admin")||adminRole==="admin") && (
         <div>
           <div style={card}>
             <div style={{ fontSize:13,fontWeight:600,marginBottom:12,display:"flex",alignItems:"center",gap:6 }}><UserPlus size={14} color={C.a}/> Invitar miembro</div>
@@ -1100,7 +1100,7 @@ function SysConfig({ authFetch, adminRole }) {
       )}
 
       {/* ── TAB SISTEMA (owner) ── */}
-      {activeTab==="sistema" && adminRole==="owner" && (
+      {activeTab==="sistema" && ((adminRole==="owner"||adminRole==="admin")||adminRole==="admin") && (
         <div>
           {/* Mantenimiento */}
           <div style={card}>
@@ -1292,12 +1292,12 @@ export default function CleoAdmin() {
             </button>
           ))}
           <div style={{ position:"absolute",bottom:16,left:12,right:12 }}>
-            <div style={{ textAlign:"center",marginBottom:10,padding:"8px",borderRadius:8,background:adminRole==="owner"?"rgba(245,158,11,0.08)":"rgba(74,222,128,0.06)",border:"1px solid "+(adminRole==="owner"?"rgba(245,158,11,0.2)":"rgba(74,222,128,0.15)"),display:"flex",alignItems:"center",gap:8 }}>
-              <div style={{ width:28,height:28,borderRadius:6,background:adminRole==="owner"?"rgba(245,158,11,0.12)":C.glow,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                {adminRole==="owner"?<ShieldCheck size={14} color="#F59E0B"/>:<Headphones size={14} color={C.a}/>}
+            <div style={{ textAlign:"center",marginBottom:10,padding:"8px",borderRadius:8,background:((adminRole==="owner"||adminRole==="admin")||adminRole==="admin")?"rgba(245,158,11,0.08)":"rgba(74,222,128,0.06)",border:"1px solid "+(((adminRole==="owner"||adminRole==="admin")||adminRole==="admin")?"rgba(245,158,11,0.2)":"rgba(74,222,128,0.15)"),display:"flex",alignItems:"center",gap:8 }}>
+              <div style={{ width:28,height:28,borderRadius:6,background:((adminRole==="owner"||adminRole==="admin")||adminRole==="admin")?"rgba(245,158,11,0.12)":C.glow,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                {((adminRole==="owner"||adminRole==="admin")||adminRole==="admin")?<ShieldCheck size={14} color="#F59E0B"/>:<Headphones size={14} color={C.a}/>}
               </div>
               <div style={{ textAlign:"left",minWidth:0 }}>
-                <div style={{ fontSize:11,fontWeight:700,color:adminRole==="owner"?"#F59E0B":C.a }}>{adminRole==="owner"?"Administrador":"Soporte"}</div>
+                <div style={{ fontSize:11,fontWeight:700,color:((adminRole==="owner"||adminRole==="admin")||adminRole==="admin")?"#F59E0B":C.a }}>{((adminRole==="owner"||adminRole==="admin")||adminRole==="admin")?"Administrador":"Soporte"}</div>
                 <div style={{ fontSize:10,color:C.d,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{adminEmail}</div>
               </div>
             </div>
