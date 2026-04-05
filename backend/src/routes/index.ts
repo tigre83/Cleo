@@ -240,6 +240,70 @@ authRouter.post("/request-password-change", async (req: Request, res: Response) 
   res.json({ sent: true });
 });
 
+
+// POST /api/auth/forgot-password — enviar código sin estar autenticado
+authRouter.post("/forgot-password", async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email requerido" });
+
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id, business_name, email_verified").eq("email", email).single();
+
+  if (!business) return res.json({ sent: true }); // No revelar si existe
+
+  const code = generateCode();
+  const codeHash = hashCode(code);
+  const codeExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+  await supabaseAdmin.from("businesses").update({
+    verification_code_hash: codeHash,
+    verification_code_expires_at: codeExpiresAt,
+  }).eq("id", business.id);
+
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: "Cleo <noreply@cleoia.app>",
+      to: [email],
+      subject: `${code} — Recupera tu contraseña de Cleo`,
+      text: `Tu código para recuperar la contraseña es:
+
+${code}
+
+Expira en 15 minutos.`,
+    }),
+  });
+
+  return res.json({ sent: true });
+});
+
+// POST /api/auth/reset-password-with-code — nueva contraseña con código
+authRouter.post("/reset-password-with-code", async (req: Request, res: Response) => {
+  const { email, code, new_password } = req.body;
+  if (!email || !code || !new_password) return res.status(400).json({ error: "Faltan campos" });
+
+  const inputHash = hashCode(code);
+  const { data: business } = await supabaseAdmin
+    .from("businesses")
+    .select("id, user_id, verification_code_hash, verification_code_expires_at")
+    .eq("email", email).single();
+
+  if (!business) return res.status(404).json({ error: "Cuenta no encontrada" });
+  if (new Date(business.verification_code_expires_at) < new Date()) return res.status(410).json({ error: "Código expirado" });
+  if (inputHash !== business.verification_code_hash) return res.status(401).json({ error: "Código inválido" });
+
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(business.user_id, { password: new_password });
+  if (error) return res.status(400).json({ error: error.message });
+
+  await supabaseAdmin.from("businesses").update({
+    verification_code_hash: null,
+    verification_code_expires_at: null,
+  }).eq("id", business.id);
+
+  return res.json({ updated: true });
+});
+
 // POST /api/auth/change-password — Verificar código + cambiar contraseña
 authRouter.post("/change-password", async (req: Request, res: Response) => {
   const { code, new_password } = req.body;
