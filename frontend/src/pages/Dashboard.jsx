@@ -1408,7 +1408,7 @@ export default function CleoDashboard() {
               </div>
 
 
-              {canUse(biz.plan, "location") ? (
+              {cfgTab==="asistente" && canUse(biz.plan, "location") ? (
               <div style={fw}>
                 <div style={fl}>Ubicación y modalidad</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
