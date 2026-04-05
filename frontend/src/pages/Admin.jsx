@@ -257,7 +257,7 @@ function AdminLogin({ onLogin }) {
 }
 
 // ── OVERVIEW ──────────────────────────────────────────────────────────────────
-function Overview({ stats, users, loading }) {
+function Overview({ stats, users, loading, views }) {
   if (loading) return <Spinner />;
   const card = { background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"20px 16px" };
   const lbl  = { fontSize:11, color:C.d, marginTop:4 };
@@ -1280,7 +1280,7 @@ export default function CleoAdmin() {
             </div>
           </div>
         )}
-        {tab==="overview" && <Overview stats={stats} users={users} loading={loading}/>}
+        {tab==="overview" && <Overview stats={stats} users={users} loading={loading} views={views}/>}
         {tab==="users"    && !selectedUser && <UsersSection users={users} loading={loading} onSelect={setSelectedUser}/>}
         {tab==="users"    && selectedUser  && <UserDetail user={selectedUser} onBack={()=>setSelectedUser(null)} onUpdate={updateUser}/>}
         {tab==="finanzas" && <Finanzas users={users} expenses={expenses} stats={stats} loading={loading}/>}
