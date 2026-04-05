@@ -1408,29 +1408,6 @@ export default function CleoDashboard() {
               </div>
 
 
-              {cfgTab==="asistente" && (canUse(biz.plan, "location") ? (
-              <div style={fw}>
-                <div style={fl}>Ubicación y modalidad</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {[{ id: "local", Icon: Home, label: "Cliente viene al local", desc: "El bot envía tu ubicación al confirmar" },{ id: "mobile", Icon: Car, label: "Voy donde el cliente", desc: "El bot pide la dirección del cliente" },{ id: "both", Icon: MapPin, label: "Ambas modalidades", desc: "El bot pregunta al cliente qué prefiere" }].map(m => (
-                    <button key={m.id} onClick={() => {setBiz({...biz,modality:m.id});showToast("Guardado ✓");}} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${biz.modality===m.id?C.accent:C.border}`, background: biz.modality===m.id?C.accentGlow:"transparent", cursor: "pointer", fontFamily: "inherit", width: "100%", textAlign: "left" }}>
-                      <m.Icon size={15} color={biz.modality===m.id?C.accent:C.dim} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: biz.modality===m.id?C.accent:C.text }}>{m.label}</div>
-                        <div style={{ fontSize: 10, color: C.dim, marginTop: 1 }}>{m.desc}</div>
-                      </div>
-                      {biz.modality===m.id && <Check size={14} color={C.accent} />}
-                    </button>
-                  ))}
-                </div>
-                {(biz.modality==="local"||biz.modality==="both") && <div style={{ marginTop: 10 }}>
-                  <input value={biz.business_address} onChange={e => setBiz({...biz,business_address:e.target.value})} placeholder="Ej: Av. 6 de Diciembre N81-18, Quito" style={{...fi, marginBottom: 6}} onBlur={() => biz.business_address && showToast("Guardado ✓")} />
-                  <input value={biz.location_url} onChange={e => setBiz({...biz,location_url:e.target.value})} placeholder="Link de Google Maps" style={fi} onBlur={() => biz.location_url && showToast("Guardado ✓")} />
-                  {biz.location_url && <a href={biz.location_url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: C.accent, textDecoration: "none", marginTop: 4 }}><MapPin size={10} /> Ver en Maps</a>}
-                </div>}
-              </div>
-              ) : <div style={{ marginBottom: 8 }}><LockedBanner plan={biz.plan} /></div>)}
-
               {/* ── 2. SERVICIOS shortcut ── */}
               </div>}
 
@@ -1472,6 +1449,31 @@ export default function CleoDashboard() {
                 </div>}
               </div>
               ) : <div style={{ marginBottom: 8 }}><LockedBanner plan={biz.plan} /></div>}
+
+
+
+              {cfgTab==="asistente" && (canUse(biz.plan, "location") ? (
+              <div style={fw}>
+                <div style={fl}>Ubicación y modalidad</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {[{ id: "local", Icon: Home, label: "Cliente viene al local", desc: "El bot envía tu ubicación al confirmar" },{ id: "mobile", Icon: Car, label: "Voy donde el cliente", desc: "El bot pide la dirección del cliente" },{ id: "both", Icon: MapPin, label: "Ambas modalidades", desc: "El bot pregunta al cliente qué prefiere" }].map(m => (
+                    <button key={m.id} onClick={() => {setBiz({...biz,modality:m.id});showToast("Guardado ✓");}} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${biz.modality===m.id?C.accent:C.border}`, background: biz.modality===m.id?C.accentGlow:"transparent", cursor: "pointer", fontFamily: "inherit", width: "100%", textAlign: "left" }}>
+                      <m.Icon size={15} color={biz.modality===m.id?C.accent:C.dim} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: biz.modality===m.id?C.accent:C.text }}>{m.label}</div>
+                        <div style={{ fontSize: 10, color: C.dim, marginTop: 1 }}>{m.desc}</div>
+                      </div>
+                      {biz.modality===m.id && <Check size={14} color={C.accent} />}
+                    </button>
+                  ))}
+                </div>
+                {(biz.modality==="local"||biz.modality==="both") && <div style={{ marginTop: 10 }}>
+                  <input value={biz.business_address} onChange={e => setBiz({...biz,business_address:e.target.value})} placeholder="Ej: Av. 6 de Diciembre N81-18, Quito" style={{...fi, marginBottom: 6}} onBlur={() => biz.business_address && showToast("Guardado ✓")} />
+                  <input value={biz.location_url} onChange={e => setBiz({...biz,location_url:e.target.value})} placeholder="Link de Google Maps" style={fi} onBlur={() => biz.location_url && showToast("Guardado ✓")} />
+                  {biz.location_url && <a href={biz.location_url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: C.accent, textDecoration: "none", marginTop: 4 }}><MapPin size={10} /> Ver en Maps</a>}
+                </div>}
+              </div>
+              ) : <div style={{ marginBottom: 8 }}><LockedBanner plan={biz.plan} /></div>)}
 
               {/* ── 4. PLAN Y FACTURACIÓN ── */}
               </div>}
