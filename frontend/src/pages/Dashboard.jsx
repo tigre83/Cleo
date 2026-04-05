@@ -958,8 +958,19 @@ export default function CleoDashboard() {
   const [, forceUpdate] = useState(0);
   const cycleTheme = () => { setTheme(t => t === "dark" ? "light" : t === "light" ? "system" : "dark"); forceUpdate(n => n+1); };
 
-  const [authed,       setAuthed]       = useState(false);
-  const [initializing, setInitializing] = useState(true);
+  const [authed, setAuthed] = useState(false);
+
+  // Persistir sesion Supabase en refresh
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setAuthed(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") setAuthed(false);
+      else if (session) setAuthed(true);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [tab, setTab] = useState("agenda");
   const [agendaView, setAgendaView] = useState("semana"); // dia | semana | mes
@@ -983,10 +994,7 @@ export default function CleoDashboard() {
     if (!dirMain) return;
     setDirSaving(true);
     try {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) setAuthed(true);
-      } catch(e) { console.error(e); } finally { setInitializing(false); }
+      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       const API = import.meta.env.VITE_API_URL;
       await fetch(`${API}/api/business/me`, {
@@ -1107,7 +1115,7 @@ export default function CleoDashboard() {
         </div>
       </div>
     )}
-    {initializing ? null : !authed && <LoginPage onLogin={function(e){ if(e){ setAuthed(true); }}} />}
+    {!authed && <LoginPage onLogin={function(e){ if(e){ setAuthed(true); }}} />}
     {authed && trialExpired && (
     <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", background: C.bg, color: C.text, minHeight: "100vh", padding: "40px 20px" }}>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
