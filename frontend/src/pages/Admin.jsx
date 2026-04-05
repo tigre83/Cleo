@@ -1243,6 +1243,17 @@ export default function CleoAdmin() {
     if (authed) loadData();
   }, [authed]);
 
+  // Actualizar visitas cada 30 segundos
+  useEffect(()=>{
+    if (!authed) return;
+    const interval = setInterval(()=>{
+      authFetch("/api/admin/views-stats")
+        .then(d => { if(d) setViews(d); })
+        .catch(()=>{});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [authed]);
+
   useEffect(()=>{
     const s=document.createElement("style");
     s.textContent=`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');@keyframes spin{to{transform:rotate(360deg)}}@keyframes gradBreathe{0%{background-position:0% 50%;filter:brightness(1)}50%{background-position:100% 50%;filter:brightness(1.2)}100%{background-position:0% 50%;filter:brightness(1)}}@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}*{box-sizing:border-box;margin:0;padding:0}html,body{overflow-x:hidden;width:100%;max-width:100vw}::-webkit-scrollbar{display:none}`;
