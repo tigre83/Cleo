@@ -1003,6 +1003,7 @@ export default function CleoDashboard() {
     { id: "config", label: "Ajustes", Icon: Settings },
   ];
 
+  const mob = typeof window !== 'undefined' && window.innerWidth < 768;
   const handleLogout = () => { setAuthed(false); setTab("agenda"); };
 
   const trialExpired = biz.plan === "trial" && biz.trial_days <= 0;
@@ -1044,10 +1045,48 @@ export default function CleoDashboard() {
       <p style={{ fontSize: 11, color: C.dim, marginTop: 16, textAlign: "center" }}>Tus datos se conservan 30 días. Después se eliminan.</p>
     </div>
     )}
-    <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", background: C.bg, color: C.text, minHeight: "100vh", paddingBottom: 80, display: showDash ? "block" : "none", overflowX: "hidden" }}>
+    <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", background: C.bg, color: C.text, minHeight: "100vh", paddingBottom: mob ? 80 : 0, display: showDash ? (mob ? "block" : "flex") : "none", overflowX: "hidden" }}>
 
-      {/* HEADER */}
-      <div style={{ position: "sticky", top: 0, zIndex: 100, background: C.bg, borderBottom: `1px solid ${C.border}`, borderTop: biz?.plan === "pro" ? `2px solid ${C.accent}55` : "none", padding: "14px 20px" }}>
+      {/* SIDEBAR desktop */}
+      {!mob && <div style={{ width:220, flexShrink:0, height:"100vh", position:"sticky", top:0, background:C.bg, borderRight:`1px solid ${C.border}`, display:"flex", flexDirection:"column", padding:"20px 12px", zIndex:50 }}>
+        <div style={{ padding:"4px 8px 16px", borderBottom:`1px solid ${C.border}`, marginBottom:14 }}>
+          <Logo size={18} tag />
+          <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:away.active?C.dim:C.accent, marginTop:6 }}>
+            <div style={{ width:6,height:6,borderRadius:"50%",background:away.active?C.dim:C.accent,animation:away.active?"none":"pulse 2s infinite" }}/>
+            {away.active?"Modo ausencia":"IA activa"}
+          </div>
+        </div>
+        <div style={{ flex:1 }}>
+          {tabs.map(t=>(
+            <button key={t.id} onClick={()=>setTab(t.id)} style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,border:"none",cursor:"pointer",fontFamily:"inherit",background:tab===t.id?C.accent+"15":"transparent",color:tab===t.id?C.accent:C.dim,fontSize:13,fontWeight:tab===t.id?600:400,marginBottom:2,transition:"all 0.15s" }}>
+              <t.Icon size={16} strokeWidth={tab===t.id?2:1.5}/>{t.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:12 }}>
+          <div style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,marginBottom:4 }}>
+            <div style={{ width:32,height:32,borderRadius:"50%",background:C.accent+"15",border:`1.5px solid ${C.accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.accent,flexShrink:0,overflow:"hidden" }}>
+              {biz.logo?<img src={biz.logo} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }}/>:initial}
+            </div>
+            <div style={{ minWidth:0,flex:1 }}>
+              <div style={{ fontSize:12,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{BUSINESS.name}</div>
+              <div style={{ fontSize:10,color:C.dim }}>Plan {PLAN_LABEL[biz.plan]||biz.plan}</div>
+            </div>
+          </div>
+          <button onClick={()=>setLogoutModal(true)} style={{ width:"100%",display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:10,border:"none",background:"transparent",cursor:"pointer",fontFamily:"inherit",fontSize:12,color:C.red }}>
+            <LogOut size={13} color={C.red}/> Cerrar sesión
+          </button>
+          <button onClick={cycleTheme} style={{ width:"100%",display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:10,border:"none",background:"transparent",cursor:"pointer",fontFamily:"inherit",fontSize:12,color:C.dim }}>
+            {resolved==="dark"?<MoonIcon size={13} color={C.dim}/>:<Sun size={13} color={C.dim}/>} {resolved==="dark"?"Oscuro":"Claro"}
+          </button>
+        </div>
+      </div>}
+
+      {/* Contenido */}
+      <div style={{ flex:1, minWidth:0, overflowX:"hidden" }}>
+
+      {/* HEADER mobile only */}
+      {mob && <div style={{ position: "sticky", top: 0, zIndex: 100, background: C.bg, borderBottom: `1px solid ${C.border}`, borderTop: biz?.plan === "pro" ? `2px solid ${C.accent}55` : "none", padding: "14px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
             <Logo size={20} tag />
@@ -1110,7 +1149,7 @@ export default function CleoDashboard() {
           </div>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* CANCEL AT PERIOD END BANNER */}
       {biz.cancel_at_period_end && (
@@ -1358,16 +1397,6 @@ export default function CleoDashboard() {
                 <MessageSquare size={15} color={C.dim} /><div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>Contactar soporte</div><div style={{ fontSize: 11, color: C.dim }}>Respuesta en menos de 24h</div></div><ChevronRight size={16} color={C.dim} />
               </button>
 
-              {/* ── 5b. INVITA Y GANA ── */}
-              <div style={st}>Invita y gana</div>
-              <div style={fw}>
-                <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.5, marginBottom: 10 }}>Invita a un amigo y cuando se suscriba a cualquier plan ambos ganan 1 mes gratis.</p>
-                <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                  <input value={"cleo.app/r/" + (biz.referral_code || "GLAM2026")} readOnly style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1px solid " + C.border, background: C.surface, color: C.text, fontSize: 12, fontFamily: "monospace", outline: "none" }} />
-                  <button onClick={function(){ navigator.clipboard.writeText("https://cleo.app/r/" + (biz.referral_code || "GLAM2026")).then(function(){ showToast("Link copiado ✓"); }); }} style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: C.accent, color: C.bg, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>Copiar</button>
-                </div>
-                <div style={{ fontSize: 11, color: C.dim }}>Has invitado a 0 negocios · 0 meses ganados</div>
-              </div>
 
               {/* ── 6. CUENTA ── */}
               <div style={st}>Cuenta</div>
@@ -1779,8 +1808,7 @@ export default function CleoDashboard() {
         })()}
       </BottomSheet>
 
-      {/* BOTTOM NAV — 4 tabs */}
-      <div style={{
+      {mob && <div style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
         background: C.bg, borderTop: `1px solid ${C.border}`,
         display: "flex", padding: "8px 0 20px",
@@ -1795,8 +1823,9 @@ export default function CleoDashboard() {
             <span style={{ fontSize: 10, fontWeight: 600, color: tab === t.id ? C.accent : C.dim }}>{t.label}</span>
           </button>
         ))}
+      </div>}
       </div>
-    </div>
+      </div>
     </div>
   );
 }
