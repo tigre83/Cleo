@@ -1316,13 +1316,12 @@ export default function CleoDashboard() {
                   </div>
                 </div>
                 {/* Nombre | Duracion */}
-                <div style={{ flex:1, minWidth:0, display:"flex", gap:16 }}>
-                  <div style={{ flex:1 }}>
+                <div style={{ flex:1, minWidth:0, display:"flex", gap:0 }}>
+                  <div style={{ flex:1, paddingRight:16, borderRight:`1px solid ${C.border}` }}>
                     <div style={fl}>Nombre del negocio</div>
-                    <div style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:4 }}>{biz.name}</div>
-                    <div style={{ fontSize:10, color:C.dim }}>PNG o JPG · 400x400px · 2MB max</div>
+                    <div style={{ fontSize:15, fontWeight:600, color:C.text }}>{biz.name}</div>
                   </div>
-                  <div style={{ flex:1 }}>
+                  <div style={{ flex:1, paddingLeft:16 }}>
                     <div style={fl}>Duracion de cita</div>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:4 }}>
                       {DURS.map(d => <button key={d} onClick={() => {setBiz({...biz,duration:d,customDuration:false});showToast("Guardado");}} style={{ padding:"7px 0", borderRadius:8, border:`1.5px solid ${biz.duration===d&&!biz.customDuration?C.accent:C.border}`, background:biz.duration===d&&!biz.customDuration?C.accentGlow:"transparent", color:biz.duration===d&&!biz.customDuration?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", textAlign:"center" }}>{d}m</button>)}
