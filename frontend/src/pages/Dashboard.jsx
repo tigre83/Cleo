@@ -1307,8 +1307,8 @@ export default function CleoDashboard() {
                 {/* CARD 1: Logo + Subir */}
                 <div style={{ flex:1, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", display:"flex", alignItems:"center", gap:12 }}>
                   <input ref={logoInputRef} type="file" accept="image/png,image/jpeg" style={{ display:"none" }} onChange={e => { const f=e.target.files?.[0]; if(!f) return; if(f.size>2*1024*1024){showToast("Máximo 2MB");return;} if(!["image/png","image/jpeg"].includes(f.type)){showToast("Solo PNG o JPG");return;} const r=new FileReader(); r.onload=ev=>{setBiz({...biz,logo:ev.target.result});showToast("Logo actualizado ✓");}; r.readAsDataURL(f); }} />
-                  <div onClick={() => logoInputRef.current?.click()} style={{ width:52, height:52, borderRadius:12, overflow:"hidden", background:biz.logo?"transparent":`${C.accent}10`, border:`1.5px solid ${biz.logo?C.border:C.accent+"25"}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
-                    {biz.logo ? <img src={biz.logo} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, color:`${C.accent}60` }}>{initial}</span>}
+                  <div onClick={() => logoInputRef.current?.click()} style={{ width:80, height:80, borderRadius:14, overflow:"hidden", background:biz.logo?"transparent":`${C.accent}10`, border:`1.5px solid ${biz.logo?C.border:C.accent+"25"}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+                    {biz.logo ? <img src={biz.logo} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:`${C.accent}60` }}>{initial}</span>}
                   </div>
                   <div>
                     <div style={{ display:"flex", gap:6, marginBottom:5 }}>
@@ -1333,6 +1333,69 @@ export default function CleoDashboard() {
                   {biz.customDuration && <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:6 }}><input type="number" min="5" max="480" value={biz.duration} onChange={e => setBiz({...biz,duration:Math.max(5,Math.min(480,parseInt(e.target.value)||5))})} onBlur={() => showToast("Guardado ✓")} style={{ ...fi, width:60, textAlign:"center", padding:"4px 6px" }} /><span style={{ fontSize:11, color:C.dim }}>min</span></div>}
                 </div>
               </div>
+
+              {/* CARD 4: Dirección */}
+              {(() => {
+                const [dirMain,   setDirMain]   = useState(biz.street_main||"");
+                const [dirNum,    setDirNum]     = useState(biz.street_number||"");
+                const [dirCross,  setDirCross]   = useState(biz.street_cross||"");
+                const [dirSaved,  setDirSaved]   = useState(!!(biz.street_main));
+                const [dirSaving, setDirSaving]  = useState(false);
+
+                const saveDir = async () => {
+                  if (!dirMain) return;
+                  setDirSaving(true);
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const token = session?.access_token;
+                    const API = import.meta.env.VITE_API_URL;
+                    await fetch(`${API}/api/business/me`, {
+                      method:"PUT",
+                      headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},
+                      body:JSON.stringify({ street_main:dirMain, street_number:dirNum, street_cross:dirCross }),
+                    });
+                    setBiz({...biz, street_main:dirMain, street_number:dirNum, street_cross:dirCross});
+                    setDirSaved(true);
+                    showToast("Dirección guardada ✓");
+                  } catch { showToast("Error al guardar"); }
+                  setDirSaving(false);
+                };
+
+                return (
+                  <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", marginBottom:8 }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                      <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase" }}>Dirección del negocio</div>
+                      {dirSaved && <span style={{ fontSize:10, color:C.accent, display:"flex", alignItems:"center", gap:4 }}><Check size={10}/> Guardada</span>}
+                    </div>
+                    {dirSaved ? (
+                      <div style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>
+                        {dirMain} {dirNum}{dirCross ? `, ${dirCross}` : ""}
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+                          <div style={{ flex:2 }}>
+                            <div style={{ fontSize:11, color:C.dim, marginBottom:4 }}>Calle principal</div>
+                            <input value={dirMain} onChange={e=>setDirMain(e.target.value)} placeholder="Ej: Av. 6 de Diciembre" style={{...fi, width:"100%", boxSizing:"border-box"}}/>
+                          </div>
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontSize:11, color:C.dim, marginBottom:4 }}>Numeración</div>
+                            <input value={dirNum} onChange={e=>setDirNum(e.target.value)} placeholder="Ej: N81-18" style={{...fi, width:"100%", boxSizing:"border-box"}}/>
+                          </div>
+                        </div>
+                        <div style={{ marginBottom:12 }}>
+                          <div style={{ fontSize:11, color:C.dim, marginBottom:4 }}>Calle secundaria / Referencia</div>
+                          <input value={dirCross} onChange={e=>setDirCross(e.target.value)} placeholder="Ej: y Diego de Almagro, frente al parque" style={{...fi, width:"100%", boxSizing:"border-box"}}/>
+                        </div>
+                        <button onClick={saveDir} disabled={!dirMain||dirSaving}
+                          style={{ width:"100%", padding:10, borderRadius:10, border:"none", background:dirMain?C.accent:C.border, color:dirMain?C.bg:C.dim, fontSize:13, fontWeight:600, cursor:dirMain?"pointer":"default", fontFamily:"inherit" }}>
+                          {dirSaving?"Guardando...":"Guardar dirección"}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div style={fw}>
                 <div style={fl}>Horarios</div>
