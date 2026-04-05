@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useInactivityTimeout } from "../hooks/useInactivityTimeout.js";
 import { BarChart3, Users, DollarSign, Mail, Settings, Search, ChevronRight, X, Eye, EyeOff, Shield, TrendingUp, Trash2, AlertTriangle, RefreshCw, Minus, Cloud, Brain, Smartphone, Wrench, Briefcase, Pause, Play, StickyNote, Sun, Moon, Activity, CheckCircle, AlertCircle, XCircle, Plus, Database, Server, Cpu, MessageSquare, Lock, UserPlus, ShieldCheck, Headphones, User } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
@@ -1153,6 +1154,7 @@ export default function CleoAdmin() {
   const cycleTheme  = () => setTheme(t=>t==="dark"?"light":t==="light"?"system":"dark");
 
   const [authed,       setAuthed]       = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [adminRole,    setAdminRole]    = useState('owner');
   const [adminEmail,   setAdminEmail]   = useState('');
 

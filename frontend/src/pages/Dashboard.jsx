@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useInactivityTimeout } from "../hooks/useInactivityTimeout.js";
 import { Calendar, CalendarDays, BarChart3, Settings, Check, X, ChevronRight, ChevronLeft, Clock, CircleDot, Smartphone, MessageSquare, Phone, Ban, Loader, ArrowLeft, Shield, Zap, User, LogOut, Lock, Pause, Play, Trash2, AlertTriangle, Wifi, WifiOff, Eye, EyeOff, Save, HelpCircle, Sparkles, Plane, Plus, Briefcase, DollarSign, TrendingUp, ToggleRight, Download, MapPin, Car, Home, Sun, Moon as MoonIcon } from "lucide-react";
 import * as XLSX from "xlsx";
 import { supabase } from '../lib/supabase.js';
@@ -937,6 +938,7 @@ export default function CleoDashboard() {
   const cycleTheme = () => { setTheme(t => t === "dark" ? "light" : t === "light" ? "system" : "dark"); forceUpdate(n => n+1); };
 
   const [authed, setAuthed] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [tab, setTab] = useState("agenda");
   const [agendaView, setAgendaView] = useState("semana"); // dia | semana | mes
   const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS);
@@ -1031,7 +1033,19 @@ export default function CleoDashboard() {
   ];
 
   const mob = typeof window !== 'undefined' && window.innerWidth < 768;
-  const handleLogout = () => { setAuthed(false); setTab("agenda"); };
+  const handleLogout = () => { setAuthed(false); setTab("agenda"); setSessionExpired(false); };
+
+  useInactivityTimeout(8 * 60 * 60 * 1000, () => {
+    if (authed) { setAuthed(false); setTab("agenda"); setSessionExpired(true); }
+  });
+
+  // Cierre automático por inactividad — 8 horas
+  useInactivityTimeout(8 * 60 * 60 * 1000, () => {
+    if (authed) {
+      setAuthed(false);
+      setTab("agenda");
+    }
+  });
 
   const trialExpired = biz.plan === "trial" && biz.trial_days <= 0;
 
@@ -1039,6 +1053,22 @@ export default function CleoDashboard() {
 
   return (
     <div style={{ overflowX:"hidden", width:"100%", maxWidth:"100vw" }}>
+    {sessionExpired && (
+      <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20 }}>
+        <div style={{ background:C.surface,border:"1px solid "+C.border,borderRadius:16,padding:36,maxWidth:360,width:"100%",textAlign:"center",fontFamily:"'DM Sans',sans-serif" }}>
+          <div style={{ width:56,height:56,borderRadius:"50%",background:C.accentGlow,border:"1px solid "+C.accent+"30",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px" }}>
+            <Shield size={24} color={C.accent}/>
+          </div>
+          <h3 style={{ fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,color:C.text,marginBottom:8 }}>Sesión cerrada</h3>
+          <p style={{ fontSize:13,color:C.dim,marginBottom:24,lineHeight:1.6 }}>Tu sesión fue cerrada por inactividad. Inicia sesión nuevamente para continuar.</p>
+          <button onClick={()=>setSessionExpired(false)}
+            style={{ width:"100%",padding:14,borderRadius:12,border:"none",background:C.accent,color:C.bg,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+            <LogOut size={16}/> Iniciar sesión
+          </button>
+        </div>
+      </div>
+    )}
+
     {logoutModal && (
       <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20 }}>
         <div style={{ background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:32,maxWidth:340,width:"100%",textAlign:"center" }}>
