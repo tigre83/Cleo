@@ -1315,11 +1315,21 @@ export default function CleoDashboard() {
                     {biz.logo && <button onClick={() => {setBiz({...biz,logo:null});showToast("Logo eliminado");}} style={{ padding:"4px 8px", borderRadius:6, border:`1px solid ${C.border}`, background:"transparent", color:C.dim, fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>Quitar</button>}
                   </div>
                 </div>
-                {/* Nombre */}
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={fl}>Nombre del negocio</div>
-                  <div style={{ fontSize:15, fontWeight:600, color:C.text }}>{biz.name}</div>
-                  <div style={{ fontSize:10, color:C.dim, marginTop:4 }}>PNG o JPG · 400×400px · 2MB máx</div>
+                {/* Nombre | Duracion */}
+                <div style={{ flex:1, minWidth:0, display:"flex", gap:16 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={fl}>Nombre del negocio</div>
+                    <div style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:4 }}>{biz.name}</div>
+                    <div style={{ fontSize:10, color:C.dim }}>PNG o JPG · 400x400px · 2MB max</div>
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={fl}>Duracion de cita</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:4 }}>
+                      {DURS.map(d => <button key={d} onClick={() => {setBiz({...biz,duration:d,customDuration:false});showToast("Guardado");}} style={{ padding:"7px 0", borderRadius:8, border:`1.5px solid ${biz.duration===d&&!biz.customDuration?C.accent:C.border}`, background:biz.duration===d&&!biz.customDuration?C.accentGlow:"transparent", color:biz.duration===d&&!biz.customDuration?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", textAlign:"center" }}>{d}m</button>)}
+                      <button onClick={() => setBiz({...biz,customDuration:true,duration:biz.customDuration?biz.duration:120})} style={{ padding:"7px 0", borderRadius:8, border:`1.5px solid ${biz.customDuration?C.accent:C.border}`, background:biz.customDuration?C.accentGlow:"transparent", color:biz.customDuration?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", textAlign:"center" }}>Otro</button>
+                    </div>
+                    {biz.customDuration && <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:6 }}><input type="number" min="5" max="480" value={biz.duration} onChange={e => setBiz({...biz,duration:Math.max(5,Math.min(480,parseInt(e.target.value)||5))})} onBlur={() => showToast("Guardado")} style={{ ...fi, width:60, textAlign:"center", padding:"4px 6px" }} /><span style={{ fontSize:11, color:C.dim }}>min</span></div>}
+                  </div>
                 </div>
               </div>
 
@@ -1334,13 +1344,6 @@ export default function CleoDashboard() {
                 ); })}
               </div>
 
-              <div style={fw}><div style={fl}>Duración de cita</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-                  {DURS.map(d => <button key={d} onClick={() => {setBiz({...biz,duration:d,customDuration:false});showToast("Guardado ✓");}} style={{ padding: "10px 0", borderRadius: 10, border: `1.5px solid ${biz.duration===d&&!biz.customDuration?C.accent:C.border}`, background: biz.duration===d&&!biz.customDuration?C.accentGlow:"transparent", color: biz.duration===d&&!biz.customDuration?C.accent:C.dim, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "center" }}>{d} min</button>)}
-                  <button onClick={() => setBiz({...biz,customDuration:true,duration:biz.customDuration?biz.duration:120})} style={{ padding: "10px 0", borderRadius: 10, border: `1.5px solid ${biz.customDuration?C.accent:C.border}`, background: biz.customDuration?C.accentGlow:"transparent", color: biz.customDuration?C.accent:C.dim, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "center" }}>Otro</button>
-                </div>
-                {biz.customDuration && <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}><input type="number" min="5" max="480" value={biz.duration} onChange={e => setBiz({...biz,duration:Math.max(5,Math.min(480,parseInt(e.target.value)||5))})} onBlur={() => showToast("Guardado ✓")} style={{ ...fi, width: 80, textAlign: "center" }} /><span style={{ fontSize: 12, color: C.dim }}>minutos</span></div>}
-              </div>
 
               {canUse(biz.plan, "location") ? (
               <div style={fw}>
