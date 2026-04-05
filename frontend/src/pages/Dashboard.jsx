@@ -903,69 +903,7 @@ function LoginPage({ onLogin }) {
       </div>
     </div>
   );
-}function LoginPage({ onLogin }) {
-  const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [resetSent, setResetSent] = useState(false);
-
-  const handleLogin = async () => {
-    if (!email || !pw) { setMsg("Completa todos los campos"); return; }
-    setLoading(true); setMsg("");
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
-      if (error) { setMsg("Email o contraseña incorrectos"); setLoading(false); return; }
-      onLogin(email);
-    } catch { setMsg("Error de conexión"); }
-    setLoading(false);
-  };
-
-  const fi = { width: "100%", padding: "14px 16px", borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.text, fontSize: 15, fontFamily: "inherit", outline: "none", boxSizing: "border-box", marginBottom: 12 };
-
-  return (
-    <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", background: C.bg, color: C.text, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ width: "100%", maxWidth: 380 }}>
-        <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <Logo size={32} tag />
-        </div>
-
-        <input value={email} onChange={function(e){setEmail(e.target.value)}} placeholder="Email" type="email" style={fi} />
-        <div style={{ position: "relative" }}>
-          <input value={pw} onChange={function(e){setPw(e.target.value)}} placeholder="Contraseña" type={showPw ? "text" : "password"} style={Object.assign({}, fi, {paddingRight: 48})} onKeyDown={function(e){ if(e.key==="Enter") handleLogin(); }} />
-          <button onClick={function(){setShowPw(!showPw)}} style={{ position: "absolute", right: 14, top: 14, background: "none", border: "none", cursor: "pointer", color: C.dim }}>
-            {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
-        </div>
-
-        {msg ? <div style={{ fontSize: 12, color: "#EF4444", marginBottom: 12, textAlign: "center" }}>{msg}</div> : null}
-
-        <button onClick={handleLogin} disabled={loading} style={{ width: "100%", padding: 15, borderRadius: 12, border: "none", background: loading ? C.border : C.accent, color: loading ? C.dim : C.bg, fontSize: 15, fontWeight: 700, cursor: loading ? "default" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16 }}>
-          {loading ? "Entrando..." : "Entrar"}
-        </button>
-
-        <div style={{ textAlign: "center" }}>
-          {resetSent ? (
-            <div style={{ fontSize: 12, color: C.accent, marginBottom: 12 }}>Revisa tu email</div>
-          ) : (
-            <button onClick={function(){ if(email){setResetSent(true)} else {setMsg("Escribe tu email primero")} }} style={{ background: "none", border: "none", color: C.dim, fontSize: 13, cursor: "pointer", fontFamily: "inherit", marginBottom: 12, display: "block", width: "100%", textAlign: "center" }}>
-              {"¿Olvidaste tu contraseña?"}
-            </button>
-          )}
-          <div style={{ fontSize: 13, color: C.dim, marginTop: 8 }}>
-            {"¿No tienes cuenta? "}
-            <button onClick={function(){ window.location.href="/"; }} style={{ background: "none", border: "none", color: C.accent, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-              {"Regístrate gratis"}
-            </button>
-          </div>
-          
-        </div>
-      </div>
-    </div>
-  );
 }
-
 // ============================================
 // MAIN DASHBOARD
 // ============================================
