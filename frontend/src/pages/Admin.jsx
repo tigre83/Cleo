@@ -1157,6 +1157,7 @@ export default function CleoAdmin() {
 
   const [authed,       setAuthed]       = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [logoutModal,    setLogoutModal]    = useState(false);
   const [initializing,  setInitializing]  = useState(true);
   const [adminRole,    setAdminRole]    = useState('owner');
   const [adminEmail,   setAdminEmail]   = useState('');
