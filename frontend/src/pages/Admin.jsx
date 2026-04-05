@@ -267,6 +267,32 @@ function Overview({ stats, users, loading }) {
   return (
     <div>
       <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, marginBottom:16 }}>Resumen</h2>
+      {/* Card Visitas */}
+      <div style={{ background:C.s, border:"1px solid "+C.b, borderRadius:14, padding:"14px 16px", marginBottom:16 }}>
+        <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:700, marginBottom:12, display:"flex", alignItems:"center", gap:6 }}>
+          <Activity size={14} color={C.a}/> Visitas al sitio web
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, marginBottom: views.topReferrers?.length>0?12:0 }}>
+          {[{label:"Hoy",value:views.today},{label:"7 días",value:views.week},{label:"Mes",value:views.month},{label:"Total",value:views.total}].map((v,i)=>(
+            <div key={i} style={{ textAlign:"center", padding:"10px 0", background:C.s2, borderRadius:10 }}>
+              <div style={{ fontSize:20, fontWeight:700, color:C.a }}>{(v.value||0).toLocaleString()}</div>
+              <div style={{ fontSize:11, color:C.d, marginTop:2 }}>{v.label}</div>
+            </div>
+          ))}
+        </div>
+        {views.topReferrers?.length>0 && (
+          <div>
+            <div style={{ fontSize:11, color:C.d, marginBottom:6 }}>Top fuentes este mes</div>
+            {views.topReferrers.map((r,i)=>(
+              <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:12, padding:"3px 0", borderBottom:"1px solid "+C.b }}>
+                <span style={{ color:C.t }}>{r.source||"Directo"}</span>
+                <span style={{ color:C.a, fontWeight:600 }}>{r.count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16 }}>
         <div style={card}><div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:C.a }}>{stats?.totalUsers ?? 0}</div><div style={lbl}>Total usuarios</div></div>
         <div style={card}><div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:C.a }}>${stats?.mrr ?? 0}</div><div style={lbl}>MRR</div></div>
