@@ -1155,23 +1155,26 @@ export default function CleoAdmin() {
 
   const [authed,       setAuthed]       = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [initializing,  setInitializing]  = useState(true);
   const [adminRole,    setAdminRole]    = useState('owner');
   const [adminEmail,   setAdminEmail]   = useState('');
 
   // Auto-login si hay token válido en localStorage
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
-    if (!token) return;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (payload.exp * 1000 > Date.now()) {
-        setAuthed(true);
-        setAdminRole(payload.role || 'owner');
-        setAdminEmail(payload.email || '');
-      } else {
-        localStorage.removeItem("adminToken");
-      }
-    } catch { localStorage.removeItem("adminToken"); }
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp * 1000 > Date.now()) {
+          setAuthed(true);
+          setAdminRole(payload.role || 'owner');
+          setAdminEmail(payload.email || '');
+        } else {
+          localStorage.removeItem("adminToken");
+        }
+      } catch { localStorage.removeItem("adminToken"); }
+    }
+    setInitializing(false);
   }, []);
 
   const [tab,          setTab]          = useState("overview");
@@ -1257,6 +1260,7 @@ export default function CleoAdmin() {
     } catch(err) { console.error(err); }
   };
 
+  if (initializing) return <div style={{ background:'#080808', minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ width:32, height:32, borderRadius:'50%', border:'2px solid #4ADE80', borderTopColor:'transparent', animation:'spin 0.8s linear infinite' }}/></div>;
   if (!authed) return <AdminLogin onLogin={(email, role)=>{ setAuthed(true); setAdminRole(role||'owner'); setAdminEmail(email); }}/>
 
   const TIcon = resolved==="dark"?Moon:resolved==="light"?Sun:Settings;
