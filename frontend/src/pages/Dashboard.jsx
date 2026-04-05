@@ -759,6 +759,151 @@ function BlockConfirm({ day, month, onConfirm, onClose }) {
 // LOGIN PAGE
 // ============================================
 function LoginPage({ onLogin }) {
+  const API = import.meta.env.VITE_API_URL;
+  const [view,    setView]    = useState("login");
+  const [email,   setEmail]   = useState("");
+  const [pw,      setPw]      = useState("");
+  const [showPw,  setShowPw]  = useState(false);
+  const [code,    setCode]    = useState("");
+  const [newPw,   setNewPw]   = useState("");
+  const [confPw,  setConfPw]  = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [msg,     setMsg]     = useState("");
+  const [err,     setErr]     = useState("");
+
+  const fi = { width:"100%", padding:"14px 16px", borderRadius:12, border:"1px solid "+C.border, background:C.surface, color:C.text, fontSize:15, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:12 };
+
+  const pwChecks = [
+    { l:"Mínimo 8 caracteres",  ok: newPw.length >= 8 },
+    { l:"Letras y números",     ok: /[a-zA-Z]/.test(newPw) && /[0-9]/.test(newPw) },
+    { l:"Un símbolo (!@#$%)",   ok: /[!@#$%^&*()_+\-=\[\]{};':"\|,.<>\/?]/.test(newPw) },
+  ];
+  const pwOk = pwChecks.every(c => c.ok) && newPw === confPw;
+
+  const handleLogin = async () => {
+    if (!email || !pw) { setErr("Completa todos los campos"); return; }
+    setLoading(true); setErr("");
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
+      if (error) { setErr("Email o contraseña incorrectos"); setLoading(false); return; }
+      onLogin(email);
+    } catch { setErr("Error de conexión"); }
+    setLoading(false);
+  };
+
+  const sendResetCode = async () => {
+    if (!email) { setErr("Escribe tu email"); return; }
+    setLoading(true); setErr(""); setMsg("");
+    try {
+      await fetch(`${API}/api/auth/forgot-password`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ email }),
+      });
+      setView("code"); setMsg("Código enviado a "+email);
+    } catch { setErr("Error de conexión"); }
+    setLoading(false);
+  };
+
+  const resetPassword = async () => {
+    if (!code || !pwOk) return;
+    setLoading(true); setErr("");
+    try {
+      const r = await fetch(`${API}/api/auth/reset-password-with-code`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ email, code, new_password:newPw }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setErr(d.error||"Código inválido"); setLoading(false); return; }
+      setView("login"); setMsg("Contraseña actualizada. Ya puedes entrar."); setCode(""); setNewPw(""); setConfPw("");
+    } catch { setErr("Error de conexión"); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ fontFamily:"'DM Sans',system-ui,sans-serif", background:C.bg, color:C.text, minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ width:"100%", maxWidth:380 }}>
+        <div style={{ textAlign:"center", marginBottom:36 }}><Logo size={32} tag /></div>
+
+        {view==="login" && <>
+          <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" type="email" style={fi}/>
+          <div style={{ position:"relative" }}>
+            <input value={pw} onChange={e=>setPw(e.target.value)} type={showPw?"text":"password"} placeholder="Contraseña"
+              style={{...fi, paddingRight:48}} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+            <button onClick={()=>setShowPw(!showPw)} style={{ position:"absolute",right:14,top:14,background:"none",border:"none",cursor:"pointer",color:C.dim }}>
+              {showPw?<EyeOff size={16}/>:<Eye size={16}/>}
+            </button>
+          </div>
+          {err&&<div style={{ fontSize:12,color:"#EF4444",marginBottom:12,textAlign:"center" }}>{err}</div>}
+          {msg&&<div style={{ fontSize:12,color:C.accent,marginBottom:12,textAlign:"center" }}>{msg}</div>}
+          <button onClick={handleLogin} disabled={loading}
+            style={{ width:"100%",padding:15,borderRadius:12,border:"none",background:loading?C.border:C.accent,color:loading?C.dim:C.bg,fontSize:15,fontWeight:700,cursor:loading?"default":"pointer",fontFamily:"inherit",marginBottom:16 }}>
+            {loading?"Entrando...":"Entrar"}
+          </button>
+          <button onClick={()=>{setView("forgot");setErr("");setMsg("");}}
+            style={{ background:"none",border:"none",color:C.dim,fontSize:13,cursor:"pointer",fontFamily:"inherit",display:"block",width:"100%",textAlign:"center",marginBottom:12 }}>
+            ¿Olvidaste tu contraseña?
+          </button>
+          <div style={{ fontSize:13,color:C.dim,textAlign:"center" }}>
+            ¿No tienes cuenta?{" "}
+            <button onClick={()=>window.location.href="/"} style={{ background:"none",border:"none",color:C.accent,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>
+              Regístrate gratis
+            </button>
+          </div>
+        </>}
+
+        {view==="forgot" && <>
+          <h2 style={{ fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,marginBottom:8,textAlign:"center" }}>Recuperar contraseña</h2>
+          <p style={{ fontSize:13,color:C.dim,marginBottom:20,textAlign:"center" }}>Te enviaremos un código de 6 caracteres.</p>
+          <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Tu email" type="email" style={fi}/>
+          {err&&<div style={{ fontSize:12,color:"#EF4444",marginBottom:12 }}>{err}</div>}
+          <button onClick={sendResetCode} disabled={loading}
+            style={{ width:"100%",padding:15,borderRadius:12,border:"none",background:C.accent,color:C.bg,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:12 }}>
+            {loading?"Enviando...":"Enviar código"}
+          </button>
+          <button onClick={()=>{setView("login");setErr("");}}
+            style={{ background:"none",border:"none",color:C.dim,fontSize:13,cursor:"pointer",fontFamily:"inherit",display:"block",width:"100%",textAlign:"center" }}>
+            Volver al login
+          </button>
+        </>}
+
+        {view==="code" && <>
+          <h2 style={{ fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,marginBottom:4,textAlign:"center" }}>Nueva contraseña</h2>
+          {msg&&<div style={{ fontSize:12,color:C.accent,marginBottom:16,textAlign:"center" }}>{msg}</div>}
+          <input value={code} onChange={e=>setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6))}
+            placeholder="Código de 6 caracteres" style={{...fi,textAlign:"center",letterSpacing:6,fontFamily:"monospace",fontSize:20}}/>
+          <div style={{ position:"relative" }}>
+            <input value={newPw} onChange={e=>setNewPw(e.target.value)} type={showNew?"text":"password"} placeholder="Nueva contraseña"
+              style={{...fi,paddingRight:48}}/>
+            <button onClick={()=>setShowNew(!showNew)} style={{ position:"absolute",right:14,top:14,background:"none",border:"none",cursor:"pointer",color:C.dim }}>
+              {showNew?<EyeOff size={16}/>:<Eye size={16}/>}
+            </button>
+          </div>
+          {newPw&&<div style={{ marginBottom:10 }}>
+            {pwChecks.map((ch,i)=>(
+              <div key={i} style={{ fontSize:12,color:ch.ok?C.accent:C.dim,display:"flex",alignItems:"center",gap:6,padding:"2px 0" }}>
+                <div style={{ width:14,height:14,borderRadius:"50%",border:"1.5px solid "+(ch.ok?C.accent:C.border),background:ch.ok?C.accent+"18":"transparent",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                  {ch.ok&&<Check size={8} color={C.accent} strokeWidth={3}/>}
+                </div>{ch.l}
+              </div>
+            ))}
+          </div>}
+          <input value={confPw} onChange={e=>setConfPw(e.target.value)} type="password" placeholder="Confirmar contraseña" style={fi}/>
+          {confPw&&newPw!==confPw&&<div style={{ fontSize:12,color:C.dim,marginBottom:8 }}>Las contraseñas no coinciden</div>}
+          {err&&<div style={{ fontSize:12,color:"#EF4444",marginBottom:12 }}>{err}</div>}
+          <button onClick={resetPassword} disabled={!code||!pwOk||loading}
+            style={{ width:"100%",padding:15,borderRadius:12,border:"none",background:code&&pwOk?C.accent:C.border,color:code&&pwOk?C.bg:C.dim,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:12 }}>
+            {loading?"Guardando...":"Cambiar contraseña"}
+          </button>
+          <button onClick={()=>{setView("forgot");setErr("");}}
+            style={{ background:"none",border:"none",color:C.dim,fontSize:13,cursor:"pointer",fontFamily:"inherit",display:"block",width:"100%",textAlign:"center" }}>
+            Reenviar código
+          </button>
+        </>}
+      </div>
+    </div>
+  );
+}function LoginPage({ onLogin }) {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [showPw, setShowPw] = useState(false);
