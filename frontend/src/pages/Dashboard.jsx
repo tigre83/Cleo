@@ -947,7 +947,31 @@ export default function CleoDashboard() {
   const [calMonth, setCalMonth] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
   const [profileOpen, setProfileOpen] = useState(false);
   const [logoutModal, setLogoutModal] = useState(false);
-  const [cfgTab, setCfgTab] = useState("negocio");
+  const [cfgTab,    setCfgTab]    = useState("negocio");
+  const [dirMain,   setDirMain]   = useState("");
+  const [dirNum,    setDirNum]    = useState("");
+  const [dirCross,  setDirCross]  = useState("");
+  const [dirSaved,  setDirSaved]  = useState(false);
+  const [dirSaving, setDirSaving] = useState(false);
+
+  const saveDir = async () => {
+    if (!dirMain) return;
+    setDirSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const API = import.meta.env.VITE_API_URL;
+      await fetch(`${API}/api/business/me`, {
+        method:"PUT",
+        headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},
+        body:JSON.stringify({ street_main:dirMain, street_number:dirNum, street_cross:dirCross }),
+      });
+      setBiz({...biz, street_main:dirMain, street_number:dirNum, street_cross:dirCross});
+      setDirSaved(true);
+      showToast("Dirección guardada ✓");
+    } catch { showToast("Error al guardar"); }
+    setDirSaving(false);
+  };
   const [away, setAway] = useState({ active: false, message: "", improving: false });
   const [toast, setToast] = useState("");
   const [passwordModal, setPasswordModal] = useState(false);
@@ -1335,33 +1359,7 @@ export default function CleoDashboard() {
               </div>
 
               {/* CARD 4: Dirección */}
-              {(() => {
-                const [dirMain,   setDirMain]   = useState(biz.street_main||"");
-                const [dirNum,    setDirNum]     = useState(biz.street_number||"");
-                const [dirCross,  setDirCross]   = useState(biz.street_cross||"");
-                const [dirSaved,  setDirSaved]   = useState(!!(biz.street_main));
-                const [dirSaving, setDirSaving]  = useState(false);
-
-                const saveDir = async () => {
-                  if (!dirMain) return;
-                  setDirSaving(true);
-                  try {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    const token = session?.access_token;
-                    const API = import.meta.env.VITE_API_URL;
-                    await fetch(`${API}/api/business/me`, {
-                      method:"PUT",
-                      headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},
-                      body:JSON.stringify({ street_main:dirMain, street_number:dirNum, street_cross:dirCross }),
-                    });
-                    setBiz({...biz, street_main:dirMain, street_number:dirNum, street_cross:dirCross});
-                    setDirSaved(true);
-                    showToast("Dirección guardada ✓");
-                  } catch { showToast("Error al guardar"); }
-                  setDirSaving(false);
-                };
-
-                return (
+              {
                   <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", marginBottom:8 }}>
                     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
                       <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase" }}>Dirección del negocio</div>
@@ -1394,8 +1392,7 @@ export default function CleoDashboard() {
                       </>
                     )}
                   </div>
-                );
-              })()}
+              }
 
               <div style={fw}>
                 <div style={fl}>Horarios</div>
