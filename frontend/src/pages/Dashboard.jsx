@@ -1265,9 +1265,27 @@ export default function CleoDashboard() {
           const fw = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 16px", marginBottom: 8 };
           const fl = { fontSize: 11, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 };
           const fi = { width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface2, color: C.text, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box" };
+          const CONFIG_TABS = [
+            { id:"negocio",   label:"Negocio",    Icon:Briefcase },
+            { id:"asistente", label:"Asistente",  Icon:Smartphone },
+            { id:"plan",      label:"Plan",        Icon:DollarSign },
+            { id:"cuenta",    label:"Cuenta",      Icon:User },
+          ];
+          const [cfgTab, setCfgTab] = useState("negocio");
+
           return (
             <div>
+              {/* TABS de config */}
+              <div style={{ display:"flex",gap:4,marginBottom:20,background:C.surface,borderRadius:12,padding:4,border:`1px solid ${C.border}` }}>
+                {CONFIG_TABS.map(t=>(
+                  <button key={t.id} onClick={()=>setCfgTab(t.id)}
+                    style={{ flex:1,padding:"9px 0",borderRadius:9,border:"none",cursor:"pointer",fontFamily:"inherit",background:cfgTab===t.id?C.bg:"transparent",color:cfgTab===t.id?C.accent:C.dim,fontSize:12,fontWeight:cfgTab===t.id?600:500,transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"center",gap:5,boxShadow:cfgTab===t.id?"0 1px 4px rgba(0,0,0,0.3)":"none" }}>
+                    <t.Icon size={13}/>{t.label}
+                  </button>
+                ))}
+              </div>
 
+              {cfgTab==="negocio" && <div>
               {/* ── 1. MI NEGOCIO ── */}
               <div style={st}>Mi negocio</div>
 
@@ -1331,6 +1349,9 @@ export default function CleoDashboard() {
               ) : <div style={{ marginBottom: 8 }}><LockedBanner plan={biz.plan} /></div>}
 
               {/* ── 2. SERVICIOS shortcut ── */}
+              </div>}
+
+              {cfgTab==="negocio" && <div>
               <div style={st}>Servicios</div>
               <button onClick={() => setTab("services")} style={{ ...fw, width: "100%", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit", textAlign: "left" }}>
                 <Briefcase size={16} color={C.accent} />
@@ -1346,6 +1367,9 @@ export default function CleoDashboard() {
               </button>
 
               {/* ── 3. ASISTENTE IA ── */}
+              </div>}
+
+              {cfgTab==="asistente" && <div>
               <div style={st}>Asistente IA</div>
               <div style={fw}><div style={fl}>Nombre del asistente</div><div style={{ fontSize: 14, color: C.dim }}>{biz.assistant_name}</div></div>
               {canUse(biz.plan, "away") ? (
@@ -1367,6 +1391,9 @@ export default function CleoDashboard() {
               ) : <div style={{ marginBottom: 8 }}><LockedBanner plan={biz.plan} /></div>}
 
               {/* ── 4. PLAN Y FACTURACIÓN ── */}
+              </div>}
+
+              {cfgTab==="plan" && <div>
               <div style={st}>Plan y facturación</div>
               <div style={fw}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
@@ -1399,6 +1426,9 @@ export default function CleoDashboard() {
 
 
               {/* ── 6. CUENTA ── */}
+              </div>}
+
+              {cfgTab==="cuenta" && <div>
               <div style={st}>Cuenta</div>
               <div style={{ fontSize: 12, color: C.dim, marginBottom: 8 }}>{biz.email}</div>
               <div style={fw}><button onClick={() => setPasswordModal(true)} style={{ width: "100%", padding: 10, borderRadius: 10, border: `1px solid ${C.border}`, background: "transparent", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8 }}><Lock size={14} color={C.dim} /> Cambiar contraseña</button></div>
@@ -1417,6 +1447,7 @@ export default function CleoDashboard() {
                 <div style={{ fontSize:9, color:"#2A2A2A", marginTop:4 }}>cleo.app/terminos · cleo.app/privacidad</div>
               </div>
 
+              </div>}
               <div style={{ height: 40 }} />
             </div>
           );
