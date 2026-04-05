@@ -154,20 +154,22 @@ function AdminLogin({ onLogin }) {
     if (!email||!pass) { setErr("Completa los campos"); return; }
     setLoading(true); setErr("");
     try {
-      // Intentar login de miembro invitado primero
+      // Intentar login de dueño primero
+      const r = await fetch(`${API}/api/admin/login`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email, password:pass }) });
+      if (r.ok) {
+        setIsMember(false);
+        setStep(1); setCountdown(60); setResends(1);
+        setLoading(false); return;
+      }
+      // Si no es dueño, intentar login de miembro invitado
       const rm = await fetch(`${API}/api/admin/login/member`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email, password:pass }) });
       if (rm.ok) {
-        // Miembro válido — pasar a step 2FA
         setIsMember(true);
         setStep(1); setCountdown(60); setResends(1);
         setLoading(false); return;
       }
-      // Si no es miembro, intentar login de dueño (2FA)
-      const r = await fetch(`${API}/api/admin/login`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email, password:pass }) });
       const d = await r.json();
-      if (!r.ok) { setErr(d.error||"Credenciales inválidas"); setLoading(false); return; }
-      setIsMember(false);
-      setStep(1); setCountdown(60); setResends(1);
+      setErr(d.error||"Credenciales inválidas"); setLoading(false); return;
     } catch { setErr("Error de conexión"); }
     setLoading(false);
   };
