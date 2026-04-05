@@ -953,6 +953,7 @@ export default function CleoDashboard() {
   const [dirCross,  setDirCross]  = useState("");
   const [dirSaved,  setDirSaved]  = useState(false);
   const [dirSaving, setDirSaving] = useState(false);
+  const [rucCi,     setRucCi]     = useState(biz.ruc_ci||"");
 
   const saveDir = async () => {
     if (!dirMain) return;
