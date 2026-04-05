@@ -933,7 +933,8 @@ export default function CleoDashboard() {
   const prefersDark = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const resolved = theme === "system" ? (prefersDark ? "dark" : "light") : theme;
   C = THEMES[resolved];
-  const cycleTheme = () => setTheme(theme === "dark" ? "light" : theme === "light" ? "system" : "dark");
+  const [, forceUpdate] = useState(0);
+  const cycleTheme = () => { setTheme(t => t === "dark" ? "light" : t === "light" ? "system" : "dark"); forceUpdate(n => n+1); };
 
   const [authed, setAuthed] = useState(false);
   const [tab, setTab] = useState("agenda");
@@ -1013,6 +1014,19 @@ export default function CleoDashboard() {
 
   return (
     <div style={{ overflowX:"hidden", width:"100%", maxWidth:"100vw" }}>
+    {logoutModal && (
+      <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20 }}>
+        <div style={{ background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:32,maxWidth:340,width:"100%",textAlign:"center" }}>
+          <LogOut size={28} color={C.accent} style={{ marginBottom:12 }}/>
+          <h3 style={{ fontFamily:"'Syne',sans-serif",fontSize:17,fontWeight:800,marginBottom:8,color:C.text }}>¿Cerrar sesión?</h3>
+          <p style={{ fontSize:13,color:C.dim,marginBottom:24,lineHeight:1.5 }}>Tu sesión se cerrará y tendrás que volver a ingresar.</p>
+          <div style={{ display:"flex",gap:10 }}>
+            <button onClick={()=>setLogoutModal(false)} style={{ flex:1,padding:12,borderRadius:10,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancelar</button>
+            <button onClick={()=>{ setLogoutModal(false); handleLogout(); }} style={{ flex:1,padding:12,borderRadius:10,border:"none",background:C.accent,color:C.bg,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Cerrar sesión</button>
+          </div>
+        </div>
+      </div>
+    )}
     {!authed && <LoginPage onLogin={function(e){ if(e){ setAuthed(true); }}} />}
     {authed && trialExpired && (
     <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", background: C.bg, color: C.text, minHeight: "100vh", padding: "40px 20px" }}>
