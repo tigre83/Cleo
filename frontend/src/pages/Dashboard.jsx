@@ -1342,7 +1342,7 @@ export default function CleoDashboard() {
                 </div>
 
                 {/* CARD 2: Nombre + RUC/CI */}
-                <div style={{ flex:1, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", display:"flex", flexDirection:"column", justifyContent:"center", gap:14 }}>
+                <div style={{ flex:"0 0 200px", background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", display:"flex", flexDirection:"column", justifyContent:"center", gap:14 }}>
                   <div>
                     <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase", marginBottom:4 }}>Nombre del negocio</div>
                     <div style={{ fontSize:15, fontWeight:600, color:C.text }}>{biz.name}</div>
@@ -1354,7 +1354,7 @@ export default function CleoDashboard() {
                 </div>
 
                 {/* CARD 3: Dirección */}
-                <div style={{ flex:1, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px" }}>
+                <div style={{ flex:1.4, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px" }}>
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
                     <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase" }}>Dirección del negocio</div>
                     {dirSaved && <span style={{ fontSize:10, color:C.accent, display:"flex", alignItems:"center", gap:4 }}><Check size={10}/> Guardada</span>}
@@ -1385,7 +1385,8 @@ export default function CleoDashboard() {
 
                 {/* CARD 4: Duración de cita */}
                 <div style={{ flex:1, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px" }}>
-                  <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase", marginBottom:8 }}>Duración de cita</div>
+                  <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, color:C.dim, textTransform:"uppercase", marginBottom:4 }}>Duración de cita</div>
+                  <div style={{ fontSize:11, color:C.dim, marginBottom:10 }}>Tiempo por cita agendada</div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:4 }}>
                     {DURS.map(d => <button key={d} onClick={() => {setBiz({...biz,duration:d,customDuration:false});showToast("Guardado ✓");}} style={{ padding:"7px 0", borderRadius:8, border:`1.5px solid ${biz.duration===d&&!biz.customDuration?C.accent:C.border}`, background:biz.duration===d&&!biz.customDuration?C.accentGlow:"transparent", color:biz.duration===d&&!biz.customDuration?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", textAlign:"center" }}>{d}m</button>)}
                     <button onClick={() => setBiz({...biz,customDuration:true,duration:biz.customDuration?biz.duration:120})} style={{ padding:"7px 0", borderRadius:8, border:`1.5px solid ${biz.customDuration?C.accent:C.border}`, background:biz.customDuration?C.accentGlow:"transparent", color:biz.customDuration?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", textAlign:"center" }}>Otro</button>
