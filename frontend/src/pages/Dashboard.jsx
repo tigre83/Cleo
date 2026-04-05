@@ -1505,10 +1505,10 @@ export default function CleoDashboard() {
               {cfgTab==="cuenta" && <div>
               <div style={st}>Ayuda</div>
               <button onClick={() => setHelpModal(true)} style={{ ...fw, width: "100%", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit", textAlign: "left", marginBottom: 6 }}>
-                <HelpCircle size={15} color={C.accent} /><div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>Preguntas frecuentes</div><div style={{ fontSize: 11, color: C.dim }}>Busca respuestas al instante</div></div><ChevronRight size={16} color={C.dim} />
+                <HelpCircle size={15} color={C.accent} /><div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600, color:C.text }}>Preguntas frecuentes</div><div style={{ fontSize: 11, color: C.dim }}>Busca respuestas al instante</div></div><ChevronRight size={16} color={C.dim} />
               </button>
               <button onClick={() => setSupportModal(true)} style={{ ...fw, width: "100%", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit", textAlign: "left" }}>
-                <MessageSquare size={15} color={C.dim} /><div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>Contactar soporte</div><div style={{ fontSize: 11, color: C.dim }}>Respuesta en menos de 24h</div></div><ChevronRight size={16} color={C.dim} />
+                <MessageSquare size={15} color={C.dim} /><div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600, color:C.text }}>Contactar soporte</div><div style={{ fontSize: 11, color: C.dim }}>Respuesta en menos de 24h</div></div><ChevronRight size={16} color={C.dim} />
               </button>
 
 
