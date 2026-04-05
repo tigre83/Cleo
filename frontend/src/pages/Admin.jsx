@@ -689,28 +689,41 @@ function Finanzas({ users, expenses, setExpenses, stats, loading, authFetch }) {
       <div style={{ ...card, marginBottom:20 }}>
         <div style={{ fontSize:12, fontWeight:600, color:C.t, marginBottom:4 }}>Evolución financiera</div>
         <div style={{ fontSize:10, color:C.d, marginBottom:16 }}>Ingresos vs gastos · últimos 6 meses</div>
-        <AreaChart width={undefined} height={160} data={chartData} style={{ width:"100%" }}
-          margin={{ top:4, right:4, bottom:0, left:0 }}>
-          <defs>
-            <linearGradient id="gi" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#4ADE80" stopOpacity={0.2}/>
-              <stop offset="95%" stopColor="#4ADE80" stopOpacity={0}/>
-            </linearGradient>
-            <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#F87171" stopOpacity={0.15}/>
-              <stop offset="95%" stopColor="#F87171" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke={C.b} vertical={false}/>
-          <XAxis dataKey="mes" tick={{ fontSize:10, fill:C.d }} axisLine={false} tickLine={false}/>
-          <YAxis tick={{ fontSize:10, fill:C.d }} axisLine={false} tickLine={false} width={36} tickFormatter={v=>`$${v}`}/>
-          <Tooltip contentStyle={{ background:C.s, border:"1px solid "+C.b, borderRadius:8, fontSize:11 }} labelStyle={{ color:C.t }} itemStyle={{ color:C.d }}/>
-          <Area type="monotone" dataKey="ingresos" stroke="#4ADE80" strokeWidth={2} fill="url(#gi)" name="Ingresos"/>
-          <Area type="monotone" dataKey="gastos" stroke="#F87171" strokeWidth={2} fill="url(#gg)" name="Gastos"/>
-        </AreaChart>
+        {!hasChartData ? (
+          <div style={{ height:160, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8 }}>
+            <BarChart3 size={24} color={C.b}/>
+            <span style={{ fontSize:12, color:C.d }}>Sin datos financieros aún</span>
+            <span style={{ fontSize:10, color:C.d, opacity:0.6 }}>Los datos aparecerán cuando registres ingresos o gastos</span>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={chartData} margin={{ top:4, right:4, bottom:0, left:0 }}>
+              <defs>
+                <linearGradient id="gi" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#4ADE80" stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor="#4ADE80" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#F87171" stopOpacity={0.15}/>
+                  <stop offset="95%" stopColor="#F87171" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.b} vertical={false}/>
+              <XAxis dataKey="mes" tick={{ fontSize:10, fill:C.d }} axisLine={false} tickLine={false}/>
+              <YAxis tick={{ fontSize:10, fill:C.d }} axisLine={false} tickLine={false} width={40} tickFormatter={v=>`$${v}`}/>
+              <Tooltip
+                contentStyle={{ background:C.s, border:"1px solid "+C.b, borderRadius:10, fontSize:11, boxShadow:"0 4px 20px rgba(0,0,0,0.4)" }}
+                labelStyle={{ color:C.t, fontWeight:600, marginBottom:4 }}
+                formatter={(val,name)=>[`$${val.toFixed(0)}`, name]}
+              />
+              <Area type="monotone" dataKey="ingresos" stroke="#4ADE80" strokeWidth={2} fill="url(#gi)" name="Ingresos" dot={false} activeDot={{ r:4, fill:"#4ADE80" }}/>
+              <Area type="monotone" dataKey="gastos" stroke="#F87171" strokeWidth={1.5} fill="url(#gg)" name="Gastos" dot={false} activeDot={{ r:4, fill:"#F87171" }}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
         <div style={{ display:"flex", gap:16, marginTop:8 }}>
-          <div style={{ display:"flex",alignItems:"center",gap:5,fontSize:11,color:C.d }}><div style={{ width:10,height:2,background:"#4ADE80",borderRadius:2 }}/> Ingresos</div>
-          <div style={{ display:"flex",alignItems:"center",gap:5,fontSize:11,color:C.d }}><div style={{ width:10,height:2,background:"#F87171",borderRadius:2 }}/> Gastos</div>
+          <div style={{ display:"flex",alignItems:"center",gap:5,fontSize:11,color:C.d }}><div style={{ width:12,height:2,background:"#4ADE80",borderRadius:2 }}/> Ingresos</div>
+          <div style={{ display:"flex",alignItems:"center",gap:5,fontSize:11,color:C.d }}><div style={{ width:12,height:2,background:"#F87171",borderRadius:2 }}/> Gastos</div>
         </div>
       </div>
 
