@@ -1223,16 +1223,18 @@ export default function CleoAdmin() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [statsData, usersData, expensesData, statusData] = await Promise.all([
+      const [statsData, usersData, expensesData, statusData, viewsData] = await Promise.all([
         authFetch("/api/admin/stats"),
         authFetch("/api/admin/users"),
         authFetch("/api/admin/expenses"),
         authFetch("/api/admin/system-status"),
+        authFetch("/api/admin/views-stats").catch(()=>({ total:0, today:0, week:0, month:0, topReferrers:[] })),
       ]);
       setStats(statsData);
       setUsers(usersData);
       setExpenses(expensesData);
       setSystemStatus(statusData);
+      if (viewsData) setViews(viewsData);
     } catch(err) { console.error("Error cargando datos:", err); }
     setLoading(false);
   };
