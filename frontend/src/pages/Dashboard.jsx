@@ -1,7 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useCleo } from "../hooks/useCleo.js";
-import { CleoButton } from "../components/CleoButton.jsx";
-import { CleoPanel } from "../components/CleoPanel.jsx";
 import { useInactivityTimeout } from "../hooks/useInactivityTimeout.js";
 import { Calendar, CalendarDays, BarChart3, Settings, Check, X, ChevronRight, ChevronLeft, Clock, CircleDot, Smartphone, MessageSquare, Phone, Ban, Loader, ArrowLeft, Shield, Zap, User, LogOut, Lock, Pause, Play, Trash2, AlertTriangle, Wifi, WifiOff, Eye, EyeOff, Save, HelpCircle, Sparkles, Plane, Plus, Briefcase, DollarSign, TrendingUp, ToggleRight, Download, MapPin, Car, Home, Sun, Moon as MoonIcon } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -1365,6 +1362,181 @@ function BlockConfirm({ day, month, onConfirm, onClose }) {
 // ============================================
 // ============================================
 
+// ── CLEO BUTTON inline ────────────────────────────────────────────────────────
+function CleoButtonInline({ onClick, C }) {
+  return (
+    <button onClick={onClick} style={{ position:"fixed",bottom:90,right:16,zIndex:99,width:48,height:48,borderRadius:"50%",border:`1.5px solid ${C.accent}50`,background:C.bg,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 24px rgba(0,0,0,0.4), 0 0 16px ${C.accent}20`,transition:"all 0.2s",outline:"none" }}
+      onMouseEnter={e=>{ e.currentTarget.style.transform="scale(1.08)"; e.currentTarget.style.boxShadow=`0 6px 28px rgba(0,0,0,0.5), 0 0 28px ${C.accent}40`; }}
+      onMouseLeave={e=>{ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow=`0 4px 24px rgba(0,0,0,0.4), 0 0 16px ${C.accent}20`; }}>
+      <div style={{ position:"relative",width:28,height:28 }}>
+        <div style={{ position:"absolute",inset:0,borderRadius:"50%",background:`radial-gradient(circle,${C.accent}20 0%,transparent 70%)` }}/>
+        <div style={{ position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:12,height:12,borderRadius:"50%",background:C.accent,boxShadow:`0 0 10px ${C.accent},0 0 20px ${C.accent}60` }}/>
+        <div style={{ position:"absolute",bottom:0,right:0,width:9,height:9,borderRadius:"50%",background:"#22C55E",border:`2px solid ${C.bg}` }}/>
+      </div>
+    </button>
+  );
+}
+
+// ── CLEO ASSISTANT inline ─────────────────────────────────────────────────────
+const _INTENTS = {
+  reagendar:        (ctx) => ({ title:"Reagendar cita", body:"Abre la cita en Agenda y toca Reagendar. Elige nueva fecha y hora desde el selector visual.", steps:["Ve a Agenda","Ubica la cita confirmada","Toca Reagendar","Selecciona día y hora","Confirma"], action:{label:"Ir a Agenda",tab:"agenda"} }),
+  cancelar:         (ctx) => ({ title:"Cancelar cita", body:"Toca Cancelar en la cita. Cleo enviará WhatsApp automático al cliente con horarios alternativos.", steps:["Ve a Agenda","Ubica la cita","Toca Cancelar","Confirma"], action:{label:"Ir a Agenda",tab:"agenda"} }),
+  crear_servicio:   (ctx) => { const lim={basico:10,negocio:20}[ctx.plan]; const r=lim?lim-ctx.sc:null; return { title:"Crear un servicio", body:lim?(r>0?`Tienes ${ctx.sc}/${lim} servicios. Te quedan ${r}.`:"Límite alcanzado. Actualiza tu plan."):`${ctx.sc} servicios creados. Plan ${ctx.pl}: ilimitados.`, steps:["Ve a Servicios","Toca + Nuevo servicio","Completa datos","Guarda"], action:{label:r===0?"Ver planes":"Ir a Servicios",tab:r===0?"config":"services"} }; },
+  limite_servicios: (ctx) => { const lim={basico:10,negocio:20}[ctx.plan]; return { title:"Límite de servicios", body:lim?`Plan ${ctx.pl}: hasta ${lim}. Tienes ${ctx.sc}, quedan ${lim-ctx.sc}.`:`Plan ${ctx.pl}: ilimitados.`, steps:["Ve a Servicios"], action:{label:"Ver Servicios",tab:"services"} }; },
+  ingresos:         (_)   => ({ title:"Ver ingresos", body:"Estadísticas: ingresos semanales, proyección mensual y exportación Excel.", steps:["Ve a Estadísticas","Revisa ingresos","Descarga reporte"], action:{label:"Ver Estadísticas",tab:"stats"} }),
+  mi_plan:          (ctx) => ({ title:`Plan ${ctx.pl}`, body:{basico:"Hasta 10 servicios, agenda y WhatsApp.",negocio:"Hasta 20 servicios, estadísticas y reportes.",pro:"Servicios ilimitados e IA avanzada.",trial:`Prueba (${ctx.td} días). Acceso completo.`}[ctx.plan]||"", steps:["Ajustes → Plan","Revisa lo incluido"], action:{label:"Ver plan",tab:"config"} }),
+  whatsapp:         (_)   => ({ title:"IA en WhatsApp", body:"Cleo responde automáticamente. Configura nombre y modo ausencia en Ajustes.", steps:["Ajustes → IA","Personaliza asistente","Configura modo ausencia"], action:{label:"Ajustes IA",tab:"config"} }),
+  citas_hoy:        (ctx) => ({ title:"Citas de hoy", body:ctx.tc>0?`Tienes ${ctx.tc} cita${ctx.tc!==1?"s":""} hoy.`:"Sin citas hoy. Comparte tu WhatsApp.", steps:ctx.tc>0?["Agenda → Día","Revisa citas"]:["Comparte WhatsApp"], action:{label:"Ver Agenda",tab:"agenda"} }),
+  ayuda_general:    (_)   => ({ title:"¿En qué te ayudo?", body:"Escribe tu pregunta o toca una acción rápida.", steps:null, action:null }),
+};
+const _QABT = { agenda:["reagendar","cancelar","citas_hoy"], services:["crear_servicio","limite_servicios"], stats:["ingresos"], config:["mi_plan","whatsapp"] };
+const _AL   = { reagendar:"Reagendar cita",cancelar:"Cancelar cita",citas_hoy:"Ver citas hoy",crear_servicio:"Crear servicio",limite_servicios:"Ver límites",ingresos:"Ver ingresos",mi_plan:"Mi plan",whatsapp:"Config IA" };
+const _CATS = [{id:"citas",label:"Citas",keys:["reagendar","cancelar","citas_hoy"]},{id:"servicios",label:"Servicios",keys:["crear_servicio","limite_servicios"]},{id:"negocio",label:"Negocio",keys:["ingresos"]},{id:"ia",label:"IA / Plan",keys:["mi_plan","whatsapp"]}];
+function _detectIntent(q) {
+  const s=q.toLowerCase(), has=(...w)=>w.some(x=>s.includes(x));
+  if(has("reagend","mover cita","cambiar hora")) return "reagendar";
+  if(has("cancel","eliminar cita","borrar cita")) return "cancelar";
+  if(has("crear servic","nuevo servic","agregar servic","servicio")) return "crear_servicio";
+  if(has("limite","límite","cuantos servic")) return "limite_servicios";
+  if(has("ingreso","dinero","ganancia","estadist")) return "ingresos";
+  if(has("plan","incluye","beneficio","suscri")) return "mi_plan";
+  if(has("whatsapp","bot","configur ia")) return "whatsapp";
+  if(has("cita hoy","cuantas citas","hoy","cita")) return "citas_hoy";
+  return "ayuda_general";
+}
+function _insights(ctx) {
+  const out=[];
+  if(ctx.tc>0) out.push({color:"#4ADE80",text:`${ctx.tc} cita${ctx.tc!==1?"s":""} hoy`});
+  const lim={basico:10,negocio:20}[ctx.plan];
+  if(lim) out.push(Math.round(ctx.sc/lim*100)>=80?{color:"#FBBF24",text:`${ctx.sc}/${lim} servicios — cerca del límite`}:{color:"#4ADE80",text:`${lim-ctx.sc} servicios disponibles`});
+  if(ctx.plan==="trial"&&ctx.td>0) out.push({color:"#22D3EE",text:`Prueba: ${ctx.td} días`});
+  return out.slice(0,3);
+}
+
+function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, onNavigate, C }) {
+  const [status,   setStatus]   = useState("idle");
+  const [result,   setResult]   = useState(null);
+  const [query,    setQuery]    = useState("");
+  const [category, setCategory] = useState(null);
+
+  const ctx = { plan:biz?.plan||"trial", pl:{basico:"Básico",negocio:"Negocio",pro:"Pro",trial:"Trial"}[biz?.plan]||"Trial", sc:services?.length||0, td:biz?.trial_days||0, tc:appointments?.filter(a=>a.datetime?.toDateString?.()===new Date().toDateString()&&a.status==="confirmed").length||0 };
+  const insights = _insights(ctx);
+  const qa = _QABT[tab] || _QABT.agenda;
+
+  const getResp = (key) => { setStatus("thinking"); setResult(null); setTimeout(()=>{ setResult(_INTENTS[key]?.(ctx)||_INTENTS.ayuda_general(ctx)); setStatus("response"); },500); };
+  const ask = (txt) => { if(!txt?.trim()) return; setStatus("thinking"); setResult(null); setTimeout(()=>{ setResult(_INTENTS[_detectIntent(txt)](ctx)); setStatus("response"); },600+Math.random()*500); };
+  const reset = () => { setResult(null); setQuery(""); setCategory(null); setStatus("idle"); };
+  const nav = (t) => { if(onNavigate) onNavigate(t); setOpen(false); };
+
+  if (!open) return null;
+  return (
+    <>
+      <div onClick={()=>setOpen(false)} style={{ position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.55)",backdropFilter:"blur(4px)",animation:"fadeIn 0.2s ease" }}/>
+      <div style={{ position:"fixed",top:0,right:0,bottom:0,zIndex:501,width:"min(400px,100vw)",background:C.bg,borderLeft:`1px solid ${C.border}`,display:"flex",flexDirection:"column",animation:"slideInRight 0.26s cubic-bezier(0.16,1,0.3,1)",boxShadow:"-28px 0 80px rgba(0,0,0,0.55)" }}>
+        {/* Header */}
+        <div style={{ padding:"20px 18px 16px",borderBottom:`1px solid ${C.border}`,flexShrink:0,background:`linear-gradient(180deg,${C.accent}07 0%,transparent 100%)` }}>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14 }}>
+            <div style={{ display:"flex",alignItems:"center",gap:12 }}>
+              <div style={{ width:44,height:44,borderRadius:14,background:`${C.accent}10`,border:`1.5px solid ${C.accent}35`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",boxShadow:`0 0 24px ${C.accent}15`,flexShrink:0 }}>
+                <div style={{ width:14,height:14,borderRadius:"50%",background:C.accent,boxShadow:`0 0 14px ${C.accent}` }}/>
+                <div style={{ position:"absolute",bottom:-3,right:-3,width:13,height:13,borderRadius:"50%",background:"#22C55E",border:`2.5px solid ${C.bg}` }}/>
+              </div>
+              <div>
+                <div style={{ fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:800,color:C.text }}>Cleo</div>
+                <div style={{ fontSize:10,color:C.accent,display:"flex",alignItems:"center",gap:4,marginTop:1 }}>
+                  <div style={{ width:5,height:5,borderRadius:"50%",background:C.accent,animation:"pulse 1.5s infinite" }}/>
+                  {status==="thinking"?"Pensando...":"Copiloto activo"}
+                </div>
+              </div>
+            </div>
+            <button onClick={()=>setOpen(false)} style={{ background:"none",border:`1px solid ${C.border}`,borderRadius:9,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><X size={13} color={C.dim}/></button>
+          </div>
+          <div style={{ position:"relative" }}>
+            <input value={query} onChange={e=>{ setQuery(e.target.value); if(!e.target.value) reset(); }} onKeyDown={e=>e.key==="Enter"&&(ask(query),setQuery(""))} placeholder="¿En qué te puedo ayudar?"
+              style={{ width:"100%",padding:"10px 42px 10px 14px",borderRadius:12,border:`1px solid ${result?C.accent+"50":C.border}`,background:C.surface,color:C.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box" }}/>
+            <button onClick={()=>{ ask(query); setQuery(""); }} disabled={!query.trim()}
+              style={{ position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",width:28,height:28,borderRadius:8,border:"none",background:query.trim()?C.accent:"transparent",color:query.trim()?C.bg:C.dim,cursor:query.trim()?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center" }}>
+              <ChevronRight size={14}/>
+            </button>
+          </div>
+        </div>
+        {/* Body */}
+        <div style={{ flex:1,overflowY:"auto",padding:"16px" }}>
+          {status==="thinking" && (
+            <div style={{ display:"flex",gap:5,alignItems:"center",padding:"12px 14px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:"4px 14px 14px 14px",width:"fit-content",marginBottom:12 }}>
+              {[0,1,2].map(i=><div key={i} style={{ width:6,height:6,borderRadius:"50%",background:C.accent,animation:`pulse ${0.6+i*0.18}s ease-in-out infinite` }}/>)}
+            </div>
+          )}
+          {result && status==="response" && (
+            <div style={{ background:C.surface,border:`1px solid ${C.accent}30`,borderRadius:16,padding:"16px",marginBottom:16,position:"relative",overflow:"hidden",animation:"fadeIn 0.25s ease" }}>
+              <div style={{ position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${C.accent},transparent)` }}/>
+              <div style={{ fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:800,color:C.text,marginBottom:8 }}>{result.title}</div>
+              <div style={{ fontSize:12,color:C.dim,lineHeight:1.7,marginBottom:result.steps?12:0 }}>{result.body}</div>
+              {result.steps && <div style={{ display:"flex",flexDirection:"column",gap:5,marginBottom:result.action?12:0 }}>
+                {result.steps.map((s,i)=><div key={i} style={{ display:"flex",alignItems:"flex-start",gap:7,fontSize:11,color:C.dim }}>
+                  <span style={{ fontSize:9,fontWeight:700,color:C.accent,minWidth:14,marginTop:2 }}>{i+1}.</span>{s}
+                </div>)}
+              </div>}
+              {result.action && <button onClick={()=>nav(result.action.tab)} style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:9,border:`1px solid ${C.accent}30`,background:C.accentGlow,color:C.accent,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{result.action.label} →</button>}
+              <button onClick={reset} style={{ position:"absolute",top:10,right:10,background:"none",border:"none",cursor:"pointer",color:C.dim,padding:2 }}><X size={11}/></button>
+            </div>
+          )}
+          {!result && insights.length>0 && (
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8 }}>Ahora mismo</div>
+              {insights.map((ins,i)=><div key={i} style={{ display:"flex",alignItems:"center",gap:9,padding:"9px 12px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,marginBottom:6 }}>
+                <div style={{ width:7,height:7,borderRadius:"50%",background:ins.color,flexShrink:0,boxShadow:`0 0 6px ${ins.color}` }}/><span style={{ fontSize:12,color:C.text }}>{ins.text}</span>
+              </div>)}
+            </div>
+          )}
+          {!result && (
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8 }}>Acciones rápidas</div>
+              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
+                {qa.map(key=>(
+                  <button key={key} onClick={()=>getResp(key)}
+                    style={{ display:"flex",alignItems:"center",gap:8,padding:"11px 12px",borderRadius:12,border:`1px solid ${C.border}`,background:C.surface,color:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s" }}
+                    onMouseEnter={e=>{ e.currentTarget.style.borderColor=`${C.accent}45`; e.currentTarget.style.background=`${C.accent}07`; e.currentTarget.style.transform="translateY(-1px)"; }}
+                    onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.background=C.surface; e.currentTarget.style.transform="translateY(0)"; }}>
+                    <div style={{ width:6,height:6,borderRadius:"50%",background:C.accent,flexShrink:0 }}/>{_AL[key]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {!result && (
+            <div>
+              <div style={{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8 }}>Explorar</div>
+              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+                {_CATS.map(cat=>(
+                  <div key={cat.id}>
+                    <button onClick={()=>setCategory(category===cat.id?null:cat.id)}
+                      style={{ width:"100%",padding:"9px 12px",borderRadius:10,border:`1px solid ${category===cat.id?C.accent+"45":C.border}`,background:category===cat.id?`${C.accent}08`:C.surface,color:category===cat.id?C.accent:C.dim,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s" }}>
+                      {cat.label}
+                    </button>
+                    {category===cat.id && <div style={{ marginTop:4,display:"flex",flexDirection:"column",gap:3 }}>
+                      {cat.keys.map(k=><button key={k} onClick={()=>getResp(k)}
+                        style={{ textAlign:"left",padding:"6px 10px",borderRadius:8,border:`1px solid ${C.border}`,background:C.surface2,color:C.dim,fontSize:11,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s" }}
+                        onMouseEnter={e=>{ e.currentTarget.style.color=C.text; e.currentTarget.style.borderColor=`${C.accent}30`; }}
+                        onMouseLeave={e=>{ e.currentTarget.style.color=C.dim; e.currentTarget.style.borderColor=C.border; }}>
+                        {_AL[k]}
+                      </button>)}
+                    </div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div style={{ padding:"10px 18px 20px",borderTop:`1px solid ${C.border}`,flexShrink:0,textAlign:"center" }}>
+          <span style={{ fontSize:10,color:C.dim,opacity:0.4 }}>Cleo · Copiloto interno</span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
 function LoginPage({ onLogin }) {
   const API = import.meta.env.VITE_API_URL;
   const [view,    setView]    = useState("login");
@@ -1565,7 +1737,6 @@ export default function CleoDashboard() {
   const [cancelTarget,    setCancelTarget]    = useState(null);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [assistantOpen,    setAssistantOpen]    = useState(false);
-  const cleo = useCleo({ tab, biz, services, appointments });
   const [blockTarget, setBlockTarget] = useState(null);
   const [calMonth, setCalMonth] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
   const [profileOpen, setProfileOpen] = useState(false);
@@ -2235,7 +2406,7 @@ export default function CleoDashboard() {
       {/* CANCEL MODAL */}
       <CancelModal appt={cancelTarget} onConfirm={handleCancel} onClose={() => setCancelTarget(null)} />
       {rescheduleTarget && <RescheduleModal appt={rescheduleTarget} onConfirm={handleReschedule} onClose={()=>setRescheduleTarget(null)} appointments={appointments}/>}
-      <CleoPanel cleo={{...cleo, open:assistantOpen, setOpen:setAssistantOpen}} C={C} onNavigate={(t)=>setTab(t)}/>
+      {assistantOpen && <CleoAssistantInline open={assistantOpen} setOpen={setAssistantOpen} tab={tab} biz={biz} services={services} appointments={appointments} onNavigate={(t)=>setTab(t)} C={C}/>}
 
       {/* BLOCK CONFIRM */}
       <BlockConfirm day={blockTarget} month={calMonth} onConfirm={handleBlock} onClose={() => setBlockTarget(null)} />
@@ -2559,7 +2730,7 @@ export default function CleoDashboard() {
 
       {/* HELP FAB */}
       {tab !== "config" && (
-        <CleoButton onClick={()=>setAssistantOpen(true)} C={C}/>
+        <CleoButtonInline onClick={()=>setAssistantOpen(true)} C={C}/>
       )}
 
       {/* FAQ HELP MODAL */}
