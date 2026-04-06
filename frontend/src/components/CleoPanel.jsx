@@ -1,6 +1,8 @@
 import { useRef, useEffect } from "react";
 import { X, ChevronRight, Calendar, CalendarDays, Plus, Briefcase, Zap, User, TrendingUp } from "lucide-react";
-import { QUICK_ACTIONS_BY_TAB } from "../hooks/useCleo.js";
+
+
+const QUICK_ACTIONS_BY_TAB = { agenda:["reagendar","cancelar","citas_hoy"], services:["crear_servicio","limite_servicios"], stats:["ingresos"], config:["mi_plan","whatsapp"] };
 
 const ACTION_ICONS  = { reagendar:CalendarDays, cancelar:X, citas_hoy:Calendar, crear_servicio:Plus, limite_servicios:Briefcase, ingresos:TrendingUp, mi_plan:User, whatsapp:Zap };
 const ACTION_LABELS = { reagendar:"Reagendar cita", cancelar:"Cancelar cita", citas_hoy:"Ver citas hoy", crear_servicio:"Crear servicio", limite_servicios:"Ver límites", ingresos:"Ver ingresos", mi_plan:"Mi plan", whatsapp:"Config IA" };
