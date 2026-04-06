@@ -887,6 +887,151 @@ function StatsView({ appointments, businessName, plan, showToast }) {
 
 // ============================================
 // ============================================
+// ============================================
+// SERVICE DRAWER
+// ============================================
+function ServiceDrawer({ onClose, onSave, plan, total, limit }) {
+  const [nm,   setNm]   = useState("");
+  const [desc, setDesc] = useState("");
+  const [pr,   setPr]   = useState("");
+  const [dur,  setDur]  = useState(30);
+  const [saving, setSaving] = useState(false);
+
+  const canSave = nm.trim() && pr && parseFloat(pr) > 0;
+  const planLabel = { basico:"Básico", negocio:"Negocio", pro:"Pro", trial:"Trial" }[plan] || plan;
+  const remaining = limit === Infinity ? null : limit - total;
+  const nearLimit = remaining !== null && remaining <= 2;
+
+  const DURATIONS = [15,30,45,60,90];
+  const fi = { width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${C.border}`, background:C.surface2, color:C.text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" };
+
+  // Sugerencias IA basadas en nombre
+  const aiSuggestions = nm.length > 3 ? {
+    price: nm.toLowerCase().includes("corte") ? 12 : nm.toLowerCase().includes("tinte") ? 45 : nm.toLowerCase().includes("manicure") ? 15 : null,
+    duration: nm.toLowerCase().includes("tinte") ? 60 : nm.toLowerCase().includes("uña") ? 45 : 30,
+  } : null;
+
+  const handleSave = () => {
+    if (!canSave) return;
+    setSaving(true);
+    setTimeout(() => {
+      onSave({ id:Date.now().toString(), name:nm.trim(), description:desc.trim()||null, price:parseFloat(pr), duration_minutes:dur, active:true });
+      setSaving(false);
+    }, 400);
+  };
+
+  return (
+    <>
+      {/* Overlay */}
+      <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:400, background:"rgba(0,0,0,0.5)", backdropFilter:"blur(3px)", animation:"fadeIn 0.2s ease" }}/>
+
+      {/* Drawer derecho */}
+      <div style={{ position:"fixed", top:0, right:0, bottom:0, zIndex:401, width:"min(400px,100vw)", background:C.bg, borderLeft:`1px solid ${C.border}`, display:"flex", flexDirection:"column", animation:"slideInRight 0.25s cubic-bezier(0.16,1,0.3,1)", boxShadow:"-20px 0 60px rgba(0,0,0,0.4)" }}>
+
+        {/* Header */}
+        <div style={{ padding:"20px 20px 16px", borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
+          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:10 }}>
+            <div>
+              <div style={{ fontFamily:"'Syne',sans-serif", fontSize:17, fontWeight:800, marginBottom:3 }}>Nuevo servicio</div>
+              <div style={{ fontSize:11, color:C.dim, lineHeight:1.4 }}>Cleo usará este servicio para informar precios y agendar</div>
+            </div>
+            <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+              <X size={13} color={C.dim}/>
+            </button>
+          </div>
+          {/* Contexto del plan */}
+          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", borderRadius:8, background:nearLimit?`rgba(251,191,36,0.08)`:`${C.accent}06`, border:`1px solid ${nearLimit?"rgba(251,191,36,0.2)":C.accent+"15"}` }}>
+            <div style={{ width:5, height:5, borderRadius:"50%", background:nearLimit?"#FBBF24":C.accent }}/>
+            <span style={{ fontSize:11, fontWeight:600, color:nearLimit?"#FBBF24":C.accent }}>Plan {planLabel}</span>
+            {remaining !== null && <span style={{ fontSize:11, color:C.dim }}>· {total} de {limit} servicios{nearLimit?" — quedan pocos":""}</span>}
+            {remaining === null && <span style={{ fontSize:11, color:C.dim }}>· Ilimitados</span>}
+          </div>
+        </div>
+
+        {/* Formulario scrollable */}
+        <div style={{ flex:1, overflowY:"auto", padding:"20px" }}>
+
+          {/* Nombre */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:11, fontWeight:600, color:C.dim, letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:6 }}>Nombre del servicio</div>
+            <input value={nm} onChange={e=>setNm(e.target.value)} placeholder="Ej: Corte de pelo, Manicure, Masaje..." style={fi} autoFocus/>
+          </div>
+
+          {/* Precio */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:11, fontWeight:600, color:C.dim, letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:6 }}>Precio</div>
+            <div style={{ position:"relative" }}>
+              <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:15, fontWeight:700, color:C.accent }}>$</span>
+              <input type="number" value={pr} onChange={e=>setPr(e.target.value)} placeholder="0.00"
+                style={{...fi, paddingLeft:30, fontSize:15, fontWeight:600}}/>
+            </div>
+            {aiSuggestions?.price && !pr && (
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:6, fontSize:11, color:C.accent }}>
+                <div style={{ width:4,height:4,borderRadius:"50%",background:C.accent }}/>
+                Cleo sugiere ${aiSuggestions.price} para este servicio
+                <button onClick={()=>setPr(String(aiSuggestions.price))} style={{ background:"none",border:"none",cursor:"pointer",color:C.accent,fontSize:11,fontWeight:600,padding:0,textDecoration:"underline" }}>Usar</button>
+              </div>
+            )}
+          </div>
+
+          {/* Duración — chips */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:11, fontWeight:600, color:C.dim, letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:8 }}>Duración</div>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              {DURATIONS.map(d=>(
+                <button key={d} onClick={()=>setDur(d)}
+                  style={{ padding:"8px 14px", borderRadius:10, border:`1.5px solid ${dur===d?C.accent:C.border}`, background:dur===d?`${C.accent}12`:"transparent", color:dur===d?C.accent:C.dim, fontSize:12, fontWeight:dur===d?700:500, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s", boxShadow:dur===d?`0 0 8px ${C.accent}18`:"none" }}>
+                  {d} min
+                </button>
+              ))}
+            </div>
+            {aiSuggestions?.duration && dur !== aiSuggestions.duration && (
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:8, fontSize:11, color:C.accent }}>
+                <div style={{ width:4,height:4,borderRadius:"50%",background:C.accent }}/>
+                Cleo sugiere {aiSuggestions.duration} min para este servicio
+                <button onClick={()=>setDur(aiSuggestions.duration)} style={{ background:"none",border:"none",cursor:"pointer",color:C.accent,fontSize:11,fontWeight:600,padding:0,textDecoration:"underline" }}>Usar</button>
+              </div>
+            )}
+          </div>
+
+          {/* Descripción */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:11, fontWeight:600, color:C.dim, letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:6 }}>Descripción <span style={{ fontWeight:400,textTransform:"none",letterSpacing:0 }}>(opcional)</span></div>
+            <textarea value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Ej: Incluye lavado y secado..."
+              rows={2} style={{...fi, resize:"none", lineHeight:1.5}}/>
+          </div>
+
+          {/* Preview de cómo lo verá Cleo */}
+          {nm && pr && (
+            <div style={{ padding:"12px 14px", background:`${C.accent}05`, border:`1px solid ${C.accent}15`, borderRadius:12 }}>
+              <div style={{ fontSize:10, fontWeight:600, color:C.accent, letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:6 }}>Vista previa · Así lo presentará Cleo</div>
+              <div style={{ fontSize:13, color:C.text }}>"<strong>{nm}</strong> — ${pr} · {dur} min{desc?` · ${desc}`:""}"</div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer fijo */}
+        <div style={{ padding:"16px 20px", borderTop:`1px solid ${C.border}`, display:"flex", gap:10, flexShrink:0 }}>
+          <button onClick={onClose} style={{ flex:1, padding:"12px 0", borderRadius:12, border:`1px solid ${C.border}`, background:"transparent", color:C.dim, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}
+            onMouseEnter={e=>{ e.currentTarget.style.color=C.text; e.currentTarget.style.borderColor=C.accent+"40"; }}
+            onMouseLeave={e=>{ e.currentTarget.style.color=C.dim; e.currentTarget.style.borderColor=C.border; }}>
+            Cancelar
+          </button>
+          <button onClick={handleSave} disabled={!canSave||saving}
+            style={{ flex:2, padding:"12px 0", borderRadius:12, border:"none", background:canSave?C.accent:C.border, color:canSave?C.bg:C.dim, fontSize:13, fontWeight:700, cursor:canSave?"pointer":"default", fontFamily:"inherit", transition:"all 0.15s", boxShadow:canSave?`0 4px 16px ${C.accent}25`:"none" }}
+            onMouseEnter={e=>{ if(canSave){ e.currentTarget.style.opacity="0.88"; e.currentTarget.style.transform="translateY(-1px)"; }}}
+            onMouseLeave={e=>{ e.currentTarget.style.opacity="1"; e.currentTarget.style.transform="translateY(0)"; }}>
+            {saving?"Creando...":"Crear servicio"}
+          </button>
+        </div>
+      </div>
+
+      <style>{`@keyframes slideInRight { from { transform:translateX(100%); opacity:0 } to { transform:translateX(0); opacity:1 } }`}</style>
+    </>
+  );
+}
+
+
 // TAB: SERVICES
 // ============================================
 function ServicesView({ services, setServices, showToast, plan }) {
@@ -1001,31 +1146,12 @@ function ServicesView({ services, setServices, showToast, plan }) {
         </div>
       )}
 
-      {/* Modal nuevo servicio */}
-      <BottomSheet open={addModal} onClose={()=>setAddModal(false)} title="Nuevo servicio">
-        {(()=>{
-          const [nm,setNm]=useState(""); const [desc,setDesc]=useState(""); const [pr,setPr]=useState(""); const [dur,setDur]=useState(30);
-          const canSave = nm.trim()&&pr;
-          return (<div>
-            <input value={nm} onChange={e=>setNm(e.target.value)} placeholder="Nombre del servicio" style={fi}/>
-            <input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Descripción (opcional)" style={fi}/>
-            <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-              <div style={{ flex:1, position:"relative" }}>
-                <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", fontSize:14, color:C.dim }}>$</span>
-                <input type="number" value={pr} onChange={e=>setPr(e.target.value)} placeholder="0.00" style={{...fi,paddingLeft:28,marginBottom:0}}/>
-              </div>
-              <select value={dur} onChange={e=>setDur(Number(e.target.value))} style={{...fi,flex:1,marginBottom:0}}>
-                {[15,30,45,60,90,120].map(d=><option key={d} value={d}>{d} min</option>)}
-              </select>
-            </div>
-            <button onClick={()=>{ if(!canSave) return; const ns={id:Date.now().toString(),name:nm.trim(),description:desc.trim()||null,price:parseFloat(pr),duration_minutes:dur,active:true}; setServices(p=>[...p,ns]); showToast("Servicio creado ✓"); setAddModal(false); }}
-              disabled={!canSave}
-              style={{ width:"100%",padding:13,borderRadius:12,border:"none",background:canSave?C.accent:C.border,color:canSave?C.bg:C.dim,fontSize:14,fontWeight:700,cursor:canSave?"pointer":"default",fontFamily:"inherit" }}>
-              Crear servicio
-            </button>
-          </div>);
-        })()}
-      </BottomSheet>
+      {/* Drawer lateral — Nuevo servicio */}
+      {addModal && <ServiceDrawer
+        onClose={()=>setAddModal(false)}
+        onSave={(svc)=>{ setServices(p=>[...p,svc]); showToast("Servicio creado ✓"); setAddModal(false); }}
+        plan={plan} total={total} limit={limit}
+      />}
 
       {/* Modal editar */}
       {editTarget && (
