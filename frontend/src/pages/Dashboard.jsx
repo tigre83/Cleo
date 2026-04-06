@@ -354,63 +354,104 @@ function BottomSheet({ open, onClose, title, children, tall }) {
 // ============================================
 function CancelModal({ appt, onConfirm, onClose }) {
   if (!appt) return null;
-  const time = appt.datetime.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" });
+  const time    = appt.datetime.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" });
   const dateStr = appt.datetime.toLocaleDateString("es-EC", { weekday: "long", day: "numeric", month: "long" });
   const firstName = appt.client_name.split(" ")[0];
+
   return (
-    <BottomSheet open={!!appt} onClose={onClose} title="Cancelar cita">
-      {/* Info de la cita */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{appt.client_name}</div>
-          <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: `${C.accent}15`, color: C.accent, letterSpacing: "0.05em" }}>CONFIRMADA</span>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.dim }}>
-            <Calendar size={11} color={C.dim}/> {dateStr} a las {time}
+    <>
+      {/* Overlay con blur */}
+      <div onClick={onClose} style={{
+        position:"fixed", inset:0, zIndex:300,
+        background:"rgba(0,0,0,0.65)",
+        backdropFilter:"blur(4px)",
+        WebkitBackdropFilter:"blur(4px)",
+        animation:"fadeIn 0.2s ease"
+      }}/>
+
+      {/* Modal flotante centrado */}
+      <div style={{
+        position:"fixed", inset:0, zIndex:301,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        padding:"20px",
+        pointerEvents:"none",
+      }}>
+        <div style={{
+          background:C.bg, border:`1px solid ${C.border}`,
+          borderRadius:20, padding:"28px 24px",
+          width:"100%", maxWidth:400,
+          boxShadow:"0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)",
+          pointerEvents:"all",
+          animation:"scaleIn 0.2s cubic-bezier(0.16,1,0.3,1)",
+        }}>
+          {/* Header */}
+          <div style={{ marginBottom:20 }}>
+            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:C.text, marginBottom:4 }}>Cancelar cita</div>
+            <div style={{ fontSize:13, color:C.dim }}>Estás a punto de cancelar esta reserva</div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.dim }}>
-            <Clock size={11} color={C.dim}/> {appt.duration_minutes} minutos
-          </div>
-          {appt.service_name && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.dim }}>
-              <Briefcase size={11} color={C.dim}/> {appt.service_name}
-              {appt.service_price && <span style={{ color: C.accent, fontWeight: 600 }}>· ${appt.service_price}</span>}
+
+          {/* Card cita */}
+          <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:14, padding:"14px 16px", marginBottom:14 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{appt.client_name}</div>
+              <span style={{ fontSize:9, fontWeight:600, padding:"3px 8px", borderRadius:6, background:`${C.accent}15`, color:C.accent, letterSpacing:"0.06em" }}>CONFIRMADA</span>
             </div>
-          )}
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.dim }}>
+                <Calendar size={11} color={C.dim}/> {dateStr} · {time}
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.dim }}>
+                <Clock size={11} color={C.dim}/> {appt.duration_minutes} minutos
+              </div>
+              {appt.service_name && (
+                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.dim }}>
+                  <Briefcase size={11} color={C.dim}/> {appt.service_name}
+                  {appt.service_price && <span style={{ color:C.accent, fontWeight:600 }}>· ${appt.service_price}</span>}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mensaje IA */}
+          <div style={{ display:"flex", gap:10, alignItems:"flex-start", padding:"11px 13px", background:`${C.accent}06`, border:`1px solid ${C.accent}18`, borderRadius:12, marginBottom:10 }}>
+            <MessageSquare size={13} color={C.accent} style={{ flexShrink:0, marginTop:1 }}/>
+            <p style={{ fontSize:12, color:C.dim, lineHeight:1.6, margin:0 }}>
+              Cleo notificará automáticamente al cliente y sugerirá nuevos horarios disponibles.
+            </p>
+          </div>
+
+          {/* Warning */}
+          <div style={{ display:"flex", gap:8, alignItems:"center", padding:"9px 12px", background:"rgba(251,191,36,0.05)", border:"1px solid rgba(251,191,36,0.15)", borderRadius:10, marginBottom:22 }}>
+            <AlertTriangle size={12} color="#FBBF24" style={{ flexShrink:0 }}/>
+            <span style={{ fontSize:11, color:"#FBBF24", opacity:0.8 }}>Esta acción liberará el espacio en tu agenda.</span>
+          </div>
+
+          {/* Botones */}
+          <div style={{ display:"flex", gap:10 }}>
+            <button onClick={onClose}
+              style={{ flex:1, padding:"12px 0", borderRadius:12, border:"none", background:C.accent, color:C.bg, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"opacity 0.15s" }}
+              onMouseEnter={e=>e.currentTarget.style.opacity="0.88"}
+              onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+              Mantener cita
+            </button>
+            <button onClick={()=>onConfirm(appt.id)}
+              style={{ flex:1, padding:"12px 0", borderRadius:12, border:`1.5px solid ${C.red}50`, background:"transparent", color:C.red, fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}
+              onMouseEnter={e=>{ e.currentTarget.style.background=`${C.red}12`; e.currentTarget.style.boxShadow=`0 0 12px ${C.red}20`; }}
+              onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.boxShadow="none"; }}>
+              Cancelar cita
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Mensaje inteligente */}
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 14px", background: `${C.accent}06`, border: `1px solid ${C.accent}20`, borderRadius: 12, marginBottom: 10 }}>
-        <MessageSquare size={14} color={C.accent} style={{ flexShrink: 0, marginTop: 1 }}/>
-        <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.6, margin: 0 }}>
-          Cleo notificará automáticamente a <span style={{ color: C.text, fontWeight: 600 }}>{firstName}</span> y ofrecerá nuevos horarios disponibles.
-        </p>
-      </div>
-
-      {/* Advertencia ligera */}
-      <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 12px", marginBottom: 20 }}>
-        <AlertTriangle size={12} color={C.dim} style={{ flexShrink: 0 }}/>
-        <span style={{ fontSize: 11, color: C.dim }}>Esta acción liberará el espacio en tu agenda.</span>
-      </div>
-
-      {/* Botones */}
-      <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={onClose}
-          style={{ flex: 1, padding: 13, borderRadius: 12, border: "none", background: C.accent, color: C.bg, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s" }}
-          onMouseEnter={e=>e.target.style.opacity="0.9"} onMouseLeave={e=>e.target.style.opacity="1"}>
-          Mantener cita
-        </button>
-        <button onClick={() => onConfirm(appt.id)}
-          style={{ flex: 1, padding: 13, borderRadius: 12, border: `1px solid ${C.red}40`, background: `${C.red}10`, color: C.red, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}
-          onMouseEnter={e=>{e.target.style.background=C.red;e.target.style.color="#fff";}} onMouseLeave={e=>{e.target.style.background=`${C.red}10`;e.target.style.color=C.red;}}>
-          Cancelar cita
-        </button>
-      </div>
-    </BottomSheet>
+      <style>{`
+        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+        @keyframes scaleIn { from { opacity:0; transform:scale(0.95) } to { opacity:1; transform:scale(1) } }
+      `}</style>
+    </>
   );
 }
+
 
 // ============================================
 // TAB 1: WEEKLY VIEW
