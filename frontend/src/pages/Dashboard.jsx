@@ -1462,57 +1462,90 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
     </div>
   );
 
-  const Bubble = ({accent,id,children}) => (
-    <div key={id} style={{marginBottom:12,animation:"fadeIn 0.25s ease"}}>
-      <div style={{background:C.surface,border:"1px solid "+(accent||C.border),borderRadius:"4px 14px 14px 14px",padding:"12px 14px",position:"relative",overflow:"hidden"}}>
-        {accent&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,"+accent+",transparent)"}}/>}
-        {children}
-      </div>
+  // ── render de mensajes tipo chat liviano ──────────────────────────────────
+  const MsgRow = ({id,children}) => (
+    <div key={id} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:10,animation:"fadeIn 0.2s ease"}}>
+      <img src="/cleo-avatar.png" alt="" style={{width:22,height:22,borderRadius:6,objectFit:"cover",flexShrink:0,marginTop:2,opacity:0.85}}/>
+      <div style={{flex:1}}>{children}</div>
+    </div>
+  );
+
+  const TextLine = ({text,dim}) => (
+    <div style={{fontSize:12,color:dim?C.dim:C.text,lineHeight:1.65}}>{text}</div>
+  );
+
+  const InlineChips = ({keys}) => (
+    <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:8}}>
+      {keys.map(k=>(
+        <button key={k} onClick={()=>respond(k,_AL[k])}
+          style={{padding:"4px 10px",borderRadius:20,border:"1px solid "+C.accent+"35",background:C.accent+"0D",color:C.accent,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}
+          onMouseEnter={e=>{e.currentTarget.style.background=C.accent+"20";e.currentTarget.style.borderColor=C.accent+"60";}}
+          onMouseLeave={e=>{e.currentTarget.style.background=C.accent+"0D";e.currentTarget.style.borderColor=C.accent+"35";}}>
+          {_AL[k]}
+        </button>
+      ))}
     </div>
   );
 
   const renderBubble = (msg) => {
+    // mensaje usuario — burbuja derecha sin avatar
     if(msg.role==="user") return (
-      <div key={msg.id} style={{display:"flex",justifyContent:"flex-end",marginBottom:10,animation:"fadeIn 0.2s ease"}}>
-        <div style={{background:C.accent+"18",border:"1px solid "+C.accent+"30",borderRadius:"14px 4px 14px 14px",padding:"9px 13px",maxWidth:"80%",fontSize:12,color:C.text,lineHeight:1.5}}>{msg.text}</div>
+      <div key={msg.id} style={{display:"flex",justifyContent:"flex-end",marginBottom:8,animation:"fadeIn 0.2s ease"}}>
+        <div style={{background:C.accent+"15",border:"1px solid "+C.accent+"25",borderRadius:"12px 3px 12px 12px",padding:"8px 12px",maxWidth:"78%",fontSize:12,color:C.text,lineHeight:1.55}}>{msg.text}</div>
       </div>
     );
+    // fuera de alcance — texto plano + chips
     if(msg.type==="out_of_scope") return (
-      <Bubble key={msg.id} id={msg.id}>
-        <div style={{fontSize:12,color:C.dim,lineHeight:1.6}}>Solo puedo ayudarte con temas de la plataforma.</div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginTop:2}}>Citas, servicios, plan e ingresos 🤖</div>
-        <QuickBtns keys={["citas_hoy","crear_servicio","mi_plan"]}/>
-      </Bubble>
+      <MsgRow key={msg.id} id={msg.id}>
+        <TextLine text="No puedo ayudarte con eso." dim/>
+        <TextLine text="Si puedo ayudarte con citas, servicios, plan e ingresos."/>
+        <InlineChips keys={["citas_hoy","crear_servicio","mi_plan"]}/>
+      </MsgRow>
     );
+    // fallback — texto plano + chips del tab actual
     if(msg.type==="fallback") return (
-      <Bubble key={msg.id} id={msg.id}>
-        <div style={{fontSize:12,color:C.dim,lineHeight:1.6}}>No estoy seguro de entenderte bien.</div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginTop:2}}>Te puedo ayudar con:</div>
-        <QuickBtns keys={qa.slice(0,3)}/>
-      </Bubble>
+      <MsgRow key={msg.id} id={msg.id}>
+        <TextLine text="No entendi bien tu pregunta." dim/>
+        <TextLine text="Prueba con alguna de estas:"/>
+        <InlineChips keys={qa.slice(0,3)}/>
+      </MsgRow>
     );
+    // saludo — texto + contexto compacto
     if(msg.type==="greeting") return (
-      <Bubble key={msg.id} id={msg.id} accent={C.accent}>
-        <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:(msg.tc>0||msg.lim||msg.plan==="trial")?10:0}}>Hola, soy Cleo 🤖 tu copiloto 🟢</div>
-        {(msg.tc>0||msg.lim||msg.plan==="trial")&&<div style={{display:"flex",flexDirection:"column",gap:5}}>
-          <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:2}}>Ahora mismo</div>
-          {msg.tc>0&&<div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text}}><div style={{width:6,height:6,borderRadius:"50%",background:"#4ADE80",flexShrink:0,boxShadow:"0 0 6px #4ADE80"}}/>{msg.tc} cita{msg.tc!==1?"s":""} hoy</div>}
-          {msg.lim&&<div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text}}><div style={{width:6,height:6,borderRadius:"50%",background:"#4ADE80",flexShrink:0,boxShadow:"0 0 6px #4ADE80"}}/>{msg.lim-msg.sc} servicios disponibles</div>}
-          {msg.plan==="trial"&&msg.td>0&&<div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text}}><div style={{width:6,height:6,borderRadius:"50%",background:"#22D3EE",flexShrink:0,boxShadow:"0 0 6px #22D3EE"}}/>Prueba activa: {msg.td} dias</div>}
-        </div>}
-      </Bubble>
+      <MsgRow key={msg.id} id={msg.id}>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.65,marginBottom:(msg.tc>0||msg.lim||msg.plan==="trial")?8:0}}>Hola, soy Cleo 🤖 tu copiloto 🟢</div>
+        {(msg.tc>0||msg.lim||msg.plan==="trial")&&(
+          <div style={{display:"flex",flexDirection:"column",gap:4,padding:"8px 10px",background:C.surface,borderRadius:10,border:"1px solid "+C.border}}>
+            {msg.tc>0&&<div style={{display:"flex",alignItems:"center",gap:7,fontSize:11,color:C.text}}><div style={{width:5,height:5,borderRadius:"50%",background:"#4ADE80",boxShadow:"0 0 5px #4ADE80"}}/>{msg.tc} cita{msg.tc!==1?"s":""} hoy</div>}
+            {msg.lim&&<div style={{display:"flex",alignItems:"center",gap:7,fontSize:11,color:C.text}}><div style={{width:5,height:5,borderRadius:"50%",background:"#4ADE80",boxShadow:"0 0 5px #4ADE80"}}/>{msg.lim-msg.sc} servicios disponibles</div>}
+            {msg.plan==="trial"&&msg.td>0&&<div style={{display:"flex",alignItems:"center",gap:7,fontSize:11,color:C.text}}><div style={{width:5,height:5,borderRadius:"50%",background:"#22D3EE",boxShadow:"0 0 5px #22D3EE"}}/>Prueba activa: {msg.td} dias</div>}
+          </div>
+        )}
+      </MsgRow>
     );
+    // product_help — sin titulo pesado, body + steps compactos + CTA pequeño
+    const hasSteps = msg.steps && msg.steps.length > 0;
     return (
-      <Bubble key={msg.id} id={msg.id} accent={C.accent}>
-        {msg.title&&<div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:800,color:C.text,marginBottom:6}}>{msg.title}</div>}
-        {msg.body&&<div style={{fontSize:12,color:C.dim,lineHeight:1.7,marginBottom:msg.steps?10:0}}>{msg.body}</div>}
-        {msg.steps&&<div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:msg.action?10:0}}>
-          {msg.steps.map((s,i)=><div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,fontSize:11,color:C.dim}}>
-            <span style={{fontSize:9,fontWeight:700,color:C.accent,minWidth:14,marginTop:2}}>{i+1}.</span>{s}
-          </div>)}
-        </div>}
-        {msg.action&&<button onClick={()=>nav(msg.action.tab)} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:"1px solid "+C.accent+"30",background:C.accentGlow,color:C.accent,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{msg.action.label} →</button>}
-      </Bubble>
+      <MsgRow key={msg.id} id={msg.id}>
+        {msg.body&&<TextLine text={msg.body}/>}
+        {hasSteps&&(
+          <div style={{display:"flex",flexDirection:"column",gap:3,marginTop:6,paddingLeft:4}}>
+            {msg.steps.map((s,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"baseline",gap:6,fontSize:11,color:C.dim}}>
+                <span style={{fontSize:10,fontWeight:700,color:C.accent,minWidth:12}}>{i+1}.</span>{s}
+              </div>
+            ))}
+          </div>
+        )}
+        {msg.action&&(
+          <button onClick={()=>nav(msg.action.tab)}
+            style={{marginTop:8,display:"inline-flex",alignItems:"center",gap:4,padding:"5px 11px",borderRadius:20,border:"1px solid "+C.accent+"35",background:C.accent+"0D",color:C.accent,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}
+            onMouseEnter={e=>{e.currentTarget.style.background=C.accent+"20";}}
+            onMouseLeave={e=>{e.currentTarget.style.background=C.accent+"0D";}}>
+            {msg.action.label} →
+          </button>
+        )}
+      </MsgRow>
     );
   };
 
