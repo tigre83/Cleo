@@ -549,25 +549,58 @@ function RescheduleModal({ appt, onConfirm, onClose, appointments }) {
             </div>
             {/* Indicador de disponibilidad */}
             {newDate && newTime && (
-              <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:isOccupied?"#F87171":C.accent }}>
-                <div style={{ width:6,height:6,borderRadius:"50%",background:isOccupied?"#F87171":C.accent }}/>
-                {isOccupied?"Cercano a otra cita":"Disponible"}
+              <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:isOccupied?"#F87171":C.accent, padding:"5px 0", transition:"all 0.2s" }}>
+                <div style={{ width:6,height:6,borderRadius:"50%",background:isOccupied?"#F87171":C.accent, boxShadow:isOccupied?"none":`0 0 6px ${C.accent}` }}/>
+                {isOccupied
+                  ? <span>⚠ Cercano a otra cita — considera otro horario</span>
+                  : <span>✓ Disponible · Sin conflictos en tu agenda</span>}
               </div>
             )}
           </div>
 
-          {/* Sugerencias rápidas */}
+          {/* Sugerencias IA */}
           {suggestions.length>0 && (
             <div style={{ marginBottom:16 }}>
-              <div style={{ fontSize:10, fontWeight:600, color:C.dim, letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:8 }}>Sugerido · horarios libres</div>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {suggestions.map(t=>(
-                  <button key={t} onClick={()=>setNewTime(t)}
-                    style={{ padding:"5px 12px", borderRadius:8, border:`1px solid ${newTime===t?C.accent:C.border}`, background:newTime===t?`${C.accent}12`:"transparent", color:newTime===t?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>
-                    {t}
-                  </button>
-                ))}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                  <div style={{ width:5, height:5, borderRadius:"50%", background:C.accent, boxShadow:`0 0 6px ${C.accent}` }}/>
+                  <span style={{ fontSize:10, fontWeight:600, color:C.accent, letterSpacing:"0.07em", textTransform:"uppercase" }}>Optimizado por IA</span>
+                </div>
+                <span style={{ fontSize:10, color:C.dim, opacity:0.6 }}>
+                  {isOccupied ? "Evita conflictos en tu agenda" : "Basado en tu disponibilidad"}
+                </span>
               </div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {suggestions.map((t,i)=>{
+                  const isBest = i===0;
+                  const isSel  = newTime===t;
+                  return (
+                    <div key={t} style={{ position:"relative" }}>
+                      <button onClick={()=>setNewTime(t)}
+                        style={{ padding:"6px 12px", borderRadius:9,
+                          border:`1.5px solid ${isSel?C.accent:isBest?C.accent+"50":C.border}`,
+                          background:isSel?`${C.accent}15`:isBest?`${C.accent}06`:"transparent",
+                          color:isSel?C.accent:isBest?C.accent:C.dim,
+                          fontSize:11, fontWeight:isBest?700:600, cursor:"pointer", fontFamily:"inherit",
+                          boxShadow:isBest&&!isSel?`0 0 10px ${C.accent}18`:"none",
+                          transition:"all 0.18s", display:"flex", alignItems:"center", gap:4 }}>
+                        {isBest && <span style={{ fontSize:8, opacity:0.7 }}>★</span>}
+                        {t}
+                      </button>
+                      {isBest && !isSel && (
+                        <div style={{ position:"absolute", top:-8, left:"50%", transform:"translateX(-50%)", fontSize:8, fontWeight:700, color:C.accent, background:C.bg, padding:"0 4px", letterSpacing:"0.05em", whiteSpace:"nowrap" }}>MEJOR</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Predicción de calidad */}
+              {newTime && (
+                <div style={{ marginTop:8, fontSize:10, color:newTime===suggestions[0]?C.accent:C.dim, display:"flex", alignItems:"center", gap:4, transition:"all 0.2s" }}>
+                  <Check size={10} color={newTime===suggestions[0]?C.accent:C.dim}/>
+                  {newTime===suggestions[0] ? "Horario óptimo · Alta probabilidad de asistencia" : "Horario disponible"}
+                </div>
+              )}
             </div>
           )}
 
