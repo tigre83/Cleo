@@ -1368,9 +1368,8 @@ function CleoButtonInline({ onClick, C }) {
     <button onClick={onClick} style={{ position:"fixed",bottom:90,right:16,zIndex:99,width:48,height:48,borderRadius:"50%",border:`1.5px solid ${C.accent}50`,background:C.bg,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 24px rgba(0,0,0,0.4), 0 0 16px ${C.accent}20`,transition:"all 0.2s",outline:"none" }}
       onMouseEnter={e=>{ e.currentTarget.style.transform="scale(1.08)"; e.currentTarget.style.boxShadow=`0 6px 28px rgba(0,0,0,0.5), 0 0 28px ${C.accent}40`; }}
       onMouseLeave={e=>{ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow=`0 4px 24px rgba(0,0,0,0.4), 0 0 16px ${C.accent}20`; }}>
-      <div style={{ position:"relative",width:28,height:28 }}>
-        <div style={{ position:"absolute",inset:0,borderRadius:"50%",background:`radial-gradient(circle,${C.accent}20 0%,transparent 70%)` }}/>
-        <div style={{ position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:12,height:12,borderRadius:"50%",background:C.accent,boxShadow:`0 0 10px ${C.accent},0 0 20px ${C.accent}60` }}/>
+      <div style={{ position:"relative",width:36,height:36 }}>
+        <img src="/cleo-avatar.png" alt="Cleo" style={{ width:36,height:36,borderRadius:"50%",objectFit:"cover",display:"block" }}/>
         <div style={{ position:"absolute",bottom:0,right:0,width:9,height:9,borderRadius:"50%",background:"#22C55E",border:`2px solid ${C.bg}` }}/>
       </div>
     </button>
@@ -1437,8 +1436,8 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
         <div style={{ padding:"20px 18px 16px",borderBottom:`1px solid ${C.border}`,flexShrink:0,background:`linear-gradient(180deg,${C.accent}07 0%,transparent 100%)` }}>
           <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14 }}>
             <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-              <div style={{ width:44,height:44,borderRadius:14,background:`${C.accent}10`,border:`1.5px solid ${C.accent}35`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",boxShadow:`0 0 24px ${C.accent}15`,flexShrink:0 }}>
-                <div style={{ width:14,height:14,borderRadius:"50%",background:C.accent,boxShadow:`0 0 14px ${C.accent}` }}/>
+              <div style={{ width:44,height:44,borderRadius:14,flexShrink:0,position:"relative" }}>
+                <img src="/cleo-avatar.png" alt="Cleo" style={{ width:44,height:44,borderRadius:14,objectFit:"cover",display:"block" }}/>
                 <div style={{ position:"absolute",bottom:-3,right:-3,width:13,height:13,borderRadius:"50%",background:"#22C55E",border:`2.5px solid ${C.bg}` }}/>
               </div>
               <div>
