@@ -540,20 +540,68 @@ function RescheduleModal({ appt, onConfirm, onClose, appointments }) {
             </div>
           </div>
 
-          {/* Selectores */}
-          <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:10, fontWeight:600, color:C.dim, letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:8 }}>Nuevo horario</div>
-            <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-              <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)} style={{...fi,flex:2}} min={new Date().toISOString().split("T")[0]}/>
-              <input type="time" value={newTime} onChange={e=>setNewTime(e.target.value)} style={{...fi,flex:1}}/>
+          {/* Selector fecha — días de la próxima semana */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:10, fontWeight:600, color:C.dim, letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:10 }}>Selecciona el día</div>
+            <div style={{ display:"flex", gap:6, overflowX:"auto", scrollbarWidth:"none", paddingBottom:4 }}>
+              {Array.from({length:14},(_,i)=>{
+                const d = new Date(); d.setDate(d.getDate()+i);
+                const iso = d.toISOString().split("T")[0];
+                const isSelected = newDate===iso;
+                const isToday = i===0;
+                const dayName = d.toLocaleDateString("es-EC",{weekday:"short"}).replace(".","");
+                const dayNum  = d.getDate();
+                const month   = d.toLocaleDateString("es-EC",{month:"short"}).replace(".","");
+                return (
+                  <button key={iso} onClick={()=>setNewDate(iso)}
+                    style={{ flexShrink:0, width:52, padding:"10px 0", borderRadius:14, border:`1.5px solid ${isSelected?C.accent:C.border}`,
+                      background:isSelected?`${C.accent}12`:"transparent",
+                      cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s",
+                      boxShadow:isSelected?`0 0 12px ${C.accent}20`:"none" }}>
+                    <div style={{ fontSize:9, fontWeight:600, color:isSelected?C.accent:C.dim, textTransform:"uppercase", letterSpacing:"0.05em" }}>{dayName}</div>
+                    <div style={{ fontSize:18, fontWeight:800, color:isSelected?C.accent:isToday?C.text:C.dim, lineHeight:1.2, marginTop:2 }}>{dayNum}</div>
+                    <div style={{ fontSize:8, color:isSelected?C.accent:C.dim, opacity:0.7 }}>{month}</div>
+                    {isToday && !isSelected && <div style={{ width:4,height:4,borderRadius:"50%",background:C.accent,margin:"3px auto 0" }}/>}
+                  </button>
+                );
+              })}
             </div>
+          </div>
+
+          {/* Selector hora — botones visuales */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:10, fontWeight:600, color:C.dim, letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:10 }}>Selecciona la hora</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+              {["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00"].map(t=>{
+                const isSel = newTime===t;
+                const dt = newDate ? new Date(`${newDate}T${t}:00`) : null;
+                const busy = appointments && dt && appointments.some(a=>
+                  a.id!==appt.id && a.status==="confirmed" &&
+                  Math.abs(dt-a.datetime) < (appt.duration_minutes||30)*60000
+                );
+                const isPast = dt && dt < new Date();
+                const isBest = suggestions[0]===t;
+                if(isPast) return null;
+                return (
+                  <button key={t} onClick={()=>!busy&&setNewTime(t)} disabled={busy}
+                    style={{ padding:"9px 0", borderRadius:10, textAlign:"center", cursor:busy?"not-allowed":"pointer", fontFamily:"inherit", transition:"all 0.15s",
+                      border:`1.5px solid ${isSel?C.accent:isBest&&!busy?C.accent+"40":busy?"transparent":C.border}`,
+                      background:isSel?`${C.accent}15`:isBest&&!busy?`${C.accent}05`:"transparent",
+                      opacity:busy?0.35:1,
+                      boxShadow:isSel?`0 0 10px ${C.accent}20`:isBest&&!busy?`0 0 8px ${C.accent}10`:"none" }}>
+                    <div style={{ fontSize:12, fontWeight:isSel||isBest?700:500, color:isSel?C.accent:busy?C.dim:isBest?C.accent:C.text }}>{t}</div>
+                    {isBest && !busy && !isSel && <div style={{ fontSize:7, color:C.accent, fontWeight:700, letterSpacing:"0.05em" }}>★ TOP</div>}
+                    {busy && <div style={{ fontSize:7, color:C.dim }}>ocupado</div>}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Indicador de disponibilidad */}
             {newDate && newTime && (
-              <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:isOccupied?"#F87171":C.accent, padding:"5px 0", transition:"all 0.2s" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, marginTop:10, color:isOccupied?"#F87171":C.accent, transition:"all 0.2s" }}>
                 <div style={{ width:6,height:6,borderRadius:"50%",background:isOccupied?"#F87171":C.accent, boxShadow:isOccupied?"none":`0 0 6px ${C.accent}` }}/>
-                {isOccupied
-                  ? <span>⚠ Cercano a otra cita — considera otro horario</span>
-                  : <span>✓ Disponible · Sin conflictos en tu agenda</span>}
+                {isOccupied ? "⚠ Cercano a otra cita" : "✓ Disponible · Sin conflictos"}
               </div>
             )}
           </div>
