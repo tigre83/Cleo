@@ -2927,10 +2927,20 @@ export default function CleoDashboard() {
       {/* Botón asistente Cleo */}
       {authed && (
         <button onClick={()=>setAssistantOpen(true)}
-          style={{ position:"fixed",bottom:82,right:16,zIndex:90,width:44,height:44,borderRadius:14,border:`1.5px solid ${C.accent}40`,background:C.bg,boxShadow:`0 4px 20px rgba(0,0,0,0.4), 0 0 16px ${C.accent}15`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"all 0.2s" }}
-          onMouseEnter={e=>{ e.currentTarget.style.boxShadow=`0 4px 24px rgba(0,0,0,0.5), 0 0 24px ${C.accent}25`; e.currentTarget.style.transform="translateY(-2px)"; }}
-          onMouseLeave={e=>{ e.currentTarget.style.boxShadow=`0 4px 20px rgba(0,0,0,0.4), 0 0 16px ${C.accent}15`; e.currentTarget.style.transform="translateY(0)"; }}>
-          <div style={{ width:10,height:10,borderRadius:"50%",background:C.accent,boxShadow:`0 0 10px ${C.accent}` }}/>
+          style={{ position:"fixed", bottom:100, right:24, zIndex:90,
+            display:"flex", alignItems:"center", gap:8,
+            padding:"10px 16px", borderRadius:16,
+            border:`1.5px solid ${C.accent}40`,
+            background:C.bg,
+            boxShadow:`0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${C.accent}15`,
+            cursor:"pointer", transition:"all 0.2s", fontFamily:"inherit" }}
+          onMouseEnter={e=>{ e.currentTarget.style.boxShadow=`0 8px 36px rgba(0,0,0,0.6), 0 0 28px ${C.accent}25`; e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.borderColor=`${C.accent}70`; }}
+          onMouseLeave={e=>{ e.currentTarget.style.boxShadow=`0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${C.accent}15`; e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=`${C.accent}40`; }}>
+          <div style={{ position:"relative", width:20, height:20, borderRadius:6, background:`${C.accent}15`, border:`1px solid ${C.accent}30`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ width:7, height:7, borderRadius:"50%", background:C.accent, boxShadow:`0 0 8px ${C.accent}` }}/>
+            <div style={{ position:"absolute", top:-3, right:-3, width:8, height:8, borderRadius:"50%", background:"#22C55E", border:`2px solid ${C.bg}` }}/>
+          </div>
+          <span style={{ fontSize:12, fontWeight:600, color:C.accent }}>Asistente Cleo</span>
         </button>
       )}
       </div>}
