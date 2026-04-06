@@ -2816,65 +2816,13 @@ export default function CleoDashboard() {
 
       {/* HELP FAB */}
       {tab !== "config" && (
-        <button onClick={function(){setHelpModal(true)}} style={{ position:"fixed", bottom:90, right:16, width:44, height:44, borderRadius:"50%", background:C.surface, border:"1px solid "+C.border, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", zIndex:99, boxShadow:"0 4px 20px rgba(0,0,0,0.3)" }}>
+        <button onClick={()=>setAssistantOpen(true)} style={{ position:"fixed", bottom:90, right:16, width:44, height:44, borderRadius:"50%", background:C.bg, border:`1.5px solid ${C.accent}40`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", zIndex:99, boxShadow:`0 4px 20px rgba(0,0,0,0.4), 0 0 16px ${C.accent}15` }}>
           <HelpCircle size={20} color={C.dim} />
         </button>
       )}
 
       {/* FAQ HELP MODAL */}
-      <BottomSheet open={helpModal} onClose={function(){setHelpModal(false)}} title={"¿En qué te ayudamos?"} tall>
-        {(() => {
-          const [q, setQ] = useState("");
-          const [cat, setCat] = useState(null);
-          const [open, setOpen] = useState(null);
 
-          const words = q.toLowerCase().split(/\s+/).filter(function(w){return w.length>1});
-          const filtered = FAQ_DATA.filter(function(f){
-            if(cat && f.cat !== cat) return false;
-            if(!q.trim()) return true;
-            return f.kw.some(function(k){ return words.some(function(w){ return k.includes(w) || w.includes(k) }) });
-          }).sort(function(a,b){
-            if(!q.trim()) return 0;
-            var scoreA = a.kw.filter(function(k){return words.some(function(w){return k.includes(w)||w.includes(k)})}).length;
-            var scoreB = b.kw.filter(function(k){return words.some(function(w){return k.includes(w)||w.includes(k)})}).length;
-            return scoreB - scoreA;
-          }).slice(0, q.trim() ? 5 : 25);
-
-          return (
-            <div>
-              <input value={q} onChange={function(e){setQ(e.target.value);setCat(null)}} placeholder="Buscar..." style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:"1px solid "+C.border, background:C.surface, color:C.text, fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:10 }} />
-              <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:14 }}>
-                {FAQ_CATS.map(function(c){ return (
-                  <button key={c} onClick={function(){setCat(cat===c?null:c);setQ("")}} style={{ padding:"5px 10px", borderRadius:6, border:"1px solid "+(cat===c?C.accent:C.border), background:cat===c?C.accentGlow:"transparent", color:cat===c?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{c}</button>
-                )})}
-              </div>
-              {filtered.length === 0 ? (
-                <div style={{ textAlign:"center", padding:"20px 0" }}>
-                  <p style={{ fontSize:13, color:C.dim, marginBottom:12 }}>No encontré respuesta a eso.</p>
-                  <button onClick={function(){setHelpModal(false);setSupportModal(true)}} style={{ padding:"10px 20px", borderRadius:10, border:"none", background:C.accent, color:C.bg, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Contactar soporte</button>
-                </div>
-              ) : (
-                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                  {filtered.map(function(f){
-                    var isOpen = open === f.id;
-                    return (
-                      <div key={f.id} style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:10, overflow:"hidden" }}>
-                        <button onClick={function(){setOpen(isOpen?null:f.id)}} style={{ width:"100%", padding:"12px 14px", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                          <span style={{ fontSize:13, fontWeight:600, color:C.text, flex:1 }}>{f.q}</span>
-                          <ChevronRight size={14} color={C.dim} style={{ transform:isOpen?"rotate(90deg)":"none", transition:"transform 0.2s", flexShrink:0, marginLeft:8 }} />
-                        </button>
-                        {isOpen && (
-                          <div style={{ padding:"0 14px 12px", fontSize:13, color:C.dim, lineHeight:1.6 }}>{f.a}</div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })()}
-      </BottomSheet>
 
       {mob && <div style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
@@ -2891,25 +2839,7 @@ export default function CleoDashboard() {
             <span style={{ fontSize: 10, fontWeight: 600, color: tab === t.id ? C.accent : C.dim }}>{t.label}</span>
           </button>
         ))}
-      {/* Botón asistente Cleo */}
-      {authed && (
-        <button onClick={()=>setAssistantOpen(true)}
-          style={{ position:"fixed", bottom:100, right:24, zIndex:90,
-            display:"flex", alignItems:"center", gap:8,
-            padding:"10px 16px", borderRadius:16,
-            border:`1.5px solid ${C.accent}40`,
-            background:C.bg,
-            boxShadow:`0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${C.accent}15`,
-            cursor:"pointer", transition:"all 0.2s", fontFamily:"inherit" }}
-          onMouseEnter={e=>{ e.currentTarget.style.boxShadow=`0 8px 36px rgba(0,0,0,0.6), 0 0 28px ${C.accent}25`; e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.borderColor=`${C.accent}70`; }}
-          onMouseLeave={e=>{ e.currentTarget.style.boxShadow=`0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${C.accent}15`; e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=`${C.accent}40`; }}>
-          <div style={{ position:"relative", width:20, height:20, borderRadius:6, background:`${C.accent}15`, border:`1px solid ${C.accent}30`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <div style={{ width:7, height:7, borderRadius:"50%", background:C.accent, boxShadow:`0 0 8px ${C.accent}` }}/>
-            <div style={{ position:"absolute", top:-3, right:-3, width:8, height:8, borderRadius:"50%", background:"#22C55E", border:`2px solid ${C.bg}` }}/>
-          </div>
-          <span style={{ fontSize:12, fontWeight:600, color:C.accent }}>Asistente Cleo</span>
-        </button>
-      )}
+
       </div>}
       </div>
       </div>
