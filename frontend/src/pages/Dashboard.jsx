@@ -1870,6 +1870,7 @@ export default function CleoDashboard() {
 
       {/* CANCEL MODAL */}
       <CancelModal appt={cancelTarget} onConfirm={handleCancel} onClose={() => setCancelTarget(null)} />
+      {rescheduleTarget && <RescheduleModal appt={rescheduleTarget} onConfirm={handleReschedule} onClose={()=>setRescheduleTarget(null)}/>}
 
       {/* BLOCK CONFIRM */}
       <BlockConfirm day={blockTarget} month={calMonth} onConfirm={handleBlock} onClose={() => setBlockTarget(null)} />
