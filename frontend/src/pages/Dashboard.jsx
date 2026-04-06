@@ -1386,13 +1386,15 @@ const _INTENTS = {
   mi_plan:          (ctx) => ({ title:`Plan ${ctx.pl}`, body:{basico:"Hasta 10 servicios, agenda y WhatsApp.",negocio:"Hasta 20 servicios, estadísticas y reportes.",pro:"Servicios ilimitados e IA avanzada.",trial:`Prueba (${ctx.td} días). Acceso completo.`}[ctx.plan]||"", steps:["Ajustes → Plan","Revisa lo incluido"], action:{label:"Ver plan",tab:"config"} }),
   whatsapp:         (_)   => ({ title:"IA en WhatsApp", body:"Cleo responde automáticamente. Configura nombre y modo ausencia en Ajustes.", steps:["Ajustes → IA","Personaliza asistente","Configura modo ausencia"], action:{label:"Ajustes IA",tab:"config"} }),
   citas_hoy:        (ctx) => ({ title:"Citas de hoy", body:ctx.tc>0?`Tienes ${ctx.tc} cita${ctx.tc!==1?"s":""} hoy.`:"Sin citas hoy. Comparte tu WhatsApp.", steps:ctx.tc>0?["Agenda → Día","Revisa citas"]:["Comparte WhatsApp"], action:{label:"Ver Agenda",tab:"agenda"} }),
+  saludo:           (ctx) => ({ type:"greeting", tc:ctx.tc, sc:ctx.sc, plan:ctx.plan, pl:ctx.pl, lim:{basico:10,negocio:20}[ctx.plan]||null, td:ctx.td }),
   ayuda_general:    (_)   => ({ title:"¿En qué te ayudo?", body:"Escribe tu pregunta o toca una acción rápida.", steps:null, action:null }),
 };
 const _QABT = { agenda:["reagendar","cancelar","citas_hoy"], services:["crear_servicio","limite_servicios"], stats:["ingresos"], config:["mi_plan","whatsapp"] };
 const _AL   = { reagendar:"Reagendar cita",cancelar:"Cancelar cita",citas_hoy:"Ver citas hoy",crear_servicio:"Crear servicio",limite_servicios:"Ver límites",ingresos:"Ver ingresos",mi_plan:"Mi plan",whatsapp:"Config IA" };
 const _CATS = [{id:"citas",label:"Citas",keys:["reagendar","cancelar","citas_hoy"]},{id:"servicios",label:"Servicios",keys:["crear_servicio","limite_servicios"]},{id:"negocio",label:"Negocio",keys:["ingresos"]},{id:"ia",label:"IA / Plan",keys:["mi_plan","whatsapp"]}];
 function _detectIntent(q) {
-  const s=q.toLowerCase(), has=(...w)=>w.some(x=>s.includes(x));
+  const s=q.toLowerCase().trim(), has=(...w)=>w.some(x=>s.includes(x));
+  if(/^(hola|holi|holis|buenas|buenos días|buen día|hey|hi|qué tal|que tal|buenas tardes|buenas noches|saludos|ey|hello)[\s!.]*$/.test(s)) return "saludo";
   if(has("reagend","mover cita","cambiar hora")) return "reagendar";
   if(has("cancel","eliminar cita","borrar cita")) return "cancelar";
   if(has("crear servic","nuevo servic","agregar servic","servicio")) return "crear_servicio";
@@ -1466,7 +1468,46 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
               {[0,1,2].map(i=><div key={i} style={{ width:6,height:6,borderRadius:"50%",background:C.accent,animation:`pulse ${0.6+i*0.18}s ease-in-out infinite` }}/>)}
             </div>
           )}
-          {result && status==="response" && (
+          {result && status==="response" && result.type==="greeting" && (
+            <div style={{ marginBottom:16,animation:"fadeIn 0.25s ease" }}>
+              <div style={{ background:C.surface,border:`1px solid ${C.accent}25`,borderRadius:"4px 16px 16px 16px",padding:"14px 16px",marginBottom:10,position:"relative",overflow:"hidden" }}>
+                <div style={{ position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${C.accent},transparent)` }}/>
+                <div style={{ fontSize:13,color:C.text,lineHeight:1.6,marginBottom:result.tc>0||result.lim?10:0 }}>
+                  Hola 👋 Estoy listo para ayudarte.
+                </div>
+                {(result.tc>0||result.lim||result.plan==="trial") && (
+                  <div style={{ display:"flex",flexDirection:"column",gap:5 }}>
+                    <div style={{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:2 }}>Ahora mismo</div>
+                    {result.tc>0 && <div style={{ display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text }}>
+                      <div style={{ width:6,height:6,borderRadius:"50%",background:"#4ADE80",flexShrink:0,boxShadow:"0 0 6px #4ADE80" }}/>
+                      {result.tc} cita{result.tc!==1?"s":""} hoy
+                    </div>}
+                    {result.lim && <div style={{ display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text }}>
+                      <div style={{ width:6,height:6,borderRadius:"50%",background:"#4ADE80",flexShrink:0,boxShadow:"0 0 6px #4ADE80" }}/>
+                      {result.lim - result.sc} servicios disponibles
+                    </div>}
+                    {result.plan==="trial" && result.td>0 && <div style={{ display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text }}>
+                      <div style={{ width:6,height:6,borderRadius:"50%",background:"#22D3EE",flexShrink:0,boxShadow:"0 0 6px #22D3EE" }}/>
+                      Prueba activa: {result.td} días restantes
+                    </div>}
+                  </div>
+                )}
+              </div>
+              <div style={{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8 }}>¿Qué necesitas?</div>
+              <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                {["citas_hoy","reagendar","crear_servicio"].map(key=>(
+                  <button key={key} onClick={()=>getResp(key)}
+                    style={{ display:"flex",alignItems:"center",gap:9,padding:"10px 13px",borderRadius:11,border:`1px solid ${C.border}`,background:C.surface,color:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s" }}
+                    onMouseEnter={e=>{ e.currentTarget.style.borderColor=`${C.accent}45`; e.currentTarget.style.background=`${C.accent}07`; e.currentTarget.style.transform="translateX(2px)"; }}
+                    onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.background=C.surface; e.currentTarget.style.transform="translateX(0)"; }}>
+                    <div style={{ width:6,height:6,borderRadius:"50%",background:C.accent,flexShrink:0 }}/>{_AL[key]}
+                  </button>
+                ))}
+              </div>
+              <button onClick={reset} style={{ marginTop:8,background:"none",border:"none",cursor:"pointer",color:C.dim,fontSize:11,padding:"4px 0",fontFamily:"inherit" }}>← Volver</button>
+            </div>
+          )}
+          {result && status==="response" && result.type!=="greeting" && (
             <div style={{ background:C.surface,border:`1px solid ${C.accent}30`,borderRadius:16,padding:"16px",marginBottom:16,position:"relative",overflow:"hidden",animation:"fadeIn 0.25s ease" }}>
               <div style={{ position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${C.accent},transparent)` }}/>
               <div style={{ fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:800,color:C.text,marginBottom:8 }}>{result.title}</div>
