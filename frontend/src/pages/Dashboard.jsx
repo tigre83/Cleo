@@ -464,20 +464,50 @@ function CancelModal({ appt, onConfirm, onClose }) {
 // ============================================
 // RESCHEDULE MODAL
 // ============================================
-function RescheduleModal({ appt, onConfirm, onClose }) {
+function RescheduleModal({ appt, onConfirm, onClose, appointments }) {
   if (!appt) return null;
   const origDate = appt.datetime.toISOString().split("T")[0];
-  const origTime = appt.datetime.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const origTime = appt.datetime.toLocaleTimeString("es-EC", { hour:"2-digit", minute:"2-digit", hour12:false });
   const [newDate, setNewDate] = useState(origDate);
   const [newTime, setNewTime] = useState(origTime);
   const [saving,  setSaving]  = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const hasChanged = newDate !== origDate || newTime !== origTime;
+
+  // Sugerencias de horarios disponibles basadas en horario de trabajo
+  const suggestions = ["09:00","10:00","11:00","14:00","15:00","16:00"].filter(t => {
+    if (!newDate) return true;
+    const dt = new Date(`${newDate}T${t}:00`);
+    return dt > new Date() && t !== origTime;
+  }).slice(0,4);
+
+  // Validación disponibilidad real
+  const isOccupied = appointments && newDate && newTime && appointments.some(a =>
+    a.id !== appt.id &&
+    a.status === "confirmed" &&
+    a.datetime.toISOString().split("T")[0] === newDate &&
+    Math.abs(new Date(`${newDate}T${newTime}:00`) - a.datetime) < (appt.duration_minutes||30)*60000
+  );
+
+  // CTA dinámico
+  const ctaLabel = (() => {
+    if (saving) return "Guardando...";
+    if (success) return "✓ Reagendado";
+    if (!hasChanged) return "Sin cambios";
+    if (!newDate || !newTime) return "Selecciona fecha y hora";
+    const d = new Date(`${newDate}T${newTime}:00`);
+    const label = d.toLocaleDateString("es-EC",{weekday:"short",day:"numeric",month:"short"});
+    return `Mover a ${label} · ${newTime}`;
+  })();
 
   const handleConfirm = async () => {
-    if (!newDate || !newTime) return;
+    if (!newDate||!newTime||!hasChanged||isOccupied) return;
     setSaving(true);
     const datetime = new Date(`${newDate}T${newTime}:00`).toISOString();
     await onConfirm(appt.id, datetime);
-    setSaving(false);
+    setSuccess(true);
+    setTimeout(()=>{ setSaving(false); }, 400);
   };
 
   const fi = { width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${C.border}`, background:C.surface, color:C.text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" };
@@ -486,36 +516,68 @@ function RescheduleModal({ appt, onConfirm, onClose }) {
     <>
       <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(0,0,0,0.65)", backdropFilter:"blur(4px)", WebkitBackdropFilter:"blur(4px)", animation:"fadeIn 0.2s ease" }}/>
       <div style={{ position:"fixed", inset:0, zIndex:301, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px", pointerEvents:"none" }}>
-        <div style={{ background:C.bg, border:`1px solid rgba(255,255,255,0.07)`, borderRadius:22, padding:"28px 24px", width:"100%", maxWidth:400, boxShadow:`0 32px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05), 0 0 40px ${C.accent}08`, pointerEvents:"all", animation:"scaleIn 0.2s cubic-bezier(0.16,1,0.3,1)" }}>
+        <div style={{ background:C.bg, border:`1px solid rgba(255,255,255,0.07)`, borderRadius:22, padding:"28px 24px", width:"100%", maxWidth:420, boxShadow:`0 32px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05), 0 0 40px ${C.accent}08`, pointerEvents:"all", animation:"scaleIn 0.2s cubic-bezier(0.16,1,0.3,1)", maxHeight:"90vh", overflowY:"auto" }}>
 
           {/* Header */}
           <div style={{ marginBottom:20 }}>
             <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:C.text, marginBottom:4 }}>Reagendar cita</div>
-            <div style={{ fontSize:12, color:C.dim, opacity:0.7 }}>Actualiza el horario de esta cita</div>
+            <div style={{ fontSize:12, color:C.dim, opacity:0.7 }}>{appt.client_name} · {appt.service_name}</div>
           </div>
 
-          {/* Info actual */}
-          <div style={{ background:"rgba(255,255,255,0.03)", border:`1px solid rgba(255,255,255,0.07)`, borderRadius:14, padding:"12px 14px", marginBottom:18 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:6 }}>{appt.client_name}</div>
-            <div style={{ fontSize:11, color:C.dim, display:"flex", flexDirection:"column", gap:4 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6 }}><Calendar size={10} color={C.dim}/> Hora actual: {appt.datetime.toLocaleDateString("es-EC", { weekday:"short", day:"numeric", month:"short" })} · {appt.datetime.toLocaleTimeString("es-EC", { hour:"2-digit", minute:"2-digit" })}</div>
-              {appt.service_name && <div style={{ display:"flex", alignItems:"center", gap:6 }}><Briefcase size={10} color={C.dim}/> {appt.service_name} · {appt.duration_minutes}min</div>}
+          {/* Comparación ANTES vs DESPUÉS */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:18 }}>
+            <div style={{ background:"rgba(255,255,255,0.02)", border:`1px solid ${C.border}`, borderRadius:12, padding:"10px 12px" }}>
+              <div style={{ fontSize:9, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.dim, marginBottom:6 }}>Antes</div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.dim }}>{appt.datetime.toLocaleDateString("es-EC",{day:"numeric",month:"short"})}</div>
+              <div style={{ fontSize:14, fontWeight:700, color:C.dim }}>{appt.datetime.toLocaleTimeString("es-EC",{hour:"2-digit",minute:"2-digit"})}</div>
+            </div>
+            <div style={{ background:hasChanged?`${C.accent}06`:"rgba(255,255,255,0.02)", border:`1px solid ${hasChanged?C.accent+"30":C.border}`, borderRadius:12, padding:"10px 12px", transition:"all 0.2s" }}>
+              <div style={{ fontSize:9, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:hasChanged?C.accent:C.dim, marginBottom:6 }}>Después</div>
+              <div style={{ fontSize:12, fontWeight:600, color:hasChanged?C.accent:C.dim }}>
+                {newDate ? new Date(newDate+"T12:00:00").toLocaleDateString("es-EC",{day:"numeric",month:"short"}) : "—"}
+              </div>
+              <div style={{ fontSize:14, fontWeight:700, color:hasChanged?C.accent:C.dim }}>{newTime||"—"}</div>
             </div>
           </div>
 
-          {/* Selector nueva fecha y hora */}
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:11, fontWeight:600, color:C.dim, letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:8 }}>Nuevo horario</div>
-            <div style={{ display:"flex", gap:8 }}>
-              <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)} style={{...fi, flex:2}} min={new Date().toISOString().split("T")[0]}/>
-              <input type="time" value={newTime} onChange={e=>setNewTime(e.target.value)} style={{...fi, flex:1}}/>
+          {/* Selectores */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:10, fontWeight:600, color:C.dim, letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:8 }}>Nuevo horario</div>
+            <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+              <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)} style={{...fi,flex:2}} min={new Date().toISOString().split("T")[0]}/>
+              <input type="time" value={newTime} onChange={e=>setNewTime(e.target.value)} style={{...fi,flex:1}}/>
             </div>
+            {/* Indicador de disponibilidad */}
+            {newDate && newTime && (
+              <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:isOccupied?"#F87171":C.accent }}>
+                <div style={{ width:6,height:6,borderRadius:"50%",background:isOccupied?"#F87171":C.accent }}/>
+                {isOccupied?"Cercano a otra cita":"Disponible"}
+              </div>
+            )}
           </div>
+
+          {/* Sugerencias rápidas */}
+          {suggestions.length>0 && (
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:10, fontWeight:600, color:C.dim, letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:8 }}>Sugerido · horarios libres</div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {suggestions.map(t=>(
+                  <button key={t} onClick={()=>setNewTime(t)}
+                    style={{ padding:"5px 12px", borderRadius:8, border:`1px solid ${newTime===t?C.accent:C.border}`, background:newTime===t?`${C.accent}12`:"transparent", color:newTime===t?C.accent:C.dim, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Mensaje IA */}
-          <div style={{ display:"flex", gap:8, alignItems:"flex-start", padding:"10px 12px", background:`${C.accent}05`, border:`1px solid ${C.accent}15`, borderRadius:12, marginBottom:20 }}>
-            <MessageSquare size={12} color={C.accent} style={{ flexShrink:0, marginTop:1, opacity:0.8 }}/>
-            <p style={{ fontSize:11, color:C.dim, lineHeight:1.6, margin:0 }}>Cleo notificará automáticamente al cliente del nuevo horario.</p>
+          <div style={{ display:"flex", gap:10, alignItems:"flex-start", padding:"11px 13px", background:`${C.accent}05`, border:`1px solid ${C.accent}15`, borderRadius:12, marginBottom:20 }}>
+            <MessageSquare size={13} color={C.accent} style={{ flexShrink:0, marginTop:1 }}/>
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:2 }}>Cleo avisará al cliente</div>
+              <p style={{ fontSize:11, color:C.dim, lineHeight:1.5, margin:0 }}>Se enviará una notificación automática por WhatsApp con el nuevo horario confirmado.</p>
+            </div>
           </div>
 
           {/* Botones */}
@@ -526,14 +588,14 @@ function RescheduleModal({ appt, onConfirm, onClose }) {
               onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.dim; }}>
               Cancelar
             </button>
-            <button onClick={handleConfirm} disabled={!newDate||!newTime||saving}
-              style={{ flex:2, padding:"12px 0", borderRadius:12, border:"none", background:newDate&&newTime?C.accent:C.border, color:newDate&&newTime?C.bg:C.dim, fontSize:13, fontWeight:700, cursor:newDate&&newTime?"pointer":"default", fontFamily:"inherit", transition:"all 0.15s", boxShadow:newDate&&newTime?`0 4px 16px ${C.accent}25`:"none" }}
-              onMouseEnter={e=>{ if(newDate&&newTime){ e.currentTarget.style.opacity="0.88"; e.currentTarget.style.transform="translateY(-1px)"; }}}
+            <button onClick={handleConfirm} disabled={!hasChanged||isOccupied||saving||success}
+              style={{ flex:2, padding:"12px 0", borderRadius:12, border:"none", background:hasChanged&&!isOccupied?C.accent:C.border, color:hasChanged&&!isOccupied?C.bg:C.dim, fontSize:12, fontWeight:700, cursor:hasChanged&&!isOccupied?"pointer":"default", fontFamily:"inherit", transition:"all 0.2s", boxShadow:hasChanged&&!isOccupied?`0 4px 16px ${C.accent}25`:"none", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", padding:"12px 14px" }}
+              onMouseEnter={e=>{ if(hasChanged&&!isOccupied){ e.currentTarget.style.opacity="0.88"; e.currentTarget.style.transform="translateY(-1px)"; }}}
               onMouseLeave={e=>{ e.currentTarget.style.opacity="1"; e.currentTarget.style.transform="translateY(0)"; }}>
-              {saving ? "Guardando..." : "Confirmar reagendado"}
+              {ctaLabel}
             </button>
           </div>
-          <div style={{ textAlign:"center", fontSize:11, color:C.dim, opacity:0.4 }}>La cita mantiene el mismo ID y historial.</div>
+          <div style={{ textAlign:"center", fontSize:10, color:C.dim, opacity:0.35 }}>La cita mantiene el mismo ID y historial.</div>
         </div>
       </div>
     </>
@@ -1870,7 +1932,7 @@ export default function CleoDashboard() {
 
       {/* CANCEL MODAL */}
       <CancelModal appt={cancelTarget} onConfirm={handleCancel} onClose={() => setCancelTarget(null)} />
-      {rescheduleTarget && <RescheduleModal appt={rescheduleTarget} onConfirm={handleReschedule} onClose={()=>setRescheduleTarget(null)}/>}
+      {rescheduleTarget && <RescheduleModal appt={rescheduleTarget} onConfirm={handleReschedule} onClose={()=>setRescheduleTarget(null)} appointments={appointments}/>}
 
       {/* BLOCK CONFIRM */}
       <BlockConfirm day={blockTarget} month={calMonth} onConfirm={handleBlock} onClose={() => setBlockTarget(null)} />
