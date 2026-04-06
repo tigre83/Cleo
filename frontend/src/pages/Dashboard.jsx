@@ -1361,294 +1361,261 @@ function BlockConfirm({ day, month, onConfirm, onClose }) {
 // LOGIN PAGE
 // ============================================
 // ============================================
-// CLEO ASSISTANT — Asistente contextual sin IA externa
 // ============================================
-const INTENTS = [
-  {
-    id: "crear_servicio",
-    keywords: ["crear","nuevo","agregar","añadir","servicio","servicios","como agrego","como creo"],
-    tab: null,
-    response: (ctx) => ({
-      title: "Crear un servicio",
-      body: `Ve a la pestaña Servicios y toca "+ Nuevo servicio". ${ctx.plan==="basico"?`Tu plan Básico permite hasta 10 servicios. Tienes ${ctx.servicesCount} creados.`:ctx.plan==="negocio"?`Tu plan Negocio permite hasta 20 servicios. Tienes ${ctx.servicesCount} creados.`:"Con tu plan Pro puedes crear servicios ilimitados."}`,
-      steps: ["Ve a Servicios en el menú inferior","Toca + Nuevo servicio","Completa nombre, precio y duración","Toca Crear servicio"],
-      action: { label: "Ir a Servicios", tab: "services" },
-    }),
-  },
-  {
-    id: "limite_servicios",
-    keywords: ["limite","límite","maximo","máximo","cuantos","cuántos","no puedo crear","bloqueado","plan","servicios"],
-    tab: null,
-    response: (ctx) => {
-      const limits = { basico:10, negocio:20, pro:"ilimitados", trial:"ilimitados" };
-      const lim = limits[ctx.plan] || "ilimitados";
-      return {
-        title: "Límite de servicios",
-        body: `Tu plan ${ctx.planLabel} permite ${lim} servicio${lim===1?"":"s"}. Actualmente tienes ${ctx.servicesCount} creados.${typeof lim==="number" && ctx.servicesCount>=lim?" Has alcanzado el límite. Elimina uno o actualiza tu plan.":`Te quedan ${typeof lim==="number"?lim-ctx.servicesCount:"ilimitados"} disponibles.`}`,
-        steps: typeof lim==="number" && ctx.servicesCount>=lim
-          ? ["Ve a Servicios","Elimina un servicio inactivo","O actualiza tu plan a Pro para tener servicios ilimitados"]
-          : ["Ve a Servicios","Toca + Nuevo servicio","Completa los datos y crea tu servicio"],
-        action: { label: "Ver Servicios", tab: "services" },
-      };
-    },
-  },
-  {
-    id: "reagendar",
-    keywords: ["reagendar","reagendado","mover cita","cambiar cita","cambiar fecha","cambiar hora","reschedule","nueva fecha"],
-    tab: null,
-    response: () => ({
-      title: "Reagendar una cita",
-      body: "Puedes cambiar la fecha y hora de cualquier cita confirmada directamente desde la agenda.",
-      steps: ["Ve a la pestaña Agenda","Encuentra la cita que quieres mover","Toca el botón Reagendar (junto al estado)","Selecciona nueva fecha y hora","Confirma el cambio"],
-      action: { label: "Ir a Agenda", tab: "agenda" },
-    }),
-  },
-  {
-    id: "cancelar_cita",
-    keywords: ["cancelar","cancelar cita","eliminar cita","borrar cita","quitar cita","cancelación"],
-    tab: null,
-    response: () => ({
-      title: "Cancelar una cita",
-      body: "Puedes cancelar cualquier cita desde la agenda. Cleo notificará automáticamente al cliente por WhatsApp.",
-      steps: ["Ve a la pestaña Agenda","Encuentra la cita","Toca el ícono X o el botón Cancelar","Confirma en el modal","Cleo enviará notificación al cliente"],
-      action: { label: "Ir a Agenda", tab: "agenda" },
-    }),
-  },
-  {
-    id: "ingresos",
-    keywords: ["ingresos","dinero","cuanto gano","ganancia","finanzas","facturación","facturacion","mrr","cuanto cobré","cobré"],
-    tab: null,
-    response: (ctx) => ({
-      title: "Ver tus ingresos",
-      body: "En la sección Estadísticas puedes ver tus ingresos de la semana, proyecciones del mes y clientes recurrentes.",
-      steps: ["Ve a la pestaña Estadísticas","Revisa Ingresos esta semana","Proyección mensual estimada","Descarga tu reporte en Excel si necesitas"],
-      action: { label: "Ver Estadísticas", tab: "stats" },
-    }),
-  },
-  {
-    id: "plan_actual",
-    keywords: ["plan","mi plan","que incluye","qué incluye","que tengo","beneficios","funciones","caracteristicas","características","trial","básico","negocio","pro"],
-    tab: null,
-    response: (ctx) => ({
-      title: `Tu plan: ${ctx.planLabel}`,
-      body: ctx.plan==="trial"
-        ? `Estás en el período de prueba (${ctx.trialDays} días restantes). Tienes acceso completo a todas las funciones.`
-        : ctx.plan==="basico"
-        ? "Plan Básico: hasta 10 servicios, agenda, respuestas por WhatsApp y panel de citas."
-        : ctx.plan==="negocio"
-        ? "Plan Negocio: hasta 20 servicios, estadísticas, exportación de reportes y modo ausencia de IA."
-        : "Plan Pro: todo ilimitado, funciones avanzadas de IA y soporte prioritario.",
-      steps: ["Ve a Ajustes → Plan para ver detalles","Puedes cambiar o cancelar tu plan desde ahí","Compara planes si quieres actualizar"],
-      action: { label: "Ver mi Plan", tab: "config" },
-    }),
-  },
-  {
-    id: "citas_hoy",
-    keywords: ["citas hoy","cuantas citas","agenda hoy","citas de hoy","proxima cita","próxima cita","hoy tengo"],
-    tab: null,
-    response: (ctx) => ({
-      title: "Tus citas de hoy",
-      body: ctx.todayCount > 0
-        ? `Tienes ${ctx.todayCount} cita${ctx.todayCount!==1?"s":""} programada${ctx.todayCount!==1?"s":""} para hoy.`
-        : "No tienes citas programadas para hoy. Comparte tu WhatsApp con clientes para que Cleo las agende automáticamente.",
-      steps: ctx.todayCount > 0
-        ? ["Ve a Agenda → vista Día","Revisa el detalle de cada cita","Puedes reagendar o cancelar desde ahí"]
-        : ["Comparte tu número de WhatsApp","Cleo responderá y agendará automáticamente","Las citas aparecerán aquí en tiempo real"],
-      action: { label: "Ver Agenda", tab: "agenda" },
-    }),
-  },
-  {
-    id: "whatsapp",
-    keywords: ["whatsapp","bot","ia","asistente","conectar","configurar","numero","número","automático","automático","responde"],
-    tab: null,
-    response: (ctx) => ({
-      title: "Configurar tu IA en WhatsApp",
-      body: `Cleo responde automáticamente por WhatsApp cuando tus clientes escriben. El número conectado es ${ctx.waNumber||"el que configuraste en Ajustes"}.`,
-      steps: ["Ve a Ajustes → IA","Revisa el nombre y modo de tu asistente","Verifica tu número de WhatsApp conectado","Activa o pausa la IA desde el toggle"],
-      action: { label: "Ajustes IA", tab: "config" },
-    }),
-  },
-  {
-    id: "ayuda_general",
-    keywords: ["ayuda","help","no entiendo","como","cómo","qué","que","tutorial","guía","guia"],
-    tab: null,
-    response: () => ({
-      title: "¿En qué te puedo ayudar?",
-      body: "Soy el asistente de Cleo. Puedo explicarte cómo usar cualquier función de la plataforma.",
-      steps: ["Escribe tu pregunta arriba","O toca una de las sugerencias rápidas","Te guiaré paso a paso"],
-      action: null,
-    }),
-  },
-];
+// CLEO COPILOT — Asistente contextual premium
+// ============================================
 
-const SUGGESTIONS_BY_TAB = {
-  agenda:   ["¿Cómo reagendo una cita?","¿Cuántas citas tengo hoy?","¿Cómo cancelo una cita?"],
-  services: ["¿Cuántos servicios puedo crear?","¿Por qué no puedo crear más servicios?","¿Cómo edito un servicio?"],
-  stats:    ["¿Dónde veo mis ingresos?","¿Cómo descargo mi reporte?","¿Qué es el MRR?"],
-  config:   ["¿Qué incluye mi plan?","¿Cómo configuro la IA?","¿Cómo cambio mi plan?"],
-};
-
-function matchIntent(input, ctx) {
-  const tokens = input.toLowerCase().split(/[\s,?.¿!]+/).filter(Boolean);
-  let best = null; let bestScore = 0;
-  for (const intent of INTENTS) {
-    let score = 0;
-    for (const kw of intent.keywords) {
-      const kwTokens = kw.split(" ");
-      if (kwTokens.every(k => tokens.some(t => t.includes(k) || k.includes(t)))) {
-        score += kwTokens.length * 2;
-      } else if (tokens.some(t => kw.includes(t) && t.length > 3)) {
-        score += 1;
-      }
-    }
-    if (intent.tab && intent.tab === ctx.tab) score += 2;
-    if (score > bestScore) { bestScore = score; best = intent; }
-  }
-  return bestScore > 0 ? best : INTENTS[INTENTS.length-1];
+function matchQuery(input, ctx) {
+  const q = input.toLowerCase();
+  const has = (...words) => words.some(w => q.includes(w));
+  if (has("reagend","mover cita","cambiar cita","cambiar hora")) return "reagendar";
+  if (has("cancel","eliminar cita","borrar cita")) return "cancelar";
+  if (has("servicio","crear servic","nuevo servic","agregar servic")) return "servicios";
+  if (has("limite","límite","cuantos","cuántos","máximo","maximo")) return "limite";
+  if (has("ingreso","dinero","gano","ganancia","estadist","reporte")) return "ingresos";
+  if (has("plan","incluye","beneficio","basico","negocio","pro","suscri")) return "plan";
+  if (has("whatsapp","bot","ia","asistente","configur","numero","responde")) return "whatsapp";
+  if (has("cita hoy","citas hoy","hoy","agenda","proxima","próxima")) return "citas_hoy";
+  return "ayuda";
 }
 
-function CleoAssistant({ open, onClose, tab, biz, services, appointments }) {
-  const [input,    setInput]    = useState("");
-  const [messages, setMessages] = useState([]);
+const RESPONSES = {
+  reagendar:   (ctx) => ({ icon:"📅", title:"Reagendar cita", body:`Ve a Agenda, busca la cita y toca "Reagendar". Elige nueva fecha y hora. Cleo notificará al cliente.`, action:{label:"Ir a Agenda",tab:"agenda"} }),
+  cancelar:    (ctx) => ({ icon:"✕", title:"Cancelar cita", body:"Abre la cita en Agenda y toca Cancelar. El cliente recibirá un WhatsApp automático con horarios alternativos.", action:{label:"Ir a Agenda",tab:"agenda"} }),
+  servicios:   (ctx) => ({ icon:"✦", title:"Crear servicio", body:`Tienes ${ctx.servicesCount} servicio${ctx.servicesCount!==1?"s":""} creado${ctx.servicesCount!==1?"s":""}. Toca "+ Nuevo servicio" en la sección Servicios para agregar uno.`, action:{label:"Ir a Servicios",tab:"services"} }),
+  limite:      (ctx) => { const l={basico:10,negocio:20,pro:null,trial:null}[ctx.plan]; return { icon:"◎", title:"Límite de servicios", body:l?`Plan ${ctx.planLabel}: hasta ${l} servicios. Tienes ${ctx.servicesCount} creados, te quedan ${l-ctx.servicesCount}.`:`Plan ${ctx.planLabel}: servicios ilimitados. Tienes ${ctx.servicesCount} creados.`, action:{label:"Ver Servicios",tab:"services"} }; },
+  ingresos:    (ctx) => ({ icon:"$", title:"Ver ingresos", body:"En Estadísticas ves ingresos de la semana, proyección mensual y clientes recurrentes. Puedes descargar reportes en Excel.", action:{label:"Ver Estadísticas",tab:"stats"} }),
+  plan:        (ctx) => ({ icon:"◈", title:`Plan ${ctx.planLabel}`, body:{basico:"Hasta 10 servicios, agenda, WhatsApp y panel de citas.",negocio:"Hasta 20 servicios, estadísticas, reportes y modo ausencia.",pro:"Servicios ilimitados, IA avanzada y soporte prioritario.",trial:`Período de prueba (${ctx.trialDays} días). Acceso completo.`}[ctx.plan]||"", action:{label:"Ver Plan",tab:"config"} }),
+  whatsapp:    (ctx) => ({ icon:"◉", title:"IA en WhatsApp", body:`Cleo responde automáticamente a tus clientes. Puedes cambiar el nombre del asistente, activar modo ausencia y ajustar comportamiento en Ajustes → IA.`, action:{label:"Ajustes IA",tab:"config"} }),
+  citas_hoy:   (ctx) => ({ icon:"◷", title:"Citas de hoy", body:ctx.todayCount>0?`Tienes ${ctx.todayCount} cita${ctx.todayCount!==1?"s":""} hoy. Puedes reagendar o cancelar desde la Agenda.`:"No tienes citas hoy. Comparte tu WhatsApp para que Cleo agende automáticamente.", action:{label:"Ver Agenda",tab:"agenda"} }),
+  ayuda:       (ctx) => ({ icon:"?", title:"¿En qué te ayudo?", body:"Puedo explicarte cómo usar cualquier función de Cleo. Escribe tu pregunta o toca una acción rápida.", action:null }),
+};
+
+const QUICK_ACTIONS = {
+  agenda:   [ {icon:Calendar,    label:"Ver agenda",       key:"citas_hoy"}, {icon:CalendarDays, label:"Reagendar cita", key:"reagendar"}, {icon:X, label:"Cancelar cita", key:"cancelar"} ],
+  services: [ {icon:Plus,        label:"Crear servicio",   key:"servicios"}, {icon:Briefcase,    label:"Ver límites",   key:"limite"} ],
+  stats:    [ {icon:TrendingUp,   label:"Ver ingresos",     key:"ingresos"} ],
+  config:   [ {icon:User,        label:"Mi plan",          key:"plan"},      {icon:Zap,          label:"Config IA",    key:"whatsapp"} ],
+};
+
+const CONTEXT_INSIGHTS = (ctx) => {
+  const insights = [];
+  if (ctx.todayCount > 0) insights.push({ dot:ctx.accent, text:`${ctx.todayCount} cita${ctx.todayCount!==1?"s":""} confirmada${ctx.todayCount!==1?"s":""} hoy` });
+  const limits = {basico:10, negocio:20};
+  const lim = limits[ctx.plan];
+  if (lim) {
+    const pct = Math.round((ctx.servicesCount/lim)*100);
+    if (pct >= 80) insights.push({ dot:"#FBBF24", text:`${ctx.servicesCount}/${lim} servicios usados — casi al límite` });
+    else insights.push({ dot:ctx.accent, text:`${lim - ctx.servicesCount} servicio${lim-ctx.servicesCount!==1?"s":""} disponibles en tu plan` });
+  }
+  return insights.slice(0,2);
+};
+
+function CleoAssistant({ open, onClose, tab, biz, services, appointments, onNavigate }) {
+  const [query,    setQuery]    = useState("");
+  const [result,   setResult]   = useState(null);
+  const [category, setCategory] = useState(null);
   const [typing,   setTyping]   = useState(false);
-  const messagesEndRef = useRef(null);
 
   const ctx = {
     tab,
     plan:          biz?.plan || "trial",
-    planLabel:     { basico:"Básico", negocio:"Negocio", pro:"Pro", trial:"Trial" }[biz?.plan] || "Trial",
+    planLabel:     {basico:"Básico",negocio:"Negocio",pro:"Pro",trial:"Trial"}[biz?.plan]||"Trial",
     servicesCount: services?.length || 0,
     trialDays:     biz?.trial_days || 0,
     waNumber:      biz?.wa_number || "",
-    todayCount:    appointments?.filter(a => a.datetime?.toDateString?.() === new Date().toDateString() && a.status==="confirmed").length || 0,
+    todayCount:    appointments?.filter(a=>a.datetime?.toDateString?.()===new Date().toDateString()&&a.status==="confirmed").length||0,
+    accent:        "#4ADE80",
   };
 
-  const suggestions = SUGGESTIONS_BY_TAB[tab] || SUGGESTIONS_BY_TAB.agenda;
+  const insights = CONTEXT_INSIGHTS(ctx);
+  const actions  = QUICK_ACTIONS[tab] || QUICK_ACTIONS.agenda;
 
-  useEffect(() => {
-    if (open && messages.length === 0) {
-      setMessages([{
-        role: "cleo",
-        title: "Hola, soy tu asistente",
-        body: `Estás en ${tab==="agenda"?"la Agenda":tab==="services"?"Servicios":tab==="stats"?"Estadísticas":"Ajustes"}. ¿En qué te puedo ayudar?`,
-        steps: null, action: null,
-      }]);
-    }
-  }, [open]);
+  const CATS = [
+    {id:"citas",    label:"Citas",     items:["reagendar","cancelar","citas_hoy"]},
+    {id:"servicios",label:"Servicios", items:["servicios","limite"]},
+    {id:"negocio",  label:"Negocio",   items:["ingresos","plan"]},
+    {id:"ia",       label:"WhatsApp",  items:["whatsapp"]},
+  ];
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const sendMessage = (text) => {
-    if (!text.trim()) return;
-    const userMsg = { role: "user", body: text };
-    setMessages(prev => [...prev, userMsg]);
-    setInput("");
+  const handleQuery = (q) => {
+    if (!q.trim()) return;
     setTyping(true);
+    setResult(null);
     setTimeout(() => {
-      const intent = matchIntent(text, ctx);
-      const resp   = intent.response(ctx);
-      setMessages(prev => [...prev, { role: "cleo", ...resp }]);
+      const key = matchQuery(q, ctx);
+      setResult(RESPONSES[key](ctx));
       setTyping(false);
-    }, 500);
+    }, 380);
   };
+
+  const handleAction = (key) => {
+    setResult(RESPONSES[key](ctx));
+    setQuery("");
+    setCategory(null);
+  };
+
+  const handleNavigate = (tab) => {
+    if (onNavigate) onNavigate(tab);
+    onClose();
+  };
+
+  const filteredActions = query.length > 1
+    ? Object.entries(RESPONSES).filter(([k]) => {
+        const r = RESPONSES[k](ctx);
+        return r.title.toLowerCase().includes(query.toLowerCase()) || r.body.toLowerCase().includes(query.toLowerCase());
+      }).map(([k]) => k)
+    : [];
 
   if (!open) return null;
-  const fi = { flex:1, padding:"10px 14px", borderRadius:12, border:`1px solid ${C.border}`, background:C.surface, color:C.text, fontSize:13, fontFamily:"inherit", outline:"none" };
 
   return (
     <>
-      <div onClick={onClose} style={{ position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(3px)",animation:"fadeIn 0.2s ease" }}/>
-      <div style={{ position:"fixed",top:0,right:0,bottom:0,zIndex:501,width:"min(380px,100vw)",background:C.bg,borderLeft:`1px solid ${C.border}`,display:"flex",flexDirection:"column",animation:"slideInRight 0.25s cubic-bezier(0.16,1,0.3,1)",boxShadow:"-20px 0 60px rgba(0,0,0,0.5)" }}>
+      <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.55)",backdropFilter:"blur(4px)",animation:"fadeIn 0.2s ease"}}/>
+      <div style={{position:"fixed",top:0,right:0,bottom:0,zIndex:501,width:"min(400px,100vw)",background:C.bg,borderLeft:`1px solid ${C.border}`,display:"flex",flexDirection:"column",animation:"slideInRight 0.25s cubic-bezier(0.16,1,0.3,1)",boxShadow:"-24px 0 80px rgba(0,0,0,0.5)"}}>
 
-        {/* Header */}
-        <div style={{ padding:"16px 16px 12px",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
-          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-            <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-              {/* Avatar */}
-              <div style={{ width:36,height:36,borderRadius:10,background:`${C.accent}12`,border:`1.5px solid ${C.accent}30`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative" }}>
-                <div style={{ width:8,height:8,borderRadius:"50%",background:C.accent,boxShadow:`0 0 8px ${C.accent}` }}/>
-                <div style={{ position:"absolute",bottom:-2,right:-2,width:10,height:10,borderRadius:"50%",background:"#22C55E",border:`2px solid ${C.bg}` }}/>
+        {/* HEADER */}
+        <div style={{padding:"20px 20px 16px",borderBottom:`1px solid ${C.border}`,flexShrink:0,background:`linear-gradient(180deg, ${C.accent}06 0%, transparent 100%)`}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:42,height:42,borderRadius:14,background:`${C.accent}10`,border:`1.5px solid ${C.accent}30`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",boxShadow:`0 0 20px ${C.accent}15`}}>
+                <div style={{width:12,height:12,borderRadius:"50%",background:C.accent,boxShadow:`0 0 12px ${C.accent}`}}/>
+                <div style={{position:"absolute",bottom:-3,right:-3,width:12,height:12,borderRadius:"50%",background:"#22C55E",border:`2px solid ${C.bg}`}}/>
               </div>
               <div>
-                <div style={{ fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:800,color:C.text }}>Asistente Cleo</div>
-                <div style={{ fontSize:10,color:C.accent,display:"flex",alignItems:"center",gap:3 }}>
-                  <div style={{ width:4,height:4,borderRadius:"50%",background:C.accent }}/>
-                  En línea · Respuesta inmediata
+                <div style={{fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:800,color:C.text}}>Cleo</div>
+                <div style={{fontSize:10,color:C.accent,display:"flex",alignItems:"center",gap:4}}>
+                  <div style={{width:5,height:5,borderRadius:"50%",background:C.accent,animation:"pulse 1.5s infinite"}}/>
+                  Copiloto activo
                 </div>
               </div>
             </div>
-            <button onClick={onClose} style={{ background:"none",border:`1px solid ${C.border}`,borderRadius:8,width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}>
+            <button onClick={onClose} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
               <X size={13} color={C.dim}/>
             </button>
           </div>
-        </div>
 
-        {/* Mensajes */}
-        <div style={{ flex:1,overflowY:"auto",padding:"14px 14px 8px",display:"flex",flexDirection:"column",gap:10 }}>
-          {messages.map((m, i) => (
-            <div key={i} style={{ display:"flex",flexDirection:"column",alignItems:m.role==="user"?"flex-end":"flex-start" }}>
-              {m.role==="user" ? (
-                <div style={{ background:`${C.accent}15`,border:`1px solid ${C.accent}25`,borderRadius:"12px 12px 2px 12px",padding:"8px 12px",maxWidth:"85%" }}>
-                  <span style={{ fontSize:13,color:C.text }}>{m.body}</span>
-                </div>
-              ) : (
-                <div style={{ background:C.surface,border:`1px solid ${C.border}`,borderRadius:"2px 12px 12px 12px",padding:"12px 14px",maxWidth:"95%",width:"100%" }}>
-                  {m.title && <div style={{ fontFamily:"'Syne',sans-serif",fontSize:13,fontWeight:800,color:C.text,marginBottom:6 }}>{m.title}</div>}
-                  <div style={{ fontSize:12,color:C.dim,lineHeight:1.6,marginBottom:m.steps?10:0 }}>{m.body}</div>
-                  {m.steps && (
-                    <div style={{ display:"flex",flexDirection:"column",gap:4,marginBottom:m.action?10:0 }}>
-                      {m.steps.map((s,si) => (
-                        <div key={si} style={{ display:"flex",alignItems:"flex-start",gap:6,fontSize:11,color:C.dim }}>
-                          <span style={{ fontSize:9,fontWeight:700,color:C.accent,minWidth:14,marginTop:2 }}>{si+1}.</span>
-                          {s}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {m.action && (
-                    <button onClick={()=>{ onClose(); }}
-                      style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:`1px solid ${C.accent}30`,background:C.accentGlow,color:C.accent,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginTop:4 }}>
-                      {m.action.label} →
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-          {typing && (
-            <div style={{ display:"flex",alignItems:"center",gap:4,padding:"10px 14px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:"2px 12px 12px 12px",width:"fit-content" }}>
-              {[0,1,2].map(i => <div key={i} style={{ width:5,height:5,borderRadius:"50%",background:C.accent,animation:`pulse ${0.8+i*0.15}s infinite` }}/>)}
+          {/* Buscador */}
+          <div style={{position:"relative"}}>
+            <input value={query} onChange={e=>{setQuery(e.target.value);if(!e.target.value)setResult(null);}}
+              onKeyDown={e=>e.key==="Enter"&&handleQuery(query)}
+              placeholder="¿En qué te puedo ayudar?"
+              style={{width:"100%",padding:"10px 40px 10px 14px",borderRadius:12,border:`1px solid ${result?C.accent+"40":C.border}`,background:C.surface,color:C.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border-color 0.2s"}}/>
+            <button onClick={()=>handleQuery(query)} disabled={!query.trim()}
+              style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",width:28,height:28,borderRadius:8,border:"none",background:query.trim()?C.accent:"transparent",color:query.trim()?C.bg:C.dim,cursor:query.trim()?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s"}}>
+              <ChevronRight size={14}/>
+            </button>
+          </div>
+
+          {/* Autocomplete */}
+          {filteredActions.length>0 && query.length>1 && !result && (
+            <div style={{marginTop:6,background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden"}}>
+              {filteredActions.slice(0,4).map(k=>(
+                <button key={k} onClick={()=>handleAction(k)}
+                  style={{width:"100%",textAlign:"left",padding:"8px 12px",border:"none",background:"transparent",color:C.text,fontSize:12,cursor:"pointer",fontFamily:"inherit",borderBottom:`1px solid ${C.border}`,transition:"background 0.1s"}}
+                  onMouseEnter={e=>e.currentTarget.style.background=C.surface2}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  {RESPONSES[k](ctx).title}
+                </button>
+              ))}
             </div>
           )}
-          <div ref={messagesEndRef}/>
         </div>
 
-        {/* Sugerencias rápidas */}
-        <div style={{ padding:"8px 14px",borderTop:`1px solid ${C.border}`,flexShrink:0 }}>
-          <div style={{ fontSize:9,fontWeight:600,color:C.dim,letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:6 }}>Sugerencias</div>
-          <div style={{ display:"flex",flexDirection:"column",gap:4 }}>
-            {suggestions.map((s,i) => (
-              <button key={i} onClick={()=>sendMessage(s)}
-                style={{ textAlign:"left",padding:"6px 10px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,fontSize:11,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s" }}
-                onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.accent+"40"; e.currentTarget.style.color=C.text; }}
-                onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.dim; }}>
-                {s}
+        {/* BODY scrollable */}
+        <div style={{flex:1,overflowY:"auto",padding:"16px"}}>
+
+          {/* Typing */}
+          {typing && (
+            <div style={{display:"flex",gap:5,alignItems:"center",padding:"12px 14px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,marginBottom:14}}>
+              {[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:C.accent,animation:`pulse ${0.6+i*0.15}s infinite`}}/>)}
+            </div>
+          )}
+
+          {/* Resultado de búsqueda */}
+          {result && !typing && (
+            <div style={{background:C.surface,border:`1px solid ${C.accent}25`,borderRadius:14,padding:"16px",marginBottom:16,position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${C.accent},transparent)`}}/>
+              <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:800,color:C.text,marginBottom:6}}>{result.title}</div>
+              <div style={{fontSize:12,color:C.dim,lineHeight:1.6,marginBottom:result.action?12:0}}>{result.body}</div>
+              {result.action && (
+                <button onClick={()=>handleNavigate(result.action.tab)}
+                  style={{display:"inline-flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:9,border:`1px solid ${C.accent}30`,background:C.accentGlow,color:C.accent,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+                  {result.action.label} →
+                </button>
+              )}
+              <button onClick={()=>setResult(null)} style={{position:"absolute",top:10,right:10,background:"none",border:"none",cursor:"pointer",color:C.dim,padding:2}}>
+                <X size={11}/>
               </button>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* Insights contextuales */}
+          {!result && insights.length>0 && (
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8}}>Ahora mismo</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {insights.map((ins,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 12px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:10}}>
+                    <div style={{width:7,height:7,borderRadius:"50%",background:ins.dot,flexShrink:0}}/>
+                    <span style={{fontSize:12,color:C.text}}>{ins.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Acciones rápidas contextuales */}
+          {!result && (
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8}}>Acciones rápidas</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {actions.map((a,i)=>(
+                  <button key={i} onClick={()=>handleAction(a.key)}
+                    style={{display:"flex",alignItems:"center",gap:8,padding:"12px 12px",borderRadius:12,border:`1px solid ${C.border}`,background:C.surface,color:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s",textAlign:"left"}}
+                    onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent+"40";e.currentTarget.style.background=`${C.accent}06`;e.currentTarget.style.transform="translateY(-1px)";}}
+                    onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface;e.currentTarget.style.transform="translateY(0)";}}>
+                    <a.icon size={14} color={C.accent}/>
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Categorías */}
+          {!result && (
+            <div>
+              <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8}}>Explorar</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                {CATS.map(cat=>(
+                  <div key={cat.id}>
+                    <button onClick={()=>setCategory(category===cat.id?null:cat.id)}
+                      style={{width:"100%",padding:"9px 12px",borderRadius:10,border:`1px solid ${category===cat.id?C.accent+"40":C.border}`,background:category===cat.id?`${C.accent}08`:C.surface,color:category===cat.id?C.accent:C.dim,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s",textAlign:"left"}}>
+                      {cat.label}
+                    </button>
+                    {category===cat.id && (
+                      <div style={{marginTop:4,display:"flex",flexDirection:"column",gap:3}}>
+                        {cat.items.map(k=>(
+                          <button key={k} onClick={()=>handleAction(k)}
+                            style={{textAlign:"left",padding:"6px 10px",borderRadius:8,border:`1px solid ${C.border}`,background:C.surface2,color:C.dim,fontSize:11,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}
+                            onMouseEnter={e=>{e.currentTarget.style.color=C.text;e.currentTarget.style.borderColor=C.accent+"30";}}
+                            onMouseLeave={e=>{e.currentTarget.style.color=C.dim;e.currentTarget.style.borderColor=C.border;}}>
+                            {RESPONSES[k](ctx).title}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Input */}
-        <div style={{ padding:"10px 14px 20px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,flexShrink:0 }}>
-          <input value={input} onChange={e=>setInput(e.target.value)}
-            onKeyDown={e=>e.key==="Enter"&&sendMessage(input)}
-            placeholder="Escribe tu pregunta..." style={fi}/>
-          <button onClick={()=>sendMessage(input)} disabled={!input.trim()}
-            style={{ width:40,height:40,borderRadius:10,border:"none",background:input.trim()?C.accent:C.border,color:input.trim()?C.bg:C.dim,cursor:input.trim()?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s" }}>
-            <ChevronRight size={18}/>
-          </button>
+        {/* Footer */}
+        <div style={{padding:"10px 16px 20px",borderTop:`1px solid ${C.border}`,flexShrink:0}}>
+          <div style={{fontSize:10,color:C.dim,opacity:0.5,textAlign:"center"}}>Cleo · Copiloto interno · Sin IA externa</div>
         </div>
       </div>
     </>
@@ -2525,7 +2492,7 @@ export default function CleoDashboard() {
       {/* CANCEL MODAL */}
       <CancelModal appt={cancelTarget} onConfirm={handleCancel} onClose={() => setCancelTarget(null)} />
       {rescheduleTarget && <RescheduleModal appt={rescheduleTarget} onConfirm={handleReschedule} onClose={()=>setRescheduleTarget(null)} appointments={appointments}/>}
-      <CleoAssistant open={assistantOpen} onClose={()=>setAssistantOpen(false)} tab={tab} biz={biz} services={services} appointments={appointments}/>
+      <CleoAssistant open={assistantOpen} onClose={()=>setAssistantOpen(false)} tab={tab} biz={biz} services={services} appointments={appointments} onNavigate={(t)=>setTab(t)}/>
 
       {/* BLOCK CONFIRM */}
       <BlockConfirm day={blockTarget} month={calMonth} onConfirm={handleBlock} onClose={() => setBlockTarget(null)} />
