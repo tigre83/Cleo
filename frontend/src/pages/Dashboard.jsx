@@ -240,7 +240,7 @@ function AppointmentStatusBadge({ status, isActive, isNext, isPast }) {
   );
 }
 
-function ApptCard({ appt, onCancel, isNext }) {
+function ApptCard({ appt, onCancel, onReschedule, isNext }) {
   const [now, setNow] = useState(new Date());
 
   // Actualizar tiempo cada 30s para estado time-aware
@@ -288,6 +288,14 @@ function ApptCard({ appt, onCancel, isNext }) {
             <div style={{ fontSize:13, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{appt.client_name}</div>
             <div style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
               <AppointmentStatusBadge status={appt.status} isActive={isActive} isNext={isNext&&!isActive} isPast={isPast}/>
+              {!isCancelled && !isPast && !isActive && (
+                <button onClick={()=>onReschedule&&onReschedule(appt)}
+                  style={{ background:"none", border:`1px solid ${C.accent}25`, borderRadius:6, cursor:"pointer", color:C.accent, padding:"2px 7px", fontSize:10, fontWeight:500, fontFamily:"inherit", opacity:0.7, transition:"all 0.15s", display:"flex", alignItems:"center", gap:3 }}
+                  onMouseEnter={e=>{e.currentTarget.style.opacity="1"; e.currentTarget.style.background=`${C.accent}10`;}}
+                  onMouseLeave={e=>{e.currentTarget.style.opacity="0.7"; e.currentTarget.style.background="none";}}>
+                  <CalendarDays size={9}/> Reagendar
+                </button>
+              )}
               {!isCancelled && !isPast && (
                 <button onClick={()=>onCancel(appt)}
                   style={{ background:"none", border:`1px solid ${C.red}25`, borderRadius:6, cursor:"pointer", color:C.red, padding:"2px 7px", fontSize:10, fontWeight:500, fontFamily:"inherit", opacity:0.7, transition:"all 0.15s", display:"flex", alignItems:"center", gap:3 }}
@@ -454,9 +462,89 @@ function CancelModal({ appt, onConfirm, onClose }) {
 
 
 // ============================================
+// RESCHEDULE MODAL
+// ============================================
+function RescheduleModal({ appt, onConfirm, onClose }) {
+  if (!appt) return null;
+  const origDate = appt.datetime.toISOString().split("T")[0];
+  const origTime = appt.datetime.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const [newDate, setNewDate] = useState(origDate);
+  const [newTime, setNewTime] = useState(origTime);
+  const [saving,  setSaving]  = useState(false);
+
+  const handleConfirm = async () => {
+    if (!newDate || !newTime) return;
+    setSaving(true);
+    const datetime = new Date(`${newDate}T${newTime}:00`).toISOString();
+    await onConfirm(appt.id, datetime);
+    setSaving(false);
+  };
+
+  const fi = { width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${C.border}`, background:C.surface, color:C.text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" };
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(0,0,0,0.65)", backdropFilter:"blur(4px)", WebkitBackdropFilter:"blur(4px)", animation:"fadeIn 0.2s ease" }}/>
+      <div style={{ position:"fixed", inset:0, zIndex:301, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px", pointerEvents:"none" }}>
+        <div style={{ background:C.bg, border:`1px solid rgba(255,255,255,0.07)`, borderRadius:22, padding:"28px 24px", width:"100%", maxWidth:400, boxShadow:`0 32px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05), 0 0 40px ${C.accent}08`, pointerEvents:"all", animation:"scaleIn 0.2s cubic-bezier(0.16,1,0.3,1)" }}>
+
+          {/* Header */}
+          <div style={{ marginBottom:20 }}>
+            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:C.text, marginBottom:4 }}>Reagendar cita</div>
+            <div style={{ fontSize:12, color:C.dim, opacity:0.7 }}>Actualiza el horario de esta cita</div>
+          </div>
+
+          {/* Info actual */}
+          <div style={{ background:"rgba(255,255,255,0.03)", border:`1px solid rgba(255,255,255,0.07)`, borderRadius:14, padding:"12px 14px", marginBottom:18 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:6 }}>{appt.client_name}</div>
+            <div style={{ fontSize:11, color:C.dim, display:"flex", flexDirection:"column", gap:4 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}><Calendar size={10} color={C.dim}/> Hora actual: {appt.datetime.toLocaleDateString("es-EC", { weekday:"short", day:"numeric", month:"short" })} · {appt.datetime.toLocaleTimeString("es-EC", { hour:"2-digit", minute:"2-digit" })}</div>
+              {appt.service_name && <div style={{ display:"flex", alignItems:"center", gap:6 }}><Briefcase size={10} color={C.dim}/> {appt.service_name} · {appt.duration_minutes}min</div>}
+            </div>
+          </div>
+
+          {/* Selector nueva fecha y hora */}
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11, fontWeight:600, color:C.dim, letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:8 }}>Nuevo horario</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)} style={{...fi, flex:2}} min={new Date().toISOString().split("T")[0]}/>
+              <input type="time" value={newTime} onChange={e=>setNewTime(e.target.value)} style={{...fi, flex:1}}/>
+            </div>
+          </div>
+
+          {/* Mensaje IA */}
+          <div style={{ display:"flex", gap:8, alignItems:"flex-start", padding:"10px 12px", background:`${C.accent}05`, border:`1px solid ${C.accent}15`, borderRadius:12, marginBottom:20 }}>
+            <MessageSquare size={12} color={C.accent} style={{ flexShrink:0, marginTop:1, opacity:0.8 }}/>
+            <p style={{ fontSize:11, color:C.dim, lineHeight:1.6, margin:0 }}>Cleo notificará automáticamente al cliente del nuevo horario.</p>
+          </div>
+
+          {/* Botones */}
+          <div style={{ display:"flex", gap:10, marginBottom:10 }}>
+            <button onClick={onClose}
+              style={{ flex:1, padding:"12px 0", borderRadius:12, border:`1px solid ${C.border}`, background:"transparent", color:C.dim, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}
+              onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.accent+"40"; e.currentTarget.style.color=C.text; }}
+              onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.dim; }}>
+              Cancelar
+            </button>
+            <button onClick={handleConfirm} disabled={!newDate||!newTime||saving}
+              style={{ flex:2, padding:"12px 0", borderRadius:12, border:"none", background:newDate&&newTime?C.accent:C.border, color:newDate&&newTime?C.bg:C.dim, fontSize:13, fontWeight:700, cursor:newDate&&newTime?"pointer":"default", fontFamily:"inherit", transition:"all 0.15s", boxShadow:newDate&&newTime?`0 4px 16px ${C.accent}25`:"none" }}
+              onMouseEnter={e=>{ if(newDate&&newTime){ e.currentTarget.style.opacity="0.88"; e.currentTarget.style.transform="translateY(-1px)"; }}}
+              onMouseLeave={e=>{ e.currentTarget.style.opacity="1"; e.currentTarget.style.transform="translateY(0)"; }}>
+              {saving ? "Guardando..." : "Confirmar reagendado"}
+            </button>
+          </div>
+          <div style={{ textAlign:"center", fontSize:11, color:C.dim, opacity:0.4 }}>La cita mantiene el mismo ID y historial.</div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
+// ============================================
 // TAB 1: WEEKLY VIEW
 // ============================================
-function WeeklyView({ appointments, onCancel }) {
+function WeeklyView({ appointments, onCancel, onReschedule }) {
   const week = getWeekDays();
   const [selectedDay, setSelectedDay] = useState(TODAY);
 
@@ -496,7 +584,7 @@ function WeeklyView({ appointments, onCancel }) {
       {/* Appointments list */}
       {dayAppts.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {dayAppts.map((a,i) => <ApptCard key={a.id} appt={a} onCancel={onCancel} isNext={i===0&&a.datetime>new Date()} />)}
+          {dayAppts.map((a,i) => <ApptCard key={a.id} appt={a} onCancel={onCancel} onReschedule={onReschedule} isNext={i===0&&a.datetime>new Date()} />)}
         </div>
       ) : (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "36px 20px", textAlign: "center" }}>
@@ -1112,7 +1200,8 @@ export default function CleoDashboard() {
   const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS);
   const [services, setServices] = useState(MOCK_SERVICES);
   const [blocked, setBlocked] = useState([]);
-  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelTarget,    setCancelTarget]    = useState(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
   const [calMonth, setCalMonth] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
   const [profileOpen, setProfileOpen] = useState(false);
@@ -1202,6 +1291,22 @@ export default function CleoDashboard() {
 
   const mob = typeof window !== 'undefined' && window.innerWidth < 768;
   const handleLogout = () => { setAuthed(false); setTab("agenda"); setSessionExpired(false); };
+
+  const handleReschedule = async (id, datetime) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const API = import.meta.env.VITE_API_URL;
+      await fetch(`${API}/api/appointments/${id}`, {
+        method:"PUT",
+        headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},
+        body:JSON.stringify({ datetime }),
+      });
+      setAppointments(prev=>prev.map(a=>a.id===id?{...a, datetime:new Date(datetime)}:a));
+      setRescheduleTarget(null);
+      showToast("Cita reagendada ✓");
+    } catch(err) { showToast("Error al reagendar"); }
+  };
 
   useInactivityTimeout(8 * 60 * 60 * 1000, () => {
     if (authed) { setAuthed(false); setTab("agenda"); setSessionExpired(true); }
@@ -1497,7 +1602,7 @@ export default function CleoDashboard() {
                 </div>
                 {todayAppts.length > 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {todayAppts.map((a, i) => <ApptCard key={a.id} appt={a} onCancel={setCancelTarget} isNext={i===0&&a.datetime>new Date()} />)}
+                    {todayAppts.map((a, i) => <ApptCard key={a.id} appt={a} onCancel={setCancelTarget} onReschedule={setRescheduleTarget} isNext={i===0&&a.datetime>new Date()} />)}
                   </div>
                 ) : (
                   <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "30px 20px", textAlign: "center" }}>
@@ -1509,7 +1614,7 @@ export default function CleoDashboard() {
             )}
 
             {/* SEMANA */}
-            {agendaView === "semana" && hasAnyAppts && <WeeklyView appointments={appointments} onCancel={setCancelTarget} />}
+            {agendaView === "semana" && hasAnyAppts && <WeeklyView appointments={appointments} onCancel={setCancelTarget} onReschedule={setRescheduleTarget}/>}
 
             {/* MES */}
             {agendaView === "mes" && hasAnyAppts && (
