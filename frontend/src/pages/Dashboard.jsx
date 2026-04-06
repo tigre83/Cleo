@@ -220,53 +220,108 @@ function Counter({ target, duration = 1000 }) {
 // ============================================
 // APPOINTMENT CARD
 // ============================================
+function AppointmentStatusBadge({ status, isActive, isNext, isPast }) {
+  if (status === "cancelled") return (
+    <span style={{ fontSize:9, fontWeight:600, padding:"2px 7px", borderRadius:5, background:"rgba(248,113,113,0.12)", color:"#F87171", letterSpacing:"0.05em" }}>CANCELADA</span>
+  );
+  if (isActive) return (
+    <span style={{ fontSize:9, fontWeight:600, padding:"2px 7px", borderRadius:5, background:`${C.accent}15`, color:C.accent, letterSpacing:"0.05em", display:"inline-flex", alignItems:"center", gap:4 }}>
+      <span style={{ width:5, height:5, borderRadius:"50%", background:C.accent, display:"inline-block", animation:"pulse 1.5s infinite" }}/>EN CURSO
+    </span>
+  );
+  if (isNext) return (
+    <span style={{ fontSize:9, fontWeight:600, padding:"2px 7px", borderRadius:5, background:`${C.accent}10`, color:C.accent, letterSpacing:"0.05em" }}>PRÓXIMA</span>
+  );
+  if (isPast) return (
+    <span style={{ fontSize:9, fontWeight:600, padding:"2px 7px", borderRadius:5, background:"rgba(107,114,128,0.12)", color:"#6B7280", letterSpacing:"0.05em" }}>COMPLETADA</span>
+  );
+  return (
+    <span style={{ fontSize:9, fontWeight:600, padding:"2px 7px", borderRadius:5, background:`${C.accent}15`, color:C.accent, letterSpacing:"0.05em" }}>CONFIRMADA</span>
+  );
+}
+
 function ApptCard({ appt, onCancel, isNext }) {
-  const now = new Date();
-  const time = appt.datetime.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" });
-  const isPast = appt.datetime < now;
-  const isConfirmed = appt.status === "confirmed";
-  const borderColor = isNext ? C.accent : isPast ? C.border : C.border;
-  const bgColor = isNext ? `${C.accent}08` : isPast ? "transparent" : C.surface2;
+  const [now, setNow] = useState(new Date());
+
+  // Actualizar tiempo cada 30s para estado time-aware
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  const endTime    = new Date(appt.datetime.getTime() + appt.duration_minutes * 60000);
+  const isActive   = now >= appt.datetime && now <= endTime && appt.status !== "cancelled";
+  const isPast     = now > endTime && appt.status !== "cancelled";
+  const isCancelled = appt.status === "cancelled";
+  const timeStr    = appt.datetime.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" });
+  const endStr     = endTime.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" });
+
+  const borderColor = isCancelled ? `${C.red}25` : isActive ? C.accent : isNext ? `${C.accent}40` : C.border;
+  const bgColor     = isCancelled ? `${C.red}05` : isActive ? `${C.accent}06` : isNext ? `${C.accent}04` : C.surface2;
+  const opacity     = isPast || isCancelled ? 0.55 : 1;
 
   return (
-    <div style={{ background: bgColor, border: `1.5px solid ${borderColor}`, borderRadius: 14, padding: "12px 14px", opacity: isPast ? 0.6 : 1, transition: "all 0.2s", position: "relative", overflow: "hidden" }}>
-      {isNext && <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg, ${C.accent}, transparent)` }}/>}
-      <div style={{ display: "flex", gap: 10 }}>
-        {/* Tiempo */}
-        <div style={{ width: 48, textAlign: "center", flexShrink: 0, paddingTop: 2 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: isNext ? C.accent : C.text }}>{time}</div>
-          <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>{appt.duration_minutes}m</div>
-          {isNext && <div style={{ fontSize: 9, fontWeight: 600, color: C.accent, marginTop: 3, letterSpacing: "0.05em" }}>PRÓXIMA</div>}
+    <div style={{ background:bgColor, border:`1.5px solid ${borderColor}`, borderRadius:14, padding:"12px 14px",
+      opacity, transition:"all 0.2s", position:"relative", overflow:"hidden" }}
+      onMouseEnter={e=>{ if(!isPast&&!isCancelled) e.currentTarget.style.transform="translateY(-1px)"; }}
+      onMouseLeave={e=>{ e.currentTarget.style.transform="translateY(0)"; }}>
+
+      {/* Barra top para activa */}
+      {isActive && <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg, ${C.accent}, transparent)` }}/>}
+      {isNext && !isActive && <div style={{ position:"absolute", top:0, left:0, right:0, height:1.5, background:`linear-gradient(90deg, ${C.accent}50, transparent)` }}/>}
+
+      <div style={{ display:"flex", gap:10 }}>
+        {/* Columna tiempo */}
+        <div style={{ width:50, textAlign:"center", flexShrink:0, paddingTop:2 }}>
+          <div style={{ fontSize:15, fontWeight:700, color:isActive||isNext?C.accent:isPast?C.dim:C.text }}>{timeStr}</div>
+          <div style={{ fontSize:9, color:C.dim, marginTop:1 }}>→ {endStr}</div>
+          <div style={{ fontSize:10, color:C.dim, marginTop:2 }}>{appt.duration_minutes}m</div>
         </div>
-        <div style={{ width: 1, background: isNext ? `${C.accent}30` : C.border, flexShrink: 0, alignSelf: "stretch" }} />
-        {/* Info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 3 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client_name}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
-              <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 5, background: isConfirmed ? `${C.accent}15` : `${C.dim}15`, color: isConfirmed ? C.accent : C.dim, letterSpacing: "0.05em" }}>
-                {isConfirmed ? "CONFIRMADA" : "PENDIENTE"}
-              </span>
-              <button onClick={() => onCancel(appt)} style={{ background: "none", border: "none", cursor: "pointer", color: C.dim, padding: 3, opacity: 0.6, display: "flex", alignItems: "center" }} title="Cancelar cita">
-                <X size={13}/>
-              </button>
+
+        {/* Divisor */}
+        <div style={{ width:1, background:isActive?`${C.accent}30`:C.border, flexShrink:0, alignSelf:"stretch" }}/>
+
+        {/* Info principal */}
+        <div style={{ flex:1, minWidth:0 }}>
+          {/* Fila 1: nombre + badge + acción */}
+          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:6, marginBottom:4 }}>
+            <div style={{ fontSize:13, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{appt.client_name}</div>
+            <div style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
+              <AppointmentStatusBadge status={appt.status} isActive={isActive} isNext={isNext&&!isActive} isPast={isPast}/>
+              {!isCancelled && !isPast && (
+                <button onClick={()=>onCancel(appt)}
+                  style={{ background:"none", border:`1px solid ${C.red}25`, borderRadius:6, cursor:"pointer", color:C.red, padding:"2px 7px", fontSize:10, fontWeight:500, fontFamily:"inherit", opacity:0.7, transition:"all 0.15s", display:"flex", alignItems:"center", gap:3 }}
+                  onMouseEnter={e=>{e.currentTarget.style.opacity="1"; e.currentTarget.style.background=`${C.red}10`;}}
+                  onMouseLeave={e=>{e.currentTarget.style.opacity="0.7"; e.currentTarget.style.background="none";}}>
+                  <X size={9}/> Cancelar
+                </button>
+              )}
             </div>
           </div>
-          <a href={waLink(appt.client_phone)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: C.accent, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3, marginBottom: 3 }}>
-            <Phone size={10} /> {appt.client_phone}
+
+          {/* Fila 2: teléfono */}
+          <a href={waLink(appt.client_phone)} target="_blank" rel="noopener noreferrer"
+            style={{ fontSize:11, color:C.accent, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:3, marginBottom:3 }}>
+            <Phone size={10}/> {appt.client_phone}
           </a>
-          <div style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
-            <Briefcase size={10} color={C.dim} />
-            {appt.service_name
-              ? <><span style={{ color: C.dim }}>{appt.service_name}</span><span style={{ color: C.accent, fontWeight: 600, marginLeft: 4 }}>· ${appt.service_price}</span></>
-              : <span style={{ color: C.dim, opacity: 0.5 }}>Servicio no especificado</span>}
-          </div>
-          <ClientLocation appt={appt} />
+
+          {/* Fila 3: servicio + precio */}
+          {appt.service_name && (
+            <div style={{ fontSize:11, display:"flex", alignItems:"center", gap:4 }}>
+              <Briefcase size={10} color={C.dim}/>
+              <span style={{ color:C.dim }}>{appt.service_name}</span>
+              {appt.service_price && <span style={{ color:C.accent, fontWeight:600 }}>· ${appt.service_price}</span>}
+            </div>
+          )}
+
+          {/* Fila 4: ubicación */}
+          <ClientLocation appt={appt}/>
         </div>
       </div>
     </div>
   );
 }
+
 
 // ============================================
 // BOTTOM SHEET
