@@ -1386,6 +1386,10 @@ const _INTENTS = {
   mi_plan:          (ctx) => ({ title:`Plan ${ctx.pl}`, body:{basico:"Hasta 10 servicios, agenda y WhatsApp.",negocio:"Hasta 20 servicios, estadísticas y reportes.",pro:"Servicios ilimitados e IA avanzada.",trial:`Prueba (${ctx.td} días). Acceso completo.`}[ctx.plan]||"", steps:["Ajustes → Plan","Revisa lo incluido"], action:{label:"Ver plan",tab:"config"} }),
   whatsapp:         (_)   => ({ title:"IA en WhatsApp", body:"Cleo responde automáticamente. Configura nombre y modo ausencia en Ajustes.", steps:["Ajustes → IA","Personaliza asistente","Configura modo ausencia"], action:{label:"Ajustes IA",tab:"config"} }),
   citas_hoy:        (ctx) => ({ title:"Citas de hoy", body:ctx.tc>0?`Tienes ${ctx.tc} cita${ctx.tc!==1?"s":""} hoy.`:"Sin citas hoy. Comparte tu WhatsApp.", steps:ctx.tc>0?["Agenda → Día","Revisa citas"]:["Comparte WhatsApp"], action:{label:"Ver Agenda",tab:"agenda"} }),
+  out_of_scope:     (_)   => ({ type:"out_of_scope" }),
+  fallback:         (_)   => ({ type:"fallback" }),
+  out_of_scope:     (_)   => ({ type:"out_of_scope" }),
+  fallback:         (_)   => ({ type:"fallback" }),
   saludo:           (ctx) => ({ type:"greeting", tc:ctx.tc, sc:ctx.sc, plan:ctx.plan, pl:ctx.pl, lim:{basico:10,negocio:20}[ctx.plan]||null, td:ctx.td }),
   ayuda_general:    (_)   => ({ title:"¿En qué te ayudo?", body:"Escribe tu pregunta o toca una acción rápida.", steps:null, action:null }),
 };
@@ -1395,6 +1399,7 @@ const _CATS = [{id:"citas",label:"Citas",keys:["reagendar","cancelar","citas_hoy
 function _detectIntent(q) {
   const s=q.toLowerCase().trim(), has=(...w)=>w.some(x=>s.includes(x));
   if(/^(hola|holi|holis|buenas|buenos días|buen día|hey|hi|qué tal|que tal|buenas tardes|buenas noches|saludos|ey|hello)[\s!.]*$/.test(s)) return "saludo";
+  if(has("receta","lasagna","cocina","clima","deporte","futbol","pelicula","musica","chiste","politica","noticias","crypto","bitcoin","traducir","geografia","historia general","ciencia","matematica")) return "out_of_scope";
   if(has("reagend","mover cita","cambiar hora")) return "reagendar";
   if(has("cancel","eliminar cita","borrar cita")) return "cancelar";
   if(has("crear servic","nuevo servic","agregar servic","servicio")) return "crear_servicio";
@@ -1415,168 +1420,195 @@ function _insights(ctx) {
 }
 
 function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, onNavigate, C }) {
-  const [status,   setStatus]   = useState("idle");
-  const [result,   setResult]   = useState(null);
-  const [query,    setQuery]    = useState("");
-  const [category, setCategory] = useState(null);
+  const [messages,  setMessages]  = useState([]);
+  const [query,     setQuery]     = useState("");
+  const [thinking,  setThinking]  = useState(false);
+  const [mode,      setMode]      = useState("idle");
+  const endRef = useRef(null);
 
-  const ctx = { plan:biz?.plan||"trial", pl:{basico:"Básico",negocio:"Negocio",pro:"Pro",trial:"Trial"}[biz?.plan]||"Trial", sc:services?.length||0, td:biz?.trial_days||0, tc:appointments?.filter(a=>a.datetime?.toDateString?.()===new Date().toDateString()&&a.status==="confirmed").length||0 };
+  const ctx = { plan:biz?.plan||"trial", pl:{basico:"Basico",negocio:"Negocio",pro:"Pro",trial:"Trial"}[biz?.plan]||"Trial", sc:services?.length||0, td:biz?.trial_days||0, tc:appointments?.filter(a=>a.datetime?.toDateString?.()===new Date().toDateString()&&a.status==="confirmed").length||0 };
   const insights = _insights(ctx);
   const qa = _QABT[tab] || _QABT.agenda;
 
-  const getResp = (key) => { setStatus("thinking"); setResult(null); setTimeout(()=>{ setResult(_INTENTS[key]?.(ctx)||_INTENTS.ayuda_general(ctx)); setStatus("response"); },500); };
-  const ask = (txt) => { if(!txt?.trim()) return; setStatus("thinking"); setResult(null); setTimeout(()=>{ setResult(_INTENTS[_detectIntent(txt)](ctx)); setStatus("response"); },600+Math.random()*500); };
-  const reset = () => { setResult(null); setQuery(""); setCategory(null); setStatus("idle"); };
-  const nav = (t) => { if(onNavigate) onNavigate(t); setOpen(false); };
+  useEffect(()=>{ endRef.current?.scrollIntoView({behavior:"smooth"}); },[messages,thinking]);
+  useEffect(()=>{ if(!open){ setMessages([]); setQuery(""); setThinking(false); setMode("idle"); } },[open]);
 
-  if (!open) return null;
+  const nav = (t) => { if(onNavigate) onNavigate(t); setOpen(false); };
+  const addMsg = (msg) => setMessages(prev=>[...prev,{id:Date.now()+Math.random(),...msg}]);
+
+  const respond = (intentKey, userText) => {
+    if(userText) addMsg({role:"user",text:userText});
+    setThinking(true); setMode("chat");
+    setTimeout(()=>{
+      const raw = _INTENTS[intentKey]?.(ctx)||_INTENTS.ayuda_general(ctx);
+      setThinking(false);
+      addMsg({role:"assistant",...raw,intentKey});
+    }, 600+Math.random()*400);
+  };
+
+  const send = (txt) => { if(!txt?.trim()) return; setQuery(""); respond(_detectIntent(txt), txt); };
+  const quickAction = (key) => respond(key, _AL[key]);
+
+  const QuickBtns = ({keys}) => (
+    <div style={{display:"flex",flexDirection:"column",gap:5,marginTop:10}}>
+      {keys.map(k=>(
+        <button key={k} onClick={()=>respond(k,_AL[k])}
+          style={{display:"flex",alignItems:"center",gap:8,padding:"8px 11px",borderRadius:9,border:"1px solid "+C.border,background:C.surface2,color:C.text,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s"}}
+          onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent+"45";e.currentTarget.style.background=C.accent+"07";}}
+          onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface2;}}>
+          <div style={{width:5,height:5,borderRadius:"50%",background:C.accent,flexShrink:0}}/>{_AL[k]}
+        </button>
+      ))}
+    </div>
+  );
+
+  const Bubble = ({accent,id,children}) => (
+    <div key={id} style={{marginBottom:12,animation:"fadeIn 0.25s ease"}}>
+      <div style={{background:C.surface,border:"1px solid "+(accent||C.border),borderRadius:"4px 14px 14px 14px",padding:"12px 14px",position:"relative",overflow:"hidden"}}>
+        {accent&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,"+accent+",transparent)"}}/>}
+        {children}
+      </div>
+    </div>
+  );
+
+  const renderBubble = (msg) => {
+    if(msg.role==="user") return (
+      <div key={msg.id} style={{display:"flex",justifyContent:"flex-end",marginBottom:10,animation:"fadeIn 0.2s ease"}}>
+        <div style={{background:C.accent+"18",border:"1px solid "+C.accent+"30",borderRadius:"14px 4px 14px 14px",padding:"9px 13px",maxWidth:"80%",fontSize:12,color:C.text,lineHeight:1.5}}>{msg.text}</div>
+      </div>
+    );
+    if(msg.type==="out_of_scope") return (
+      <Bubble key={msg.id} id={msg.id}>
+        <div style={{fontSize:12,color:C.dim,lineHeight:1.6}}>Solo puedo ayudarte con temas de la plataforma.</div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginTop:2}}>Citas, servicios, plan e ingresos 🤖</div>
+        <QuickBtns keys={["citas_hoy","crear_servicio","mi_plan"]}/>
+      </Bubble>
+    );
+    if(msg.type==="fallback") return (
+      <Bubble key={msg.id} id={msg.id}>
+        <div style={{fontSize:12,color:C.dim,lineHeight:1.6}}>No estoy seguro de entenderte bien.</div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginTop:2}}>Te puedo ayudar con:</div>
+        <QuickBtns keys={qa.slice(0,3)}/>
+      </Bubble>
+    );
+    if(msg.type==="greeting") return (
+      <Bubble key={msg.id} id={msg.id} accent={C.accent}>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:(msg.tc>0||msg.lim||msg.plan==="trial")?10:0}}>Hola, soy Cleo 🤖 tu copiloto 🟢</div>
+        {(msg.tc>0||msg.lim||msg.plan==="trial")&&<div style={{display:"flex",flexDirection:"column",gap:5}}>
+          <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:2}}>Ahora mismo</div>
+          {msg.tc>0&&<div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text}}><div style={{width:6,height:6,borderRadius:"50%",background:"#4ADE80",flexShrink:0,boxShadow:"0 0 6px #4ADE80"}}/>{msg.tc} cita{msg.tc!==1?"s":""} hoy</div>}
+          {msg.lim&&<div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text}}><div style={{width:6,height:6,borderRadius:"50%",background:"#4ADE80",flexShrink:0,boxShadow:"0 0 6px #4ADE80"}}/>{msg.lim-msg.sc} servicios disponibles</div>}
+          {msg.plan==="trial"&&msg.td>0&&<div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text}}><div style={{width:6,height:6,borderRadius:"50%",background:"#22D3EE",flexShrink:0,boxShadow:"0 0 6px #22D3EE"}}/>Prueba activa: {msg.td} dias</div>}
+        </div>}
+      </Bubble>
+    );
+    return (
+      <Bubble key={msg.id} id={msg.id} accent={C.accent}>
+        {msg.title&&<div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:800,color:C.text,marginBottom:6}}>{msg.title}</div>}
+        {msg.body&&<div style={{fontSize:12,color:C.dim,lineHeight:1.7,marginBottom:msg.steps?10:0}}>{msg.body}</div>}
+        {msg.steps&&<div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:msg.action?10:0}}>
+          {msg.steps.map((s,i)=><div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,fontSize:11,color:C.dim}}>
+            <span style={{fontSize:9,fontWeight:700,color:C.accent,minWidth:14,marginTop:2}}>{i+1}.</span>{s}
+          </div>)}
+        </div>}
+        {msg.action&&<button onClick={()=>nav(msg.action.tab)} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:"1px solid "+C.accent+"30",background:C.accentGlow,color:C.accent,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{msg.action.label} →</button>}
+      </Bubble>
+    );
+  };
+
+  if(!open) return null;
   return (
     <>
-      <div onClick={()=>setOpen(false)} style={{ position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.55)",backdropFilter:"blur(4px)",animation:"fadeIn 0.2s ease" }}/>
-      <div style={{ position:"fixed",top:0,right:0,bottom:0,zIndex:501,width:"min(400px,100vw)",background:C.bg,borderLeft:`1px solid ${C.border}`,display:"flex",flexDirection:"column",animation:"slideInRight 0.26s cubic-bezier(0.16,1,0.3,1)",boxShadow:"-28px 0 80px rgba(0,0,0,0.55)" }}>
-        {/* Header */}
-        <div style={{ padding:"20px 18px 16px",borderBottom:`1px solid ${C.border}`,flexShrink:0,background:`linear-gradient(180deg,${C.accent}07 0%,transparent 100%)` }}>
-          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14 }}>
-            <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-              <div style={{ width:44,height:44,borderRadius:14,flexShrink:0,position:"relative" }}>
-                <img src="/cleo-avatar.png" alt="Cleo" style={{ width:44,height:44,borderRadius:14,objectFit:"cover",display:"block" }}/>
-                <div style={{ position:"absolute",bottom:-3,right:-3,width:13,height:13,borderRadius:"50%",background:"#22C55E",border:`2.5px solid ${C.bg}` }}/>
+      <div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.55)",backdropFilter:"blur(4px)",animation:"fadeIn 0.2s ease"}}/>
+      <div style={{position:"fixed",top:0,right:0,bottom:0,zIndex:501,width:"min(400px,100vw)",background:C.bg,borderLeft:"1px solid "+C.border,display:"flex",flexDirection:"column",animation:"slideInRight 0.26s cubic-bezier(0.16,1,0.3,1)",boxShadow:"-28px 0 80px rgba(0,0,0,0.55)"}}>
+        <div style={{padding:"16px 18px 14px",borderBottom:"1px solid "+C.border,flexShrink:0,background:"linear-gradient(180deg,"+C.accent+"07 0%,transparent 100%)"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:40,height:40,borderRadius:12,flexShrink:0,position:"relative"}}>
+                <img src="/cleo-avatar.png" alt="Cleo" style={{width:40,height:40,borderRadius:12,objectFit:"cover",display:"block"}}/>
+                <div style={{position:"absolute",bottom:-3,right:-3,width:12,height:12,borderRadius:"50%",background:"#22C55E",border:"2px solid "+C.bg}}/>
               </div>
               <div>
-                <div style={{ fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:800,color:C.text }}>Cleo</div>
-                <div style={{ fontSize:10,color:C.accent,display:"flex",alignItems:"center",gap:4,marginTop:1 }}>
-                  <div style={{ width:5,height:5,borderRadius:"50%",background:C.accent,animation:"pulse 1.5s infinite" }}/>
-                  {status==="thinking"?"Pensando...":"Copiloto activo"}
+                <div style={{fontFamily:"Syne,sans-serif",fontSize:15,fontWeight:800,color:C.text}}>Cleo</div>
+                <div style={{fontSize:10,color:C.accent,display:"flex",alignItems:"center",gap:4,marginTop:1}}>
+                  <div style={{width:5,height:5,borderRadius:"50%",background:C.accent,animation:"pulse 1.5s infinite"}}/>
+                  {thinking?"Pensando...":"Copiloto activo"}
                 </div>
               </div>
             </div>
-            <button onClick={()=>setOpen(false)} style={{ background:"none",border:`1px solid ${C.border}`,borderRadius:9,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><X size={13} color={C.dim}/></button>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              {mode==="chat"&&messages.length>0&&(
+                <button onClick={()=>{setMessages([]);setMode("idle");}} style={{background:"none",border:"1px solid "+C.border,borderRadius:8,padding:"5px 10px",fontSize:10,color:C.dim,cursor:"pointer",fontFamily:"inherit"}}>Nueva sesion</button>
+              )}
+              <button onClick={()=>setOpen(false)} style={{background:"none",border:"1px solid "+C.border,borderRadius:9,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={13} color={C.dim}/></button>
+            </div>
           </div>
-          <div style={{ position:"relative" }}>
-            <input value={query} onChange={e=>{ setQuery(e.target.value); if(!e.target.value) reset(); }} onKeyDown={e=>e.key==="Enter"&&(ask(query),setQuery(""))} placeholder="¿En qué te puedo ayudar?"
-              style={{ width:"100%",padding:"10px 42px 10px 14px",borderRadius:12,border:`1px solid ${result?C.accent+"50":C.border}`,background:C.surface,color:C.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box" }}/>
-            <button onClick={()=>{ ask(query); setQuery(""); }} disabled={!query.trim()}
-              style={{ position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",width:28,height:28,borderRadius:8,border:"none",background:query.trim()?C.accent:"transparent",color:query.trim()?C.bg:C.dim,cursor:query.trim()?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center" }}>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"16px"}}>
+          {mode==="idle"&&(
+            <>
+              <div style={{background:C.surface,border:"1px solid "+C.accent+"25",borderRadius:"4px 16px 16px 16px",padding:"13px 15px",marginBottom:14,position:"relative",overflow:"hidden"}}>
+                <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,"+C.accent+",transparent)"}}/>
+                <div style={{fontSize:13,color:C.text,lineHeight:1.6}}>Hola, soy Cleo 🤖 tu copiloto 🟢</div>
+              </div>
+              {insights.length>0&&(
+                <div style={{marginBottom:14}}>
+                  <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8}}>Ahora mismo</div>
+                  {insights.map((ins,i)=>(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 12px",background:C.surface,border:"1px solid "+C.border,borderRadius:10,marginBottom:6}}>
+                      <div style={{width:7,height:7,borderRadius:"50%",background:ins.color,flexShrink:0,boxShadow:"0 0 6px "+ins.color}}/><span style={{fontSize:12,color:C.text}}>{ins.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div>
+                <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8}}>Acciones rapidas</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  {qa.map(key=>(
+                    <button key={key} onClick={()=>quickAction(key)}
+                      style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px",borderRadius:12,border:"1px solid "+C.border,background:C.surface,color:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent+"45";e.currentTarget.style.background=C.accent+"07";e.currentTarget.style.transform="translateY(-1px)";}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface;e.currentTarget.style.transform="translateY(0)";}}>
+                      <div style={{width:6,height:6,borderRadius:"50%",background:C.accent,flexShrink:0}}/>{_AL[key]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+          {mode==="chat"&&(
+            <>
+              {messages.map(msg=>renderBubble(msg))}
+              {thinking&&(
+                <div style={{display:"flex",gap:5,alignItems:"center",padding:"12px 14px",background:C.surface,border:"1px solid "+C.border,borderRadius:"4px 14px 14px 14px",width:"fit-content",marginBottom:12,animation:"fadeIn 0.2s ease"}}>
+                  {[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:C.accent,animation:"pulse "+(0.6+i*0.18)+"s ease-in-out infinite"}}/>)}
+                </div>
+              )}
+              <div ref={endRef}/>
+            </>
+          )}
+        </div>
+        <div style={{padding:"12px 16px 16px",borderTop:"1px solid "+C.border,flexShrink:0}}>
+          <div style={{position:"relative"}}>
+            <input value={query} onChange={e=>setQuery(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter"&&query.trim()) send(query);}}
+              placeholder="Escribe tu pregunta..."
+              style={{width:"100%",padding:"11px 44px 11px 14px",borderRadius:13,border:"1px solid "+C.border,background:C.surface,color:C.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border-color 0.15s"}}
+              onFocus={e=>e.target.style.borderColor=C.accent+"50"}
+              onBlur={e=>e.target.style.borderColor=C.border}/>
+            <button onClick={()=>{if(query.trim()) send(query);}} disabled={!query.trim()}
+              style={{position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",width:30,height:30,borderRadius:9,border:"none",background:query.trim()?C.accent:"transparent",color:query.trim()?C.bg:C.dim,cursor:query.trim()?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s"}}>
               <ChevronRight size={14}/>
             </button>
           </div>
-        </div>
-        {/* Body */}
-        <div style={{ flex:1,overflowY:"auto",padding:"16px" }}>
-          {status==="thinking" && (
-            <div style={{ display:"flex",gap:5,alignItems:"center",padding:"12px 14px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:"4px 14px 14px 14px",width:"fit-content",marginBottom:12 }}>
-              {[0,1,2].map(i=><div key={i} style={{ width:6,height:6,borderRadius:"50%",background:C.accent,animation:`pulse ${0.6+i*0.18}s ease-in-out infinite` }}/>)}
-            </div>
-          )}
-          {result && status==="response" && result.type==="greeting" && (
-            <div style={{ marginBottom:16,animation:"fadeIn 0.25s ease" }}>
-              <div style={{ background:C.surface,border:`1px solid ${C.accent}25`,borderRadius:"4px 16px 16px 16px",padding:"14px 16px",marginBottom:10,position:"relative",overflow:"hidden" }}>
-                <div style={{ position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${C.accent},transparent)` }}/>
-                <div style={{ fontSize:13,color:C.text,lineHeight:1.6,marginBottom:result.tc>0||result.lim?10:0 }}>
-                  Hola 👋 Estoy listo para ayudarte.
-                </div>
-                {(result.tc>0||result.lim||result.plan==="trial") && (
-                  <div style={{ display:"flex",flexDirection:"column",gap:5 }}>
-                    <div style={{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:2 }}>Ahora mismo</div>
-                    {result.tc>0 && <div style={{ display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text }}>
-                      <div style={{ width:6,height:6,borderRadius:"50%",background:"#4ADE80",flexShrink:0,boxShadow:"0 0 6px #4ADE80" }}/>
-                      {result.tc} cita{result.tc!==1?"s":""} hoy
-                    </div>}
-                    {result.lim && <div style={{ display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text }}>
-                      <div style={{ width:6,height:6,borderRadius:"50%",background:"#4ADE80",flexShrink:0,boxShadow:"0 0 6px #4ADE80" }}/>
-                      {result.lim - result.sc} servicios disponibles
-                    </div>}
-                    {result.plan==="trial" && result.td>0 && <div style={{ display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.text }}>
-                      <div style={{ width:6,height:6,borderRadius:"50%",background:"#22D3EE",flexShrink:0,boxShadow:"0 0 6px #22D3EE" }}/>
-                      Prueba activa: {result.td} días restantes
-                    </div>}
-                  </div>
-                )}
-              </div>
-              <div style={{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8 }}>¿Qué necesitas?</div>
-              <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                {["citas_hoy","reagendar","crear_servicio"].map(key=>(
-                  <button key={key} onClick={()=>getResp(key)}
-                    style={{ display:"flex",alignItems:"center",gap:9,padding:"10px 13px",borderRadius:11,border:`1px solid ${C.border}`,background:C.surface,color:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s" }}
-                    onMouseEnter={e=>{ e.currentTarget.style.borderColor=`${C.accent}45`; e.currentTarget.style.background=`${C.accent}07`; e.currentTarget.style.transform="translateX(2px)"; }}
-                    onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.background=C.surface; e.currentTarget.style.transform="translateX(0)"; }}>
-                    <div style={{ width:6,height:6,borderRadius:"50%",background:C.accent,flexShrink:0 }}/>{_AL[key]}
-                  </button>
-                ))}
-              </div>
-              <button onClick={reset} style={{ marginTop:8,background:"none",border:"none",cursor:"pointer",color:C.dim,fontSize:11,padding:"4px 0",fontFamily:"inherit" }}>← Volver</button>
-            </div>
-          )}
-          {result && status==="response" && result.type!=="greeting" && (
-            <div style={{ background:C.surface,border:`1px solid ${C.accent}30`,borderRadius:16,padding:"16px",marginBottom:16,position:"relative",overflow:"hidden",animation:"fadeIn 0.25s ease" }}>
-              <div style={{ position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${C.accent},transparent)` }}/>
-              <div style={{ fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:800,color:C.text,marginBottom:8 }}>{result.title}</div>
-              <div style={{ fontSize:12,color:C.dim,lineHeight:1.7,marginBottom:result.steps?12:0 }}>{result.body}</div>
-              {result.steps && <div style={{ display:"flex",flexDirection:"column",gap:5,marginBottom:result.action?12:0 }}>
-                {result.steps.map((s,i)=><div key={i} style={{ display:"flex",alignItems:"flex-start",gap:7,fontSize:11,color:C.dim }}>
-                  <span style={{ fontSize:9,fontWeight:700,color:C.accent,minWidth:14,marginTop:2 }}>{i+1}.</span>{s}
-                </div>)}
-              </div>}
-              {result.action && <button onClick={()=>nav(result.action.tab)} style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:9,border:`1px solid ${C.accent}30`,background:C.accentGlow,color:C.accent,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{result.action.label} →</button>}
-              <button onClick={reset} style={{ position:"absolute",top:10,right:10,background:"none",border:"none",cursor:"pointer",color:C.dim,padding:2 }}><X size={11}/></button>
-            </div>
-          )}
-          {!result && insights.length>0 && (
-            <div style={{ marginBottom:16 }}>
-              <div style={{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8 }}>Ahora mismo</div>
-              {insights.map((ins,i)=><div key={i} style={{ display:"flex",alignItems:"center",gap:9,padding:"9px 12px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,marginBottom:6 }}>
-                <div style={{ width:7,height:7,borderRadius:"50%",background:ins.color,flexShrink:0,boxShadow:`0 0 6px ${ins.color}` }}/><span style={{ fontSize:12,color:C.text }}>{ins.text}</span>
-              </div>)}
-            </div>
-          )}
-          {!result && (
-            <div style={{ marginBottom:16 }}>
-              <div style={{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8 }}>Acciones rápidas</div>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
-                {qa.map(key=>(
-                  <button key={key} onClick={()=>getResp(key)}
-                    style={{ display:"flex",alignItems:"center",gap:8,padding:"11px 12px",borderRadius:12,border:`1px solid ${C.border}`,background:C.surface,color:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s" }}
-                    onMouseEnter={e=>{ e.currentTarget.style.borderColor=`${C.accent}45`; e.currentTarget.style.background=`${C.accent}07`; e.currentTarget.style.transform="translateY(-1px)"; }}
-                    onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.background=C.surface; e.currentTarget.style.transform="translateY(0)"; }}>
-                    <div style={{ width:6,height:6,borderRadius:"50%",background:C.accent,flexShrink:0 }}/>{_AL[key]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {!result && (
-            <div>
-              <div style={{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8 }}>Explorar</div>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
-                {_CATS.map(cat=>(
-                  <div key={cat.id}>
-                    <button onClick={()=>setCategory(category===cat.id?null:cat.id)}
-                      style={{ width:"100%",padding:"9px 12px",borderRadius:10,border:`1px solid ${category===cat.id?C.accent+"45":C.border}`,background:category===cat.id?`${C.accent}08`:C.surface,color:category===cat.id?C.accent:C.dim,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s" }}>
-                      {cat.label}
-                    </button>
-                    {category===cat.id && <div style={{ marginTop:4,display:"flex",flexDirection:"column",gap:3 }}>
-                      {cat.keys.map(k=><button key={k} onClick={()=>getResp(k)}
-                        style={{ textAlign:"left",padding:"6px 10px",borderRadius:8,border:`1px solid ${C.border}`,background:C.surface2,color:C.dim,fontSize:11,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s" }}
-                        onMouseEnter={e=>{ e.currentTarget.style.color=C.text; e.currentTarget.style.borderColor=`${C.accent}30`; }}
-                        onMouseLeave={e=>{ e.currentTarget.style.color=C.dim; e.currentTarget.style.borderColor=C.border; }}>
-                        {_AL[k]}
-                      </button>)}
-                    </div>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <div style={{ padding:"10px 18px 20px",borderTop:`1px solid ${C.border}`,flexShrink:0,textAlign:"center" }}>
-          <span style={{ fontSize:10,color:C.dim,opacity:0.4 }}>Cleo · Copiloto interno</span>
+          <div style={{textAlign:"center",marginTop:8}}>
+            <span style={{fontSize:10,color:C.dim,opacity:0.4}}>Cleo · Copiloto interno</span>
+          </div>
         </div>
       </div>
     </>
   );
 }
-
-
 function LoginPage({ onLogin }) {
   const API = import.meta.env.VITE_API_URL;
   const [view,    setView]    = useState("login");
