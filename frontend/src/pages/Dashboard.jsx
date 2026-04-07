@@ -728,6 +728,7 @@ function WeeklyView({ appointments, onCancel, onReschedule }) {
 // TAB 2: STATS
 // ============================================
 function StatsView({ appointments, businessName, plan, showToast }) {
+  const [statsPeriod, setStatsPeriod] = useState("semana");
   const confirmed = appointments.filter(a => a.status === "confirmed");
   const weekIncome = confirmed.filter(a => a.service_price).reduce((s, a) => s + a.service_price, 0);
   const monthIncome = Math.round(weekIncome * 4.3);
@@ -800,19 +801,26 @@ function StatsView({ appointments, businessName, plan, showToast }) {
 
   // ── Cálculos por período ─────────────────────────────────────────────────
   const now2 = new Date();
+  // Rango según período seleccionado
   const weekStart = new Date(now2); weekStart.setDate(now2.getDate()-(now2.getDay()===0?6:now2.getDay()-1)); weekStart.setHours(0,0,0,0);
   const weekEnd   = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
-  const monthStart2 = new Date(now2.getFullYear(),now2.getMonth(),1);
+  const monthStart2 = new Date(now2.getFullYear(),now2.getMonth(),1,0,0,0);
   const monthEnd2   = new Date(now2.getFullYear(),now2.getMonth()+1,0,23,59,59);
+  const dayStart  = new Date(now2.getFullYear(),now2.getMonth(),now2.getDate(),0,0,0);
+  const dayEnd    = new Date(now2.getFullYear(),now2.getMonth(),now2.getDate(),23,59,59);
 
-  const weekAppts2  = appointments.filter(a=>a.datetime>=weekStart&&a.datetime<=weekEnd);
-  const monthAppts2 = appointments.filter(a=>a.datetime>=monthStart2&&a.datetime<=monthEnd2);
+  const pStart = statsPeriod==="dia"?dayStart:statsPeriod==="mes"?monthStart2:weekStart;
+  const pEnd   = statsPeriod==="dia"?dayEnd:statsPeriod==="mes"?monthEnd2:weekEnd;
+  const pLabel = statsPeriod==="dia"?"hoy":statsPeriod==="mes"?"este mes":"esta semana";
+
+  const weekAppts2  = appointments.filter(a=>a.datetime>=pStart&&a.datetime<=pEnd);
+  const monthAppts2 = weekAppts2; // alias para compatibilidad
 
   const recaudadoSemana  = weekAppts2.filter(a=>a.status==="confirmed"&&new Date(a.datetime.getTime()+a.duration_minutes*60000)<now2).reduce((s,a)=>s+(a.service_price||0),0);
   const porRecaudar      = weekAppts2.filter(a=>a.status==="confirmed"&&a.datetime>now2).reduce((s,a)=>s+(a.service_price||0),0);
   const citasSemana      = weekAppts2.filter(a=>a.status==="confirmed").length;
   const canceladasSemana = weekAppts2.filter(a=>a.status==="cancelled").length;
-  const citasMes         = monthAppts2.filter(a=>a.status==="confirmed").length;
+  const citasMes         = citasSemana;
   const conversaciones   = 0; // TODO: conectar a tabla messages cuando exista
   const conversion       = conversaciones>0?Math.round((citasSemana/conversaciones)*100):0;
   const ahorroMin        = citasSemana*15;
@@ -859,7 +867,7 @@ function StatsView({ appointments, businessName, plan, showToast }) {
   const trendUp       = trendPct!==null&&trendPct>=0;
 
   const kpis = [
-    { label:"Ingresos",     value:recaudadoSemana, prefix:"$", sub:"Esta semana",      trend:trendStr, up:trendUp },
+    { label:"Ingresos",     value:recaudadoSemana, prefix:"$", sub:"Recaudado "+pLabel, trend:trendStr, up:trendUp },
     { label:"Por recaudar", value:porRecaudar,      prefix:"$", sub:"Citas pendientes", note:"si se concretan" },
     { label:"Citas",        value:citasSemana,      prefix:"",  sub:"Esta semana" },
     { label:"Conversión",   value:conversion,       prefix:"",  suffix:"%", sub:"Convers. → citas" },
@@ -867,6 +875,19 @@ function StatsView({ appointments, businessName, plan, showToast }) {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20, paddingBottom:40 }}>
+      {/* Selector período */}
+      {(()=>{
+        const filters=[{id:"dia",label:"Día"},{id:"semana",label:"Semana"},{id:"mes",label:"Mes"}];
+        const idx=filters.findIndex(f=>f.id===statsPeriod);
+        return (
+          <div style={{ position:"relative", display:"flex", background:C.surface, borderRadius:10, padding:3, border:"1px solid "+C.border }}>
+            <div style={{ position:"absolute", top:3, left:`calc(3px + ${idx} * (100% - 6px) / 3)`, width:"calc((100% - 6px) / 3)", height:"calc(100% - 6px)", borderRadius:7, background:C.accent, transition:"left 0.22s cubic-bezier(0.16,1,0.3,1)", boxShadow:"0 1px 6px rgba(74,222,128,0.25)", zIndex:0 }}/>
+            {filters.map(f=>(
+              <button key={f.id} onClick={()=>setStatsPeriod(f.id)} style={{ flex:1, padding:"7px 0", borderRadius:7, border:"none", cursor:"pointer", fontFamily:"inherit", background:"transparent", color:statsPeriod===f.id?C.bg:C.dim, fontSize:12, fontWeight:600, position:"relative", zIndex:1, transition:"color 0.18s" }}>{f.label}</button>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* ── BLOQUE 1: Hero IA ───────────────────────────────────────────── */}
       {canUse(plan,"stats")&&(
@@ -1288,7 +1309,20 @@ function ServicesView({ services, setServices, showToast, plan }) {
                     onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.background="transparent"; }}>
                     <Trash2 size={10} color={C.dim}/>
                   </button>
-                  <button onClick={()=>{ const u=services.map(x=>x.id===s.id?{...x,active:!x.active}:x); setServices(u); showToast(s.active?"Servicio desactivado":"Servicio activado ✓"); }}
+                  <button onClick={async ()=>{
+                    const newActive = !s.active;
+                    setServices(services.map(x=>x.id===s.id?{...x,active:newActive}:x));
+                    showToast(newActive?"Servicio activado ✓":"Servicio desactivado");
+                    try {
+                      const { data:{ session } } = await supabase.auth.getSession();
+                      const token = session?.access_token;
+                      const API = import.meta.env.VITE_API_URL;
+                      await fetch(`${API}/api/services/${s.id}`, {
+                        method:"PUT", headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},
+                        body:JSON.stringify({ active:newActive }),
+                      });
+                    } catch(e){ console.error("Error toggle:", e); }
+                  }}
                     style={{ width:32, height:18, borderRadius:9, border:"none", cursor:"pointer", background:s.active?C.accent:"#2A2A2A", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
                     <div style={{ width:14, height:14, borderRadius:"50%", background:"#fff", position:"absolute", top:2, left:s.active?16:2, transition:"left 0.2s" }}/>
                   </button>
@@ -1302,7 +1336,21 @@ function ServicesView({ services, setServices, showToast, plan }) {
       {/* Drawer lateral — Nuevo servicio */}
       {addModal && <ServiceDrawer
         onClose={()=>setAddModal(false)}
-        onSave={(svc)=>{ setServices(p=>[...p,svc]); showToast("Servicio creado ✓"); setAddModal(false); }}
+        onSave={async (svc)=>{
+          try {
+            const { data:{ session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            const API = import.meta.env.VITE_API_URL;
+            const res = await fetch(`${API}/api/services`, {
+              method:"POST",
+              headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},
+              body:JSON.stringify({ name:svc.name, description:svc.description, price:svc.price, duration_minutes:svc.duration_minutes, active:svc.active }),
+            });
+            if(res.ok){ const data=await res.json(); setServices(p=>[...p,{...svc,id:data.id}]); }
+            else { setServices(p=>[...p,svc]); }
+          } catch(e){ setServices(p=>[...p,svc]); }
+          showToast("Servicio creado ✓"); setAddModal(false);
+        }}
         plan={plan} total={total} limit={limit}
       />}
 
@@ -1324,7 +1372,21 @@ function ServicesView({ services, setServices, showToast, plan }) {
                   {[15,30,45,60,90,120].map(d=><option key={d} value={d}>{d} min</option>)}
                 </select>
               </div>
-              <button onClick={()=>{ if(!canSave) return; setServices(p=>p.map(x=>x.id===editTarget.id?{...x,name:nm.trim(),description:desc.trim()||null,price:parseFloat(pr),duration_minutes:dur}:x)); showToast("Servicio actualizado ✓"); setEditTarget(null); }}
+              <button onClick={async ()=>{
+                if(!canSave) return;
+                const updated = {name:nm.trim(),description:desc.trim()||null,price:parseFloat(pr),duration_minutes:dur};
+                setServices(p=>p.map(x=>x.id===editTarget.id?{...x,...updated}:x));
+                showToast("Servicio actualizado ✓"); setEditTarget(null);
+                try {
+                  const { data:{ session } } = await supabase.auth.getSession();
+                  const token = session?.access_token;
+                  const API = import.meta.env.VITE_API_URL;
+                  await fetch(`${API}/api/services/${editTarget.id}`, {
+                    method:"PUT", headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},
+                    body:JSON.stringify(updated),
+                  });
+                } catch(e){ console.error("Error edit:", e); }
+              }}
                 disabled={!canSave}
                 style={{ width:"100%",padding:13,borderRadius:12,border:"none",background:canSave?C.accent:C.border,color:canSave?C.bg:C.dim,fontSize:14,fontWeight:700,cursor:canSave?"pointer":"default",fontFamily:"inherit" }}>
                 Guardar cambios
@@ -1344,7 +1406,17 @@ function ServicesView({ services, setServices, showToast, plan }) {
               <p style={{ fontSize:13,color:C.dim,marginBottom:20,lineHeight:1.5 }}>¿Eliminar <strong style={{ color:C.text }}>{delTarget.name}</strong>? La IA ya no lo ofrecerá.</p>
               <div style={{ display:"flex",gap:10 }}>
                 <button onClick={()=>setDelTarget(null)} style={{ flex:1,padding:12,borderRadius:10,border:`1px solid ${C.border}`,background:"transparent",color:C.text,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancelar</button>
-                <button onClick={()=>{ setServices(p=>p.filter(x=>x.id!==delTarget.id)); showToast("Servicio eliminado"); setDelTarget(null); }}
+                <button onClick={async ()=>{
+                  setServices(p=>p.filter(x=>x.id!==delTarget.id)); setDelTarget(null); showToast("Servicio eliminado");
+                  try {
+                    const { data:{ session } } = await supabase.auth.getSession();
+                    const token = session?.access_token;
+                    const API = import.meta.env.VITE_API_URL;
+                    await fetch(`${API}/api/services/${delTarget.id}`, {
+                      method:"DELETE", headers:{"Authorization":`Bearer ${token}`},
+                    });
+                  } catch(e){ console.error("Error delete:", e); }
+                }}
                   style={{ flex:1,padding:12,borderRadius:10,border:"none",background:C.red,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Eliminar</button>
               </div>
             </div>
@@ -2153,9 +2225,20 @@ export default function CleoDashboard() {
     document.head.appendChild(s); return () => document.head.removeChild(s);
   }, []);
 
-  const handleCancel = (id) => {
+  const handleCancel = async (id) => {
+    try {
+      const { data:{ session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const API = import.meta.env.VITE_API_URL;
+      await fetch(`${API}/api/appointments/${id}`, {
+        method:"PUT",
+        headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},
+        body:JSON.stringify({ status:"cancelled" }),
+      });
+    } catch(e) { console.error("Error cancelando:", e); }
     setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: "cancelled" } : a));
     setCancelTarget(null);
+    showToast("Cita cancelada");
   };
 
   const handleBlock = (day) => {
