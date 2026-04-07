@@ -1554,55 +1554,77 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
     <>
       <div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.55)",backdropFilter:"blur(4px)",animation:"fadeIn 0.2s ease"}}/>
       <div style={{position:"fixed",top:0,right:0,bottom:0,zIndex:501,width:"min(400px,100vw)",background:C.bg,borderLeft:"1px solid "+C.border,display:"flex",flexDirection:"column",animation:"slideInRight 0.26s cubic-bezier(0.16,1,0.3,1)",boxShadow:"-28px 0 80px rgba(0,0,0,0.55)"}}>
-        <div style={{padding:"16px 18px 14px",borderBottom:"1px solid "+C.border,flexShrink:0,background:"linear-gradient(180deg,"+C.accent+"07 0%,transparent 100%)"}}>
+        <div style={{padding:"14px 16px 12px",borderBottom:"1px solid "+C.border,flexShrink:0,background:"linear-gradient(160deg,"+C.accent+"0A 0%,"+C.bg+" 70%)"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:40,height:40,borderRadius:12,flexShrink:0,position:"relative"}}>
-                <img src="/cleo-avatar.png" alt="Cleo" style={{width:40,height:40,borderRadius:12,objectFit:"cover",display:"block"}}/>
-                <div style={{position:"absolute",bottom:-3,right:-3,width:12,height:12,borderRadius:"50%",background:"#22C55E",border:"2px solid "+C.bg}}/>
+            <div style={{display:"flex",alignItems:"center",gap:11}}>
+              <div style={{position:"relative",flexShrink:0}}>
+                <div style={{position:"absolute",inset:-4,borderRadius:16,background:"radial-gradient(circle,"+C.accent+"25 0%,transparent 70%)",animation:"pulse 2.5s ease-in-out infinite"}}/>
+                <div style={{position:"absolute",inset:-1,borderRadius:14,border:"1px solid "+C.accent+"30",animation:"pulse 2s ease-in-out infinite"}}/>
+                <img src="/cleo-avatar.png" alt="Cleo" style={{width:40,height:40,borderRadius:13,objectFit:"cover",display:"block",position:"relative",zIndex:1}}/>
+                <div style={{position:"absolute",bottom:-2,right:-2,width:11,height:11,borderRadius:"50%",background:"#22C55E",border:"2px solid "+C.bg,zIndex:2,boxShadow:"0 0 6px #22C55E"}}/>
               </div>
               <div>
-                <div style={{fontFamily:"Syne,sans-serif",fontSize:15,fontWeight:800,color:C.text}}>Cleo</div>
-                <div style={{fontSize:10,color:C.accent,display:"flex",alignItems:"center",gap:4,marginTop:1}}>
-                  <div style={{width:5,height:5,borderRadius:"50%",background:C.accent,animation:"pulse 1.5s infinite"}}/>
-                  {thinking?"Pensando...":"Copiloto activo"}
+                <div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,color:C.text,letterSpacing:"-0.01em"}}>Cleo</div>
+                <div style={{fontSize:10,color:thinking?C.cyan:C.accent,display:"flex",alignItems:"center",gap:5,marginTop:2,transition:"color 0.3s"}}>
+                  <div style={{width:5,height:5,borderRadius:"50%",background:thinking?C.cyan:C.accent,animation:"pulse 1.5s infinite",transition:"background 0.3s",boxShadow:"0 0 4px "+(thinking?C.cyan:C.accent)}}/>
+                  {thinking?"Analizando...":ctx.tc>0?""+ctx.tc+" citas detectadas hoy":"Listo para ayudarte"}
                 </div>
               </div>
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:7}}>
               {mode==="chat"&&messages.length>0&&(
-                <button onClick={()=>{setMessages([]);setMode("idle");}} style={{background:"none",border:"1px solid "+C.border,borderRadius:8,padding:"5px 10px",fontSize:10,color:C.dim,cursor:"pointer",fontFamily:"inherit"}}>Nueva sesion</button>
+                <button onClick={()=>{setMessages([]);setMode("idle");}}
+                  style={{background:"none",border:"1px solid "+C.border,borderRadius:8,padding:"4px 9px",fontSize:10,color:C.dim,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent+"40";e.currentTarget.style.color=C.text;}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.dim;}}>
+                  Nueva sesion
+                </button>
               )}
-              <button onClick={()=>setOpen(false)} style={{background:"none",border:"1px solid "+C.border,borderRadius:9,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={13} color={C.dim}/></button>
+              <button onClick={()=>setOpen(false)}
+                style={{background:"none",border:"1px solid "+C.border,borderRadius:9,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"all 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent+"40";e.currentTarget.style.background=C.accent+"08";}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background="none";}}>
+                <X size={12} color={C.dim}/>
+              </button>
             </div>
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px"}}>
           {mode==="idle"&&(
             <>
-              <div style={{background:C.surface,border:"1px solid "+C.accent+"25",borderRadius:"4px 16px 16px 16px",padding:"13px 15px",marginBottom:14,position:"relative",overflow:"hidden"}}>
-                <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,"+C.accent+",transparent)"}}/>
-                <div style={{fontSize:13,color:C.text,lineHeight:1.6}}>Hola, soy Cleo 🤖 tu copiloto 🟢</div>
+              {/* ── Hero ── */}
+              <div style={{marginBottom:16,padding:"16px",borderRadius:16,background:"linear-gradient(135deg,"+C.accent+"0D 0%,"+C.surface+" 100%)",border:"1px solid "+C.accent+"20",position:"relative",overflow:"hidden",animation:"fadeIn 0.3s ease"}}>
+                <div style={{position:"absolute",top:-20,right:-20,width:80,height:80,borderRadius:"50%",background:"radial-gradient(circle,"+C.accent+"15 0%,transparent 70%)"}}/>
+                <div style={{position:"absolute",bottom:0,left:0,right:0,height:1,background:"linear-gradient(90deg,"+C.accent+"30,transparent)"}}/>
+                <div style={{fontSize:18,fontWeight:800,fontFamily:"'Syne',sans-serif",color:C.text,letterSpacing:"-0.02em",marginBottom:4}}>Hola, soy Cleo</div>
+                <div style={{fontSize:12,color:C.dim,lineHeight:1.6,marginBottom:insights.length>0?12:0}}>Estoy monitoreando tu negocio ahora mismo.</div>
+                {insights.length>0&&(
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {insights.map((ins,i)=>(
+                      <div key={i} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 9px",borderRadius:20,background:ins.color+"15",border:"1px solid "+ins.color+"30",animation:"fadeIn "+(0.3+i*0.1)+"s ease"}}>
+                        <div style={{width:5,height:5,borderRadius:"50%",background:ins.color,boxShadow:"0 0 5px "+ins.color}}/>
+                        <span style={{fontSize:10,fontWeight:600,color:ins.color}}>{ins.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              {insights.length>0&&(
-                <div style={{marginBottom:14}}>
-                  <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8}}>Ahora mismo</div>
-                  {insights.map((ins,i)=>(
-                    <div key={i} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 12px",background:C.surface,border:"1px solid "+C.border,borderRadius:10,marginBottom:6}}>
-                      <div style={{width:7,height:7,borderRadius:"50%",background:ins.color,flexShrink:0,boxShadow:"0 0 6px "+ins.color}}/><span style={{fontSize:12,color:C.text}}>{ins.text}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div>
-                <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:C.dim,marginBottom:8}}>Acciones rapidas</div>
+              {/* ── Acciones rápidas premium ── */}
+              <div style={{marginBottom:4}}>
+                <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.09em",textTransform:"uppercase",color:C.dim,marginBottom:10,paddingLeft:2}}>Acciones rapidas</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                  {qa.map(key=>(
+                  {qa.map((key,i)=>(
                     <button key={key} onClick={()=>quickAction(key)}
-                      style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px",borderRadius:12,border:"1px solid "+C.border,background:C.surface,color:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s"}}
-                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent+"45";e.currentTarget.style.background=C.accent+"07";e.currentTarget.style.transform="translateY(-1px)";}}
-                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface;e.currentTarget.style.transform="translateY(0)";}}>
-                      <div style={{width:6,height:6,borderRadius:"50%",background:C.accent,flexShrink:0}}/>{_AL[key]}
+                      style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:4,padding:"12px 12px 10px",borderRadius:14,border:"1px solid "+C.border,background:C.surface,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.18s",animation:"fadeIn "+(0.2+i*0.07)+"s ease"}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent+"50";e.currentTarget.style.background=C.accent+"08";e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,0.3),0 0 12px "+C.accent+"10";}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface;e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
+                      <div style={{width:28,height:28,borderRadius:8,background:C.accent+"12",border:"1px solid "+C.accent+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:C.accent}}>
+                        {{"reagendar":"↗","cancelar":"✕","citas_hoy":"◎","crear_servicio":"＋","limite_servicios":"◈","ingresos":"↑","mi_plan":"◇","whatsapp":"◉"}[key]||"·"}
+                      </div>
+                      <div style={{fontSize:11,fontWeight:700,color:C.text,lineHeight:1.2}}>{_AL[key]}</div>
+                      <div style={{fontSize:10,color:C.dim,lineHeight:1.3}}>
+                        {{"reagendar":"Cambia fecha u hora","cancelar":"Elimina una cita","citas_hoy":"Ver agenda de hoy","crear_servicio":"Nuevo servicio","limite_servicios":"Cupos disponibles","ingresos":"Ver estadisticas","mi_plan":"Tu suscripcion","whatsapp":"Config del bot"}[key]||""}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -1621,21 +1643,21 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
             </>
           )}
         </div>
-        <div style={{padding:"12px 16px 16px",borderTop:"1px solid "+C.border,flexShrink:0}}>
+        <div style={{padding:"10px 14px 14px",borderTop:"1px solid "+C.border,flexShrink:0,background:"linear-gradient(0deg,"+C.accent+"05 0%,transparent 100%)"}}>
           <div style={{position:"relative"}}>
             <input value={query} onChange={e=>setQuery(e.target.value)}
               onKeyDown={e=>{if(e.key==="Enter"&&query.trim()) send(query);}}
-              placeholder="Escribe tu pregunta..."
-              style={{width:"100%",padding:"11px 44px 11px 14px",borderRadius:13,border:"1px solid "+C.border,background:C.surface,color:C.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border-color 0.15s"}}
-              onFocus={e=>e.target.style.borderColor=C.accent+"50"}
-              onBlur={e=>e.target.style.borderColor=C.border}/>
+              placeholder={mode==="idle"?"Preguntame algo sobre tu negocio...":"Continua la conversacion..."}
+              style={{width:"100%",padding:"12px 46px 12px 16px",borderRadius:14,border:"1px solid "+C.border,background:C.surface,color:C.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"all 0.2s",lineHeight:1.4}}
+              onFocus={e=>{e.target.style.borderColor=C.accent+"55";e.target.style.boxShadow="0 0 0 3px "+C.accent+"08";}}
+              onBlur={e=>{e.target.style.borderColor=C.border;e.target.style.boxShadow="none";}}/>
             <button onClick={()=>{if(query.trim()) send(query);}} disabled={!query.trim()}
-              style={{position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",width:30,height:30,borderRadius:9,border:"none",background:query.trim()?C.accent:"transparent",color:query.trim()?C.bg:C.dim,cursor:query.trim()?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s"}}>
-              <ChevronRight size={14}/>
+              style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",width:30,height:30,borderRadius:10,border:"none",background:query.trim()?C.accent:C.accent+"20",color:query.trim()?C.bg:C.accent+"60",cursor:query.trim()?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s",boxShadow:query.trim()?"0 2px 8px "+C.accent+"40":"none"}}>
+              <ChevronRight size={13}/>
             </button>
           </div>
-          <div style={{textAlign:"center",marginTop:8}}>
-            <span style={{fontSize:10,color:C.dim,opacity:0.4}}>Cleo · Copiloto interno</span>
+          <div style={{textAlign:"center",marginTop:7}}>
+            <span style={{fontSize:9,color:C.dim,opacity:0.35,letterSpacing:"0.04em"}}>Cleo · Copiloto interno</span>
           </div>
         </div>
       </div>
