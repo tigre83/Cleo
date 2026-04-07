@@ -261,7 +261,7 @@ function ApptCard({ appt, onCancel, onReschedule, isNext }) {
   const opacity     = isPast || isCancelled ? 0.55 : 1;
 
   return (
-    <div style={{ background:bgColor, border:`1.5px solid ${borderColor}`, borderRadius:14, padding:"12px 14px",
+    <div style={{ background:bgColor, border:`1.5px solid ${borderColor}`, borderRadius:12, padding:"9px 12px",
       opacity, transition:"all 0.2s", position:"relative", overflow:"hidden" }}
       onMouseEnter={e=>{ if(!isPast&&!isCancelled) e.currentTarget.style.transform="translateY(-1px)"; }}
       onMouseLeave={e=>{ e.currentTarget.style.transform="translateY(0)"; }}>
@@ -270,61 +270,45 @@ function ApptCard({ appt, onCancel, onReschedule, isNext }) {
       {isActive && <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg, ${C.accent}, transparent)` }}/>}
       {isNext && !isActive && <div style={{ position:"absolute", top:0, left:0, right:0, height:1.5, background:`linear-gradient(90deg, ${C.accent}50, transparent)` }}/>}
 
-      <div style={{ display:"flex", gap:10 }}>
-        {/* Columna tiempo */}
-        <div style={{ width:50, textAlign:"center", flexShrink:0, paddingTop:2 }}>
-          <div style={{ fontSize:15, fontWeight:700, color:isActive||isNext?C.accent:isPast?C.dim:C.text }}>{timeStr}</div>
-          <div style={{ fontSize:9, color:C.dim, marginTop:1 }}>→ {endStr}</div>
-          <div style={{ fontSize:10, color:C.dim, marginTop:2 }}>{appt.duration_minutes}m</div>
-        </div>
-
-        {/* Divisor */}
-        <div style={{ width:1, background:isActive?`${C.accent}30`:C.border, flexShrink:0, alignSelf:"stretch" }}/>
-
-        {/* Info principal */}
-        <div style={{ flex:1, minWidth:0 }}>
-          {/* Fila 1: nombre + badge + acción */}
-          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:6, marginBottom:4 }}>
-            <div style={{ fontSize:13, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{appt.client_name}</div>
-            <div style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
-              <AppointmentStatusBadge status={appt.status} isActive={isActive} isNext={isNext&&!isActive} isPast={isPast}/>
-              {!isCancelled && !isPast && !isActive && (
-                <button onClick={()=>onReschedule&&onReschedule(appt)}
-                  style={{ background:"none", border:`1px solid ${C.accent}25`, borderRadius:6, cursor:"pointer", color:C.accent, padding:"2px 7px", fontSize:10, fontWeight:500, fontFamily:"inherit", opacity:0.7, transition:"all 0.15s", display:"flex", alignItems:"center", gap:3 }}
-                  onMouseEnter={e=>{e.currentTarget.style.opacity="1"; e.currentTarget.style.background=`${C.accent}10`;}}
-                  onMouseLeave={e=>{e.currentTarget.style.opacity="0.7"; e.currentTarget.style.background="none";}}>
-                  <CalendarDays size={9}/> Reagendar
-                </button>
-              )}
-              {!isCancelled && !isPast && (
-                <button onClick={()=>onCancel(appt)}
-                  style={{ background:"none", border:`1px solid ${C.red}25`, borderRadius:6, cursor:"pointer", color:C.red, padding:"2px 7px", fontSize:10, fontWeight:500, fontFamily:"inherit", opacity:0.7, transition:"all 0.15s", display:"flex", alignItems:"center", gap:3 }}
-                  onMouseEnter={e=>{e.currentTarget.style.opacity="1"; e.currentTarget.style.background=`${C.red}10`;}}
-                  onMouseLeave={e=>{e.currentTarget.style.opacity="0.7"; e.currentTarget.style.background="none";}}>
-                  <X size={9}/> Cancelar
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Fila 2: teléfono */}
-          <a href={waLink(appt.client_phone)} target="_blank" rel="noopener noreferrer"
-            style={{ fontSize:11, color:C.accent, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:3, marginBottom:3 }}>
-            <Phone size={10}/> {appt.client_phone}
-          </a>
-
-          {/* Fila 3: servicio + precio */}
-          {appt.service_name && (
-            <div style={{ fontSize:11, display:"flex", alignItems:"center", gap:4 }}>
-              <Briefcase size={10} color={C.dim}/>
-              <span style={{ color:C.dim }}>{appt.service_name}</span>
-              {appt.service_price && <span style={{ color:C.accent, fontWeight:600 }}>· ${appt.service_price}</span>}
-            </div>
+      {/* Fila 1: hora + nombre + badge + acciones */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
+        <div style={{ fontSize:13, fontWeight:700, color:isActive||isNext?C.accent:isPast?C.dim:C.text, flexShrink:0, minWidth:38 }}>{timeStr}</div>
+        <div style={{ fontSize:13, fontWeight:600, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{appt.client_name}</div>
+        <div style={{ display:"flex", alignItems:"center", gap:4, flexShrink:0 }}>
+          <AppointmentStatusBadge status={appt.status} isActive={isActive} isNext={isNext&&!isActive} isPast={isPast}/>
+          {!isCancelled && !isPast && !isActive && (
+            <button onClick={()=>onReschedule&&onReschedule(appt)}
+              style={{ background:"none", border:`1px solid ${C.accent}25`, borderRadius:6, cursor:"pointer", color:C.accent, padding:"2px 7px", fontSize:10, fontWeight:500, fontFamily:"inherit", opacity:0.8, transition:"all 0.15s", display:"flex", alignItems:"center", gap:3 }}
+              onMouseEnter={e=>{e.currentTarget.style.opacity="1"; e.currentTarget.style.background=`${C.accent}10`;}}
+              onMouseLeave={e=>{e.currentTarget.style.opacity="0.8"; e.currentTarget.style.background="none";}}>
+              <CalendarDays size={9}/> Reagendar
+            </button>
           )}
-
-          {/* Fila 4: ubicación */}
-          <ClientLocation appt={appt}/>
+          {!isCancelled && !isPast && (
+            <button onClick={()=>onCancel(appt)}
+              style={{ background:"none", border:`1px solid ${C.red}25`, borderRadius:6, cursor:"pointer", color:C.red, padding:"2px 7px", fontSize:10, fontWeight:500, fontFamily:"inherit", opacity:0.8, transition:"all 0.15s", display:"flex", alignItems:"center", gap:3 }}
+              onMouseEnter={e=>{e.currentTarget.style.opacity="1"; e.currentTarget.style.background=`${C.red}10`;}}
+              onMouseLeave={e=>{e.currentTarget.style.opacity="0.8"; e.currentTarget.style.background="none";}}>
+              <X size={9}/> Cancelar
+            </button>
+          )}
         </div>
+      </div>
+      {/* Fila 2: duración · servicio · precio · teléfono · ubicación */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <span style={{ fontSize:10, color:C.dim, display:"flex", alignItems:"center", gap:3 }}><Clock size={9}/>{appt.duration_minutes}m · {endStr}</span>
+        {appt.service_name && <>
+          <span style={{ fontSize:10, color:"#333", opacity:0.4 }}>·</span>
+          <span style={{ fontSize:10, color:C.dim, display:"flex", alignItems:"center", gap:3 }}><Briefcase size={9}/>{appt.service_name}{appt.service_price && <span style={{ color:C.accent, fontWeight:600 }}> ${appt.service_price}</span>}</span>
+        </>}
+        {appt.client_phone && <>
+          <span style={{ fontSize:10, color:"#333", opacity:0.4 }}>·</span>
+          <a href={waLink(appt.client_phone)} target="_blank" rel="noopener noreferrer"
+            style={{ fontSize:10, color:C.accent, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:3 }}>
+            <Phone size={9}/>{appt.client_phone}
+          </a>
+        </>}
+        <ClientLocation appt={appt} compact/>
       </div>
     </div>
   );
