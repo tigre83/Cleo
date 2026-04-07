@@ -1860,11 +1860,69 @@ export default function CleoDashboard() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Cargar datos reales desde backend cuando hay sesion
+  const API = import.meta.env.VITE_API_URL;
+  const loadData = async () => {
+    try {
+      setLoadingData(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const token = session.access_token;
+      const headers = { "Authorization": "Bearer " + token, "Content-Type": "application/json" };
+
+      // Cargar biz
+      const bizRes = await fetch(API + "/api/business/me", { headers });
+      if (bizRes.ok) {
+        const bizData = await bizRes.json();
+        setBiz(prev => ({
+          ...prev,
+          name: bizData.business_name || prev.name,
+          plan: bizData.plan || prev.plan,
+          trial_days: bizData.trial_days || 0,
+          schedule: bizData.schedule || prev.schedule,
+          assistant_name: bizData.assistant_name || prev.assistant_name,
+          duration: bizData.appointment_duration || prev.duration,
+          wa_connected: bizData.wa_connected || false,
+        }));
+      }
+
+      // Cargar servicios
+      const svcRes = await fetch(API + "/api/services", { headers });
+      if (svcRes.ok) {
+        const svcData = await svcRes.json();
+        if (Array.isArray(svcData) && svcData.length > 0) setServices(svcData);
+      }
+
+      // Cargar appointments del mes actual + siguiente mes
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+      const end   = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().split("T")[0];
+      const apptRes = await fetch(API + "/api/appointments/range?start=" + start + "&end=" + end, { headers });
+      if (apptRes.ok) {
+        const apptData = await apptRes.json();
+        if (Array.isArray(apptData) && apptData.length > 0) {
+          setAppointments(apptData.map(a => ({
+            ...a,
+            datetime: new Date(a.datetime),
+          })));
+        }
+      }
+    } catch(e) {
+      console.error("Error cargando datos:", e);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  useEffect(() => { if (authed) loadData(); }, [authed]);
+
   const [sessionExpired, setSessionExpired] = useState(false);
   const [tab, setTab] = useState("agenda");
   const [agendaView, setAgendaView] = useState("semana"); // dia | semana | mes
-  const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS);
-  const [services, setServices] = useState(MOCK_SERVICES);
+  const [appointments, setAppointments] = useState([]);
+  const [services, setServices] = useState([]);
+  const [loadingData, setLoadingData] = useState(false);
   const [blocked, setBlocked] = useState([]);
   const [cancelTarget,    setCancelTarget]    = useState(null);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
