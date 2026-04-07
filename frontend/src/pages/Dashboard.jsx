@@ -1426,6 +1426,7 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
   const [query,     setQuery]     = useState("");
   const [thinking,  setThinking]  = useState(false);
   const [mode,      setMode]      = useState("idle");
+  const [phase,     setPhase]     = useState(0);
   const endRef = useRef(null);
 
   const ctx = { plan:biz?.plan||"trial", pl:{basico:"Basico",negocio:"Negocio",pro:"Pro",trial:"Trial"}[biz?.plan]||"Trial", sc:services?.length||0, td:biz?.trial_days||0, tc:appointments?.filter(a=>a.datetime?.toDateString?.()===new Date().toDateString()&&a.status==="confirmed").length||0 };
@@ -1433,7 +1434,13 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
   const qa = _QABT[tab] || _QABT.agenda;
 
   useEffect(()=>{ endRef.current?.scrollIntoView({behavior:"smooth"}); },[messages,thinking]);
-  useEffect(()=>{ if(!open){ setMessages([]); setQuery(""); setThinking(false); setMode("idle"); } },[open]);
+  useEffect(()=>{
+    if(!open){ setMessages([]); setQuery(""); setThinking(false); setMode("idle"); setPhase(0); return; }
+    setPhase(0);
+    const t1=setTimeout(()=>setPhase(1),700);
+    const t2=setTimeout(()=>setPhase(2),1600);
+    return ()=>{ clearTimeout(t1); clearTimeout(t2); };
+  },[open]);
 
   const nav = (t) => { if(onNavigate) onNavigate(t); setOpen(false); };
   const addMsg = (msg) => setMessages(prev=>[...prev,{id:Date.now()+Math.random(),...msg}]);
@@ -1567,9 +1574,15 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
               </div>
               <div>
                 <div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,color:C.text,letterSpacing:"-0.01em"}}>Cleo</div>
-                <div style={{fontSize:10,color:thinking?C.cyan:C.accent,display:"flex",alignItems:"center",gap:5,marginTop:2,transition:"color 0.3s"}}>
-                  <div style={{width:5,height:5,borderRadius:"50%",background:thinking?C.cyan:C.accent,animation:"pulse 1.5s infinite",transition:"background 0.3s",boxShadow:"0 0 4px "+(thinking?C.cyan:C.accent)}}/>
-                  {thinking?"Analizando...":ctx.tc>0?""+ctx.tc+" citas detectadas hoy":"Listo para ayudarte"}
+                <div style={{fontSize:10,color:thinking?C.cyan:phase<2?"#6B7280":C.accent,display:"flex",alignItems:"center",gap:5,marginTop:2,transition:"color 0.4s"}}>
+                  <div style={{width:5,height:5,borderRadius:"50%",
+                    background:thinking?C.cyan:phase===0?"#6B7280":phase===1?C.cyan:C.accent,
+                    animation:phase===0?"pulse 0.6s infinite":phase===1?"pulse 1.2s infinite":"pulse 2.5s infinite",
+                    transition:"background 0.4s",
+                    boxShadow:"0 0 4px "+(thinking?C.cyan:phase===0?"#6B7280":phase===1?C.cyan:C.accent)}}/>
+                  <span style={{transition:"opacity 0.3s",opacity:1}}>
+                    {thinking?"Analizando...":phase===0?"Conectando...":phase===1?"Sincronizando agenda...":ctx.tc>0?ctx.tc+" citas detectadas hoy":"Listo para ayudarte"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1595,15 +1608,15 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
           {mode==="idle"&&(
             <>
               {/* ── Hero ── */}
-              <div style={{marginBottom:16,padding:"16px",borderRadius:16,background:"linear-gradient(135deg,"+C.accent+"0D 0%,"+C.surface+" 100%)",border:"1px solid "+C.accent+"20",position:"relative",overflow:"hidden",animation:"fadeIn 0.3s ease"}}>
+              <div style={{marginBottom:16,padding:"16px",borderRadius:16,background:"linear-gradient(135deg,"+C.accent+"0D 0%,"+C.surface+" 100%)",border:"1px solid "+C.accent+"20",position:"relative",overflow:"hidden",opacity:phase>=1?1:0,transform:phase>=1?"translateY(0)":"translateY(8px)",transition:"opacity 0.4s ease, transform 0.4s ease"}}>
                 <div style={{position:"absolute",top:-20,right:-20,width:80,height:80,borderRadius:"50%",background:"radial-gradient(circle,"+C.accent+"15 0%,transparent 70%)"}}/>
                 <div style={{position:"absolute",bottom:0,left:0,right:0,height:1,background:"linear-gradient(90deg,"+C.accent+"30,transparent)"}}/>
-                <div style={{fontSize:18,fontWeight:800,fontFamily:"'Syne',sans-serif",color:C.text,letterSpacing:"-0.02em",marginBottom:4}}>Hola, soy Cleo</div>
-                <div style={{fontSize:12,color:C.dim,lineHeight:1.6,marginBottom:insights.length>0?12:0}}>Monitoreando tu negocio. Preguntame sobre citas, servicios, plan o ingresos.</div>
+                <div style={{fontSize:18,fontWeight:800,fontFamily:"'Syne',sans-serif",color:C.text,letterSpacing:"-0.02em",marginBottom:4,opacity:phase>=1?1:0,transition:"opacity 0.3s 0.1s"}}>Hola, soy Cleo</div>
+                <div style={{fontSize:12,color:C.dim,lineHeight:1.6,marginBottom:insights.length>0?12:0,opacity:phase>=2?1:0,transition:"opacity 0.3s 0.2s"}}>Monitoreando tu negocio. Preguntame sobre citas, servicios, plan o ingresos.</div>
                 {insights.length>0&&(
                   <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                     {insights.map((ins,i)=>(
-                      <div key={i} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 9px",borderRadius:20,background:ins.color+"15",border:"1px solid "+ins.color+"30",animation:"fadeIn "+(0.3+i*0.1)+"s ease"}}>
+                      <div key={i} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 9px",borderRadius:20,background:ins.color+"15",border:"1px solid "+ins.color+"30",opacity:phase>=2?1:0,transform:phase>=2?"translateY(0)":"translateY(4px)",transition:"opacity 0.3s "+(0.25+i*0.08)+"s, transform 0.3s "+(0.25+i*0.08)+"s"}}>
                         <div style={{width:5,height:5,borderRadius:"50%",background:ins.color,boxShadow:"0 0 5px "+ins.color}}/>
                         <span style={{fontSize:10,fontWeight:600,color:ins.color}}>{ins.text}</span>
                       </div>
@@ -1643,7 +1656,7 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
           <div style={{position:"relative"}}>
             <input value={query} onChange={e=>setQuery(e.target.value)}
               onKeyDown={e=>{if(e.key==="Enter"&&query.trim()) send(query);}}
-              placeholder={mode==="idle"?"Preguntame algo sobre tu negocio...":"Continua la conversacion..."}
+              placeholder={thinking?"Analizando tu negocio...":phase<2?"Iniciando Cleo...":mode==="idle"?"Preguntame algo... o dime que quieres hacer":"Continua la conversacion..."}
               style={{width:"100%",padding:"12px 46px 12px 16px",borderRadius:14,border:"1px solid "+C.border,background:C.surface,color:C.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"all 0.2s",lineHeight:1.4}}
               onFocus={e=>{e.target.style.borderColor=C.accent+"55";e.target.style.boxShadow="0 0 0 3px "+C.accent+"08";}}
               onBlur={e=>{e.target.style.borderColor=C.border;e.target.style.boxShadow="none";}}/>
