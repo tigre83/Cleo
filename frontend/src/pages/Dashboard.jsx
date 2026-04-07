@@ -1416,8 +1416,10 @@ function _insights(ctx) {
   const out=[];
   if(ctx.tc>0) out.push({color:"#4ADE80",text:`${ctx.tc} cita${ctx.tc!==1?"s":""} hoy`});
   const lim={basico:10,negocio:20}[ctx.plan];
-  if(lim) out.push(Math.round(ctx.sc/lim*100)>=80?{color:"#FBBF24",text:`${ctx.sc}/${lim} servicios — cerca del límite`}:{color:"#4ADE80",text:`${lim-ctx.sc} servicios disponibles`});
+  if(lim) out.push(Math.round(ctx.sc/lim*100)>=80?{color:"#FBBF24",text:`${ctx.sc}/${lim} servicios`}:{color:"#4ADE80",text:`${lim-ctx.sc} servicios disponibles`});
   if(ctx.plan==="trial"&&ctx.td>0) out.push({color:"#22D3EE",text:`Prueba: ${ctx.td} días`});
+  else if(ctx.monthRevenue!=null) out.push({color:"#A78BFA",text:`$${ctx.monthRevenue} este mes`});
+  else out.push({color:"#6B7280",text:"Ingreso del mes — pronto"});
   return out.slice(0,3);
 }
 
@@ -1429,7 +1431,7 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
   const [phase,     setPhase]     = useState(0);
   const endRef = useRef(null);
 
-  const ctx = { plan:biz?.plan||"trial", pl:{basico:"Basico",negocio:"Negocio",pro:"Pro",trial:"Trial"}[biz?.plan]||"Trial", sc:services?.length||0, td:biz?.trial_days||0, tc:appointments?.filter(a=>a.datetime?.toDateString?.()===new Date().toDateString()&&a.status==="confirmed").length||0 };
+  const ctx = { plan:biz?.plan||"trial", pl:{basico:"Basico",negocio:"Negocio",pro:"Pro",trial:"Trial"}[biz?.plan]||"Trial", sc:services?.length||0, td:biz?.trial_days||0, tc:appointments?.filter(a=>a.datetime?.toDateString?.()===new Date().toDateString()&&a.status==="confirmed").length||0, monthRevenue:biz?.month_revenue??null };
   const insights = _insights(ctx);
   const qa = _QABT[tab] || _QABT.agenda;
 
@@ -1574,14 +1576,14 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
               </div>
               <div>
                 <div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,color:C.text,letterSpacing:"-0.01em"}}>Cleo</div>
-                <div style={{fontSize:10,color:thinking?C.cyan:phase<2?"#6B7280":C.accent,display:"flex",alignItems:"center",gap:5,marginTop:2,transition:"color 0.4s"}}>
-                  <div style={{width:5,height:5,borderRadius:"50%",
-                    background:thinking?C.cyan:phase===0?"#6B7280":phase===1?C.cyan:C.accent,
-                    animation:phase===0?"pulse 0.6s infinite":phase===1?"pulse 1.2s infinite":"pulse 2.5s infinite",
-                    transition:"background 0.4s",
-                    boxShadow:"0 0 4px "+(thinking?C.cyan:phase===0?"#6B7280":phase===1?C.cyan:C.accent)}}/>
-                  <span style={{transition:"opacity 0.3s",opacity:1}}>
-                    {thinking?"Analizando...":phase===0?"Conectando...":phase===1?"Sincronizando agenda...":ctx.tc>0?ctx.tc+" citas detectadas hoy":"Listo para ayudarte"}
+                <div style={{fontSize:10,display:"flex",alignItems:"center",gap:5,marginTop:3,transition:"color 0.4s",color:thinking?C.cyan:phase===0?"#EF4444":phase===1?C.accent:C.accent}}>
+                  <div style={{width:5,height:5,borderRadius:"50%",flexShrink:0,
+                    background:thinking?C.cyan:phase===0?"#EF4444":C.accent,
+                    animation:phase===0?"pulse 0.5s infinite":phase===1?"pulse 1s infinite":"none",
+                    boxShadow:"0 0 5px "+(thinking?C.cyan:phase===0?"#EF4444":C.accent),
+                    transition:"background 0.5s"}}/>
+                  <span style={{transition:"opacity 0.3s",opacity:1,letterSpacing:"0.01em"}}>
+                    {thinking?"Analizando...":phase===0?"Conectando...":phase===1?"Sincronizando negocio...":"En línea"}
                   </span>
                 </div>
               </div>
@@ -1611,8 +1613,8 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
               <div style={{marginBottom:16,padding:"16px",borderRadius:16,background:"linear-gradient(135deg,"+C.accent+"0D 0%,"+C.surface+" 100%)",border:"1px solid "+C.accent+"20",position:"relative",overflow:"hidden",opacity:phase>=1?1:0,transform:phase>=1?"translateY(0)":"translateY(8px)",transition:"opacity 0.4s ease, transform 0.4s ease"}}>
                 <div style={{position:"absolute",top:-20,right:-20,width:80,height:80,borderRadius:"50%",background:"radial-gradient(circle,"+C.accent+"15 0%,transparent 70%)"}}/>
                 <div style={{position:"absolute",bottom:0,left:0,right:0,height:1,background:"linear-gradient(90deg,"+C.accent+"30,transparent)"}}/>
-                <div style={{fontSize:18,fontWeight:800,fontFamily:"'Syne',sans-serif",color:C.text,letterSpacing:"-0.02em",marginBottom:4,opacity:phase>=1?1:0,transition:"opacity 0.3s 0.1s"}}>Hola, soy Cleo</div>
-                <div style={{fontSize:12,color:C.dim,lineHeight:1.6,marginBottom:insights.length>0?12:0,opacity:phase>=2?1:0,transition:"opacity 0.3s 0.2s"}}>Monitoreando tu negocio. Preguntame sobre citas, servicios, plan o ingresos.</div>
+                <div style={{fontSize:14,fontWeight:800,fontFamily:"'Syne',sans-serif",color:C.text,letterSpacing:"-0.01em",marginBottom:4,opacity:phase>=1?1:0,transition:"opacity 0.3s 0.1s"}}>Hola, soy Cleo</div>
+                <div style={{fontSize:12,color:C.dim,lineHeight:1.6,marginBottom:insights.length>0?12:0,opacity:phase>=2?1:0,transform:phase>=2?"translateX(0)":"translateX(-6px)",transition:"opacity 0.4s 0.15s, transform 0.4s 0.15s"}}>Pregúntame sobre citas, servicios, plan o ingresos.</div>
                 {insights.length>0&&(
                   <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                     {insights.map((ins,i)=>(
