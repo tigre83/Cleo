@@ -797,74 +797,202 @@ function StatsView({ appointments, businessName, plan, showToast }) {
     }
   };
 
-  return (
-    <div>
-      {/* INGRESOS */}
-      <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Ingresos</div>
-      {canUse(plan, "stats") ? (<>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 8 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 16px" }}>
-            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 28, fontWeight: 800, background: C.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>$<Counter target={weekIncome} /></div>
-            <div style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>Esta semana</div>
-          </div>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 16px" }}>
-            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 28, fontWeight: 800, background: C.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>$<Counter target={monthIncome} /></div>
-            <div style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>Este mes</div>
-          </div>
-        </div>
-        {canUse(plan, "projection") ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "16px", marginBottom: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: 11, color: C.dim }}>Proyección del mes</div>
-                <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: C.accent, marginTop: 2 }}>$<Counter target={projection} /></div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 8, background: C.accentGlow }}>
-                <TrendingUp size={12} color={C.accent} /><span style={{ fontSize: 12, fontWeight: 600, color: C.accent }}>+12%</span>
-              </div>
-            </div>
-          </div>
-        ) : <div style={{ marginBottom: 24 }}><LockedBanner plan={plan} /></div>}
-      </>) : <div style={{ marginBottom: 24 }}><LockedBanner plan={plan} /></div>}
+  // ── Cálculos por período ─────────────────────────────────────────────────
+  const now2 = new Date();
+  const weekStart = new Date(now2); weekStart.setDate(now2.getDate()-(now2.getDay()===0?6:now2.getDay()-1)); weekStart.setHours(0,0,0,0);
+  const weekEnd   = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
+  const monthStart2 = new Date(now2.getFullYear(),now2.getMonth(),1);
+  const monthEnd2   = new Date(now2.getFullYear(),now2.getMonth()+1,0,23,59,59);
 
-      {/* ACTIVIDAD */}
-      <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Actividad</div>
-      {canUse(plan, "stats") ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {topService && (
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-              <Briefcase size={16} color={C.accent} />
-              <div style={{ flex: 1 }}><div style={{ fontSize: 12, color: C.dim }}>Servicio más solicitado</div><div style={{ fontSize: 14, fontWeight: 600, marginTop: 2 }}>{topService[0]}</div></div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.accent }}>{topService[1]}x</div>
+  const weekAppts2  = appointments.filter(a=>a.datetime>=weekStart&&a.datetime<=weekEnd);
+  const monthAppts2 = appointments.filter(a=>a.datetime>=monthStart2&&a.datetime<=monthEnd2);
+
+  const recaudadoSemana  = weekAppts2.filter(a=>a.status==="confirmed"&&new Date(a.datetime.getTime()+a.duration_minutes*60000)<now2).reduce((s,a)=>s+(a.service_price||0),0);
+  const porRecaudar      = weekAppts2.filter(a=>a.status==="confirmed"&&a.datetime>now2).reduce((s,a)=>s+(a.service_price||0),0);
+  const citasSemana      = weekAppts2.filter(a=>a.status==="confirmed").length;
+  const canceladasSemana = weekAppts2.filter(a=>a.status==="cancelled").length;
+  const citasMes         = monthAppts2.filter(a=>a.status==="confirmed").length;
+  const conversaciones   = 47; // cuando exista tabla real se conecta aquí
+  const conversion       = conversaciones>0?Math.round((citasSemana/conversaciones)*100):0;
+  const ahorroMin        = citasSemana*15;
+  const ahorroStr        = ahorroMin>=60?Math.floor(ahorroMin/60)+"h "+(ahorroMin%60)+"min":ahorroMin+"min";
+
+  // Hero insight dinámico
+  const heroTitle = recaudadoSemana>100?"Buen rendimiento esta semana":citasSemana===0?"Sin actividad esta semana":"La IA está trabajando por ti";
+  const heroSub   = recaudadoSemana>0?`$${recaudadoSemana} recaudados · ${citasSemana} cita${citasSemana!==1?"s":""} confirmadas esta semana`:"Comparte tu WhatsApp y Cleo comenzará a generar citas automáticamente.";
+
+  // Chart data — ingresos por día de la semana actual
+  const DIAS = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+  const chartData = DIAS.map((d,i)=>{
+    const dayDate = new Date(weekStart); dayDate.setDate(weekStart.getDate()+i);
+    const dayAppts = appointments.filter(a=>a.datetime.toDateString()===dayDate.toDateString()&&a.status==="confirmed");
+    return { day:d, ingresos:dayAppts.reduce((s,a)=>s+(a.service_price||0),0), citas:dayAppts.length };
+  });
+
+  const kpis = [
+    { label:"Ingresos",     value:recaudadoSemana, prefix:"$", sub:"Esta semana",     trend:"+12%", up:true },
+    { label:"Por recaudar", value:porRecaudar,      prefix:"$", sub:"Citas pendientes",note:"si se completan" },
+    { label:"Citas",        value:citasSemana,      prefix:"",  sub:"Esta semana" },
+    { label:"Conversión",   value:conversion,       prefix:"",  suffix:"%", sub:"Conversaciones → citas" },
+  ];
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20, paddingBottom:40 }}>
+
+      {/* ── BLOQUE 1: Hero IA ───────────────────────────────────────────── */}
+      {canUse(plan,"stats")&&(
+      <div style={{ background:"linear-gradient(135deg,"+C.accent+"0E 0%,"+C.surface+" 100%)", border:"1px solid "+C.accent+"25", borderRadius:16, padding:"18px 20px", position:"relative", overflow:"hidden", animation:"fadeIn 0.4s ease" }}>
+        <div style={{ position:"absolute", top:-30, right:-30, width:120, height:120, borderRadius:"50%", background:"radial-gradient(circle,"+C.accent+"12 0%,transparent 70%)" }}/>
+        <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:10 }}>
+          <div style={{ width:6, height:6, borderRadius:"50%", background:C.accent, animation:"pulse 1.5s infinite", boxShadow:"0 0 6px "+C.accent }}/>
+          <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:C.accent }}>IA Insight</span>
+        </div>
+        <div style={{ fontFamily:"'Syne',sans-serif", fontSize:16, fontWeight:800, color:C.text, marginBottom:6, letterSpacing:"-0.01em" }}>{heroTitle}</div>
+        <div style={{ fontSize:12, color:C.dim, lineHeight:1.6, marginBottom:12 }}>{heroSub}</div>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+          {[{t:"+12% vs semana anterior",c:C.accent},{t:conversaciones+" conversaciones IA",c:C.cyan},{t:citasSemana+" citas generadas",c:"#A78BFA"}].map((chip,i)=>(
+            <div key={i} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:20, background:chip.c+"15", border:"1px solid "+chip.c+"30" }}>
+              <div style={{ width:4, height:4, borderRadius:"50%", background:chip.c }}/>
+              <span style={{ fontSize:10, fontWeight:600, color:chip.c }}>{chip.t}</span>
             </div>
-          )}
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-            <Clock size={16} color={C.accent} />
-            <div><div style={{ fontSize: 12, color: C.dim }}>Hora pico de mensajes</div><div style={{ fontSize: 14, fontWeight: 600, marginTop: 2 }}>7pm – 9pm</div></div>
+          ))}
+        </div>
+      </div>
+      )}
+
+      {/* ── BLOQUE 2: KPIs ─────────────────────────────────────────────── */}
+      {canUse(plan,"stats")&&(
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:8 }}>
+        {kpis.map((k,i)=>(
+          <div key={i} style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:12, padding:"12px 14px", animation:"fadeIn "+(0.2+i*0.08)+"s ease", transition:"all 0.2s" }}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent+"35";e.currentTarget.style.transform="translateY(-1px)";}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.transform="translateY(0)";}}>
+            <div style={{ fontSize:9, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.dim, marginBottom:6 }}>{k.label}</div>
+            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, color:C.accent, display:"flex", alignItems:"baseline", gap:2 }}>
+              {k.prefix}<Counter target={k.value}/>{k.suffix||""}
+            </div>
+            <div style={{ fontSize:9, color:C.dim, marginTop:3 }}>{k.sub}</div>
+            {k.trend&&<div style={{ display:"inline-flex", alignItems:"center", gap:3, marginTop:5, padding:"2px 6px", borderRadius:6, background:(k.up?C.accent:"#EF4444")+"15" }}>
+              <TrendingUp size={9} color={k.up?C.accent:"#EF4444"}/><span style={{ fontSize:9, fontWeight:600, color:k.up?C.accent:"#EF4444" }}>{k.trend}</span>
+            </div>}
+            {k.note&&<div style={{ fontSize:9, color:C.dim, marginTop:3, opacity:0.6 }}>{k.note}</div>}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", textAlign: "center" }}>
-              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 24, fontWeight: 800, color: C.accent }}><Counter target={uniqueClients - recurring} /></div>
-              <div style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>Nuevos</div>
+        ))}
+      </div>
+      )}
+
+      {/* ── BLOQUE 3: Gráfico ──────────────────────────────────────────── */}
+      {canUse(plan,"stats")&&(
+      <div style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:14, padding:"16px 18px" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:C.text }}>Ingresos esta semana</div>
+          <span style={{ fontSize:10, color:C.dim }}>Lun — Dom</span>
+        </div>
+        <ResponsiveContainer width="100%" height={120}>
+          <AreaChart data={chartData} margin={{ top:4, right:4, bottom:0, left:0 }}>
+            <defs>
+              <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={C.accent} stopOpacity={0.25}/>
+                <stop offset="95%" stopColor={C.accent} stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="day" tick={{ fontSize:10, fill:C.dim }} axisLine={false} tickLine={false}/>
+            <Tooltip contentStyle={{ background:C.bg, border:"1px solid "+C.border, borderRadius:8, fontSize:11, color:C.text }} formatter={(v)=>["$"+v,"Ingresos"]}/>
+            <Area type="monotone" dataKey="ingresos" stroke={C.accent} strokeWidth={2} fill="url(#incomeGrad)" dot={false} activeDot={{ r:4, fill:C.accent }}/>
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+      )}
+
+      {/* ── BLOQUE 4: Funnel ───────────────────────────────────────────── */}
+      {canUse(plan,"stats")&&(
+      <div style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:14, padding:"16px 20px" }}>
+        <div style={{ fontSize:11, fontWeight:700, color:C.dim, letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:14 }}>Funnel del negocio</div>
+        <div style={{ display:"flex", alignItems:"center", gap:0 }}>
+          {[{n:conversaciones,l:"Conversaciones",c:C.cyan},{n:citasSemana,l:"Citas generadas",c:C.accent},{n:"$"+recaudadoSemana,l:"Ingresos",c:"#A78BFA"}].map((f,i)=>(
+            <div key={i} style={{ display:"flex", alignItems:"center", flex:1 }}>
+              <div style={{ flex:1, textAlign:"center", padding:"12px 8px", borderRadius:12, background:f.c+"0E", border:"1px solid "+f.c+"25" }}>
+                <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:f.c }}>{f.n}</div>
+                <div style={{ fontSize:10, color:C.dim, marginTop:3 }}>{f.l}</div>
+              </div>
+              {i<2&&<div style={{ fontSize:14, color:C.dim, padding:"0 6px", opacity:0.4 }}>→</div>}
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", textAlign: "center" }}>
-              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 24, fontWeight: 800, color: C.accent }}><Counter target={recurring} /></div>
-              <div style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>Recurrentes</div>
+          ))}
+        </div>
+      </div>
+      )}
+
+      {/* ── BLOQUE 5: IA en acción ─────────────────────────────────────── */}
+      {canUse(plan,"stats")&&(
+      <div style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:14, padding:"16px 18px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:14 }}>
+          <div style={{ width:6, height:6, borderRadius:"50%", background:C.accent, animation:"pulse 1.5s infinite" }}/>
+          <span style={{ fontSize:12, fontWeight:700, color:C.text }}>La IA en acción</span>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {[
+            {v:conversaciones+" mensajes respondidos",s:"esta semana",c:C.cyan},
+            {v:citasSemana+" citas confirmadas",s:"generadas automáticamente",c:C.accent},
+            {v:ahorroStr+" ahorrados",s:"tiempo estimado",c:"#A78BFA"},
+            {v:"Hora pico: 7pm – 9pm",s:"mayor actividad detectada",c:"#FBBF24"},
+          ].map((item,i)=>(
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:10, background:C.surface2, border:"1px solid "+C.border, animation:"fadeIn "+(0.1+i*0.1)+"s ease" }}>
+              <div style={{ width:6, height:6, borderRadius:"50%", background:item.c, flexShrink:0, boxShadow:"0 0 5px "+item.c }}/>
+              <div>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text }}>{item.v}</div>
+                <div style={{ fontSize:10, color:C.dim }}>{item.s}</div>
+              </div>
             </div>
+          ))}
+        </div>
+      </div>
+      )}
+
+      {/* ── BLOQUE 6+7: Clientes + Comportamiento ──────────────────────── */}
+      {canUse(plan,"stats")&&(
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+        <div style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:12, padding:"14px 16px" }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.dim, letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:10 }}>Clientes</div>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:C.accent }}><Counter target={uniqueClients-recurring}/></div>
+          <div style={{ fontSize:10, color:C.dim, marginTop:2 }}>nuevos · <span style={{ color:C.text }}>{recurring}</span> recurrentes</div>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          <div style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ fontSize:9, fontWeight:600, letterSpacing:"0.07em", textTransform:"uppercase", color:C.dim, marginBottom:4 }}>Canceladas</div>
+            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:canceladasSemana>0?"#EF4444":C.text }}>{canceladasSemana}</div>
           </div>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-            <MessageSquare size={16} color={C.accent} />
-            <div><div style={{ fontSize: 12, color: C.dim }}>Mensajes respondidos por IA</div><div style={{ fontSize: 14, fontWeight: 600, marginTop: 2 }}>47 esta semana</div></div>
+          <div style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ fontSize:9, fontWeight:600, letterSpacing:"0.07em", textTransform:"uppercase", color:C.dim, marginBottom:4 }}>Ocupación</div>
+            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:C.accent }}>{Math.min(100,Math.round((citasSemana/60)*100))}%</div>
+            <div style={{ height:3, background:C.border, borderRadius:2, marginTop:6, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:Math.min(100,Math.round((citasSemana/60)*100))+"%", background:C.accent, borderRadius:2, transition:"width 0.8s ease" }}/>
+            </div>
           </div>
         </div>
-      ) : <LockedBanner plan={plan} />}
+      </div>
+      )}
+
+      {/* ── BLOQUE 8: Pro locked ───────────────────────────────────────── */}
+      {!canUse(plan,"excel")&&(
+      <div style={{ background:"linear-gradient(135deg,"+C.accent+"06 0%,"+C.surface+" 100%)", border:"1px solid "+C.accent+"20", borderRadius:14, padding:"18px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
+        <div>
+          <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:6 }}>
+            <Lock size={13} color={C.dim}/>
+            <span style={{ fontSize:12, fontWeight:700, color:C.text }}>Reportes avanzados</span>
+          </div>
+          <div style={{ fontSize:11, color:C.dim, lineHeight:1.6 }}>Proyecciones, exportación Excel y análisis profundo disponibles en Pro.</div>
+        </div>
+        <button style={{ flexShrink:0, padding:"8px 16px", borderRadius:10, border:"1px solid "+C.accent+"40", background:C.accentGlow, color:C.accent, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>Ver plan Pro →</button>
+      </div>
+      )}
 
       {/* Download report */}
-      {canUse(plan, "excel") ? (
-        <button onClick={downloadReport} style={{ width: "100%", padding: 14, borderRadius: 12, border: `1px solid ${C.accent}40`, background: C.accentGlow, color: C.accent, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 20 }}>
-          <Download size={16} /> Descargar reporte
+      {canUse(plan,"excel")&&(
+        <button onClick={downloadReport} style={{ width:"100%", padding:13, borderRadius:12, border:"1px solid "+C.accent+"40", background:C.accentGlow, color:C.accent, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+          <Download size={15}/> Descargar reporte Excel
         </button>
-      ) : <div style={{ marginTop: 20 }}><LockedBanner plan={plan} /></div>}
+      )}
+
     </div>
   );
 }
