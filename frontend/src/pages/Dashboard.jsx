@@ -1049,7 +1049,7 @@ function ServicesView({ services, setServices, showToast, plan }) {
   const fi      = { width:"100%", padding:"12px 14px", borderRadius:10, border:`1px solid ${C.border}`, background:C.surface2, color:C.text, fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:10 };
 
   return (
-    <div style={{ paddingBottom:20 }}>
+    <div style={{ paddingBottom:80 }}>
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
         <div>
@@ -1066,19 +1066,25 @@ function ServicesView({ services, setServices, showToast, plan }) {
         </button>
       </div>
 
-      {/* Barra de uso */}
-      {limit !== Infinity && (
-        <div style={{ ...card, marginBottom:16 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-            <span style={{ fontSize:12, color:C.dim }}>{total} de {limit} servicios</span>
-            <span style={{ fontSize:12, fontWeight:600, color:atLimit?C.red:nearLimit?"#FBBF24":C.accent }}>
+      {/* Barra de uso — solo planes con límite */}
+      {limit !== Infinity ? (
+        <div style={{ ...card, marginBottom:12 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+            <span style={{ fontSize:11, color:C.dim }}>{total} de {limit} servicios</span>
+            <span style={{ fontSize:11, fontWeight:600, color:atLimit?C.red:nearLimit?"#FBBF24":C.accent }}>
               {atLimit?"Límite alcanzado":nearLimit?`Solo ${limit-total} disponibles`:`${limit-total} restantes`}
             </span>
           </div>
-          <div style={{ height:5, background:C.surface2, borderRadius:4, overflow:"hidden" }}>
+          <div style={{ height:4, background:C.surface2, borderRadius:4, overflow:"hidden" }}>
             <div style={{ height:"100%", width:`${pct}%`, borderRadius:4, transition:"width 0.5s ease",
               background:atLimit?C.red:nearLimit?"#FBBF24":C.accent }}/>
           </div>
+        </div>
+      ) : (
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, padding:"8px 12px", borderRadius:10, background:C.accent+"08", border:`1px solid ${C.accent}20` }}>
+          <div style={{ width:6, height:6, borderRadius:"50%", background:C.accent, boxShadow:`0 0 6px ${C.accent}` }}/>
+          <span style={{ fontSize:11, fontWeight:600, color:C.accent }}>Plan Pro · Servicios ilimitados</span>
+          <span style={{ fontSize:11, color:C.dim, marginLeft:"auto" }}>{total} activos</span>
         </div>
       )}
 
@@ -1108,36 +1114,38 @@ function ServicesView({ services, setServices, showToast, plan }) {
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {services.map(s=>(
             <div key={s.id}
-              style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:14, padding:"14px 16px", opacity:s.active?1:0.5, transition:"all 0.2s" }}
+              style={{ background:C.surface, border:`1px solid ${s.active?C.border:"#2A2A2A"}`, borderRadius:12, padding:"10px 12px", transition:"all 0.2s" }}
               onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.3)"; }}
               onMouseLeave={e=>{ e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="none"; }}>
-              <div style={{ display:"flex", alignItems:"flex-start", gap:10 }}>
+              {/* fila 1: nombre + precio + acciones */}
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{s.name}</div>
-                  {s.description && <div style={{ fontSize:12, color:C.dim, marginTop:2 }}>{s.description}</div>}
+                  <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                    <span style={{ fontSize:13, fontWeight:600, color:s.active?C.text:C.dim, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.name}</span>
+                    {!s.active && <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.06em", textTransform:"uppercase", color:"#6B7280", background:"#6B728018", border:"1px solid #6B728030", borderRadius:4, padding:"1px 5px", flexShrink:0 }}>Inactivo</span>}
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:3 }}>
+                    <span style={{ fontSize:11, color:C.dim, display:"flex", alignItems:"center", gap:4 }}><Clock size={10}/>{s.duration_minutes} min</span>
+                    {s.description && <span style={{ fontSize:11, color:C.dim, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:120 }}>{s.description}</span>}
+                  </div>
                 </div>
-                <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:C.accent, flexShrink:0 }}>${s.price}</div>
-              </div>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>
-                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:C.dim }}>
-                  <Clock size={11}/> {s.duration_minutes} min
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:800, color:C.accent, flexShrink:0 }}>${s.price}</div>
+                <div style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
                   <button onClick={()=>setEditTarget(s)}
-                    style={{ width:28, height:28, borderRadius:8, border:`1px solid ${C.border}`, background:"transparent", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"all 0.15s" }}
+                    style={{ width:26, height:26, borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"all 0.15s" }}
                     onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.accent+"40"; e.currentTarget.style.background=C.accentGlow; }}
                     onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.background="transparent"; }}>
-                    <Save size={11} color={C.dim}/>
+                    <Save size={10} color={C.dim}/>
                   </button>
                   <button onClick={()=>setDelTarget(s)}
-                    style={{ width:28, height:28, borderRadius:8, border:`1px solid ${C.border}`, background:"transparent", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"all 0.15s" }}
+                    style={{ width:26, height:26, borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"all 0.15s" }}
                     onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.red+"40"; e.currentTarget.style.background=`${C.red}08`; }}
                     onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.background="transparent"; }}>
-                    <Trash2 size={11} color={C.dim}/>
+                    <Trash2 size={10} color={C.dim}/>
                   </button>
                   <button onClick={()=>{ const u=services.map(x=>x.id===s.id?{...x,active:!x.active}:x); setServices(u); showToast(s.active?"Servicio desactivado":"Servicio activado ✓"); }}
-                    style={{ width:36, height:20, borderRadius:10, border:"none", cursor:"pointer", background:s.active?C.accent:"#333", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
-                    <div style={{ width:16, height:16, borderRadius:"50%", background:"#fff", position:"absolute", top:2, left:s.active?18:2, transition:"left 0.2s" }}/>
+                    style={{ width:32, height:18, borderRadius:9, border:"none", cursor:"pointer", background:s.active?C.accent:"#2A2A2A", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
+                    <div style={{ width:14, height:14, borderRadius:"50%", background:"#fff", position:"absolute", top:2, left:s.active?16:2, transition:"left 0.2s" }}/>
                   </button>
                 </div>
               </div>
@@ -1365,7 +1373,7 @@ function BlockConfirm({ day, month, onConfirm, onClose }) {
 // ── CLEO BUTTON inline ────────────────────────────────────────────────────────
 function CleoButtonInline({ onClick, C }) {
   return (
-    <button onClick={onClick} style={{ position:"fixed",bottom:90,right:16,zIndex:99,width:48,height:48,borderRadius:"50%",border:`1.5px solid ${C.accent}50`,background:C.bg,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 24px rgba(0,0,0,0.4), 0 0 16px ${C.accent}20`,transition:"all 0.2s",outline:"none" }}
+    <button onClick={onClick} style={{ position:"fixed",bottom:24,right:16,zIndex:99,width:48,height:48,borderRadius:"50%",border:`1.5px solid ${C.accent}50`,background:C.bg,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 24px rgba(0,0,0,0.4), 0 0 16px ${C.accent}20`,transition:"all 0.2s",outline:"none" }}
       onMouseEnter={e=>{ e.currentTarget.style.transform="scale(1.08)"; e.currentTarget.style.boxShadow=`0 6px 28px rgba(0,0,0,0.5), 0 0 28px ${C.accent}40`; }}
       onMouseLeave={e=>{ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow=`0 4px 24px rgba(0,0,0,0.4), 0 0 16px ${C.accent}20`; }}>
       <div style={{ position:"relative",width:36,height:36 }}>
