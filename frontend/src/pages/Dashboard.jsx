@@ -1609,22 +1609,16 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
                   </div>
                 )}
               </div>
-              {/* ── Acciones rápidas premium ── */}
-              <div style={{marginBottom:4}}>
-                <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.09em",textTransform:"uppercase",color:C.dim,marginBottom:10,paddingLeft:2}}>Acciones rapidas</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                  {qa.map((key,i)=>(
+              {/* ── Acciones rápidas ── */}
+              <div>
+                <div style={{fontSize:9,fontWeight:600,letterSpacing:"0.09em",textTransform:"uppercase",color:C.dim,marginBottom:8,paddingLeft:2}}>Acciones rapidas</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+                  {qa.map(key=>(
                     <button key={key} onClick={()=>quickAction(key)}
-                      style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:4,padding:"12px 12px 10px",borderRadius:14,border:"1px solid "+C.border,background:C.surface,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.18s",animation:"fadeIn "+(0.2+i*0.07)+"s ease"}}
-                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent+"50";e.currentTarget.style.background=C.accent+"08";e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,0.3),0 0 12px "+C.accent+"10";}}
-                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface;e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
-                      <div style={{width:28,height:28,borderRadius:8,background:C.accent+"12",border:"1px solid "+C.accent+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:C.accent}}>
-                        {{"reagendar":"↗","cancelar":"✕","citas_hoy":"◎","crear_servicio":"＋","limite_servicios":"◈","ingresos":"↑","mi_plan":"◇","whatsapp":"◉"}[key]||"·"}
-                      </div>
-                      <div style={{fontSize:11,fontWeight:700,color:C.text,lineHeight:1.2}}>{_AL[key]}</div>
-                      <div style={{fontSize:10,color:C.dim,lineHeight:1.3}}>
-                        {{"reagendar":"Cambia fecha u hora","cancelar":"Elimina una cita","citas_hoy":"Ver agenda de hoy","crear_servicio":"Nuevo servicio","limite_servicios":"Cupos disponibles","ingresos":"Ver estadisticas","mi_plan":"Tu suscripcion","whatsapp":"Config del bot"}[key]||""}
-                      </div>
+                      style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",borderRadius:11,border:"1px solid "+C.border,background:C.surface,color:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent+"45";e.currentTarget.style.background=C.accent+"08";e.currentTarget.style.transform="translateY(-1px)";}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface;e.currentTarget.style.transform="translateY(0)";}}>
+                      <div style={{width:6,height:6,borderRadius:"50%",background:C.accent,flexShrink:0}}/>{_AL[key]}
                     </button>
                   ))}
                 </div>
