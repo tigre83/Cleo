@@ -1195,7 +1195,7 @@ function ServicesView({ services, setServices, showToast, plan }) {
 }
 
 
-function CalendarView({ appointments, blocked, onCancel, onBlock }) {
+function CalendarView({ appointments, blocked, onCancel, onBlock, onReschedule }) {
   const [month, setMonth] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
   const dayRefs = useRef({});
 
@@ -1283,32 +1283,36 @@ function CalendarView({ appointments, blocked, onCancel, onBlock }) {
                 {/* Appointments */}
                 {grouped[day].map(a => {
                   const time = a.datetime.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" });
+                  const isPast = new Date() > new Date(a.datetime.getTime() + a.duration_minutes*60000);
+                  const isCancelled = a.status==="cancelled";
                   return (
-                    <div key={a.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px", marginBottom: 6 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ textAlign: "center", flexShrink: 0, minWidth: 44 }}>
-                          <div style={{ fontSize: 15, fontWeight: 700 }}>{time}</div>
-                          <div style={{ fontSize: 10, color: C.dim }}>{a.duration_minutes} min</div>
+                    <div key={a.id} style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:12, padding:"9px 12px", marginBottom:6, opacity:isPast||isCancelled?0.6:1, transition:"all 0.2s" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
+                        <div style={{ fontSize:13, fontWeight:700, color:C.text, flexShrink:0, minWidth:38 }}>{time}</div>
+                        <div style={{ fontSize:13, fontWeight:600, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.client_name}</div>
+                        <div style={{ display:"flex", alignItems:"center", gap:4, flexShrink:0 }}>
+                          {!isCancelled && !isPast && (
+                            <button onClick={()=>onReschedule&&onReschedule(a)}
+                              style={{ background:"none", border:"1px solid "+C.accent+"25", borderRadius:6, cursor:"pointer", color:C.accent, padding:"2px 7px", fontSize:10, fontWeight:500, fontFamily:"inherit", display:"flex", alignItems:"center", gap:3, transition:"all 0.15s" }}
+                              onMouseEnter={e=>{e.currentTarget.style.background=C.accent+"10";}}
+                              onMouseLeave={e=>{e.currentTarget.style.background="none";}}>
+                              <CalendarDays size={9}/> Reagendar
+                            </button>
+                          )}
+                          {!isCancelled && !isPast && (
+                            <button onClick={()=>onCancel(a)}
+                              style={{ background:"none", border:"1px solid "+C.red+"25", borderRadius:6, cursor:"pointer", color:C.red, padding:"2px 7px", fontSize:10, fontWeight:500, fontFamily:"inherit", display:"flex", alignItems:"center", gap:3, transition:"all 0.15s" }}
+                              onMouseEnter={e=>{e.currentTarget.style.background=C.red+"10";}}
+                              onMouseLeave={e=>{e.currentTarget.style.background="none";}}>
+                              <X size={9}/> Cancelar
+                            </button>
+                          )}
                         </div>
-                        <div style={{ width: 1, height: 42, background: C.border, flexShrink: 0 }} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.client_name}</div>
-                            <button onClick={() => onCancel(a)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.red}25`, background: `${C.red}08`, color: C.red, fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}><X size={10} /> Cancelar cita</button>
-                          </div>
-                          <a href={waLink(a.client_phone)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: C.accent, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, marginTop: 2 }}>
-                            <Phone size={10} /> {a.client_phone}
-                          </a>
-                          <div style={{ fontSize: 12, marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
-                            <Briefcase size={10} color={C.dim} />
-                            {a.service_name ? (
-                              <><span style={{ color: C.dim }}>{a.service_name}</span> <span style={{ color: C.accent, fontWeight: 600 }}>· ${a.service_price}</span></>
-                            ) : (
-                              <span style={{ color: "#555" }}>Servicio no especificado</span>
-                            )}
-                          </div>
-                          <ClientLocation appt={a} />
-                        </div>
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                        <span style={{ fontSize:10, color:C.dim, display:"flex", alignItems:"center", gap:3 }}><Clock size={9}/>{a.duration_minutes}m</span>
+                        {a.service_name && <><span style={{ fontSize:10, color:"#333", opacity:0.4 }}>·</span><span style={{ fontSize:10, color:C.dim, display:"flex", alignItems:"center", gap:3 }}><Briefcase size={9}/>{a.service_name}{a.service_price&&<span style={{ color:C.accent, fontWeight:600 }}> ${a.service_price}</span>}</span></>}
+                        {a.client_phone && <><span style={{ fontSize:10, color:"#333", opacity:0.4 }}>·</span><a href={waLink(a.client_phone)} target="_blank" rel="noopener noreferrer" style={{ fontSize:10, color:C.accent, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:3 }}><Phone size={9}/>{a.client_phone}</a></>}
                       </div>
                     </div>
                   );
@@ -2199,17 +2203,21 @@ export default function CleoDashboard() {
           const todayIncome = todayAppts.filter(a => a.service_price).reduce((s, a) => s + a.service_price, 0);
           const filters = [{ id: "dia", label: "Día" }, { id: "semana", label: "Semana" }, { id: "mes", label: "Mes" }];
           return (<div>
-            {/* Sub-filter */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 16, background: C.surface, borderRadius: 10, padding: 3 }}>
-              {filters.map(f => (
-                <button key={f.id} onClick={() => setAgendaView(f.id)} style={{
-                  flex: 1, padding: "9px 0", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit",
-                  background: agendaView === f.id ? C.accent : "transparent",
-                  color: agendaView === f.id ? C.bg : C.dim,
-                  fontSize: 13, fontWeight: 600, transition: "all 0.2s",
-                }}>{f.label}</button>
-              ))}
-            </div>
+            {/* Segmented control premium */}
+            {(()=>{
+              const idx = filters.findIndex(f=>f.id===agendaView);
+              return (
+                <div style={{ position:"relative", display:"flex", background:C.surface, borderRadius:10, padding:3, marginBottom:14, border:"1px solid "+C.border }}>
+                  {/* Pill deslizante */}
+                  <div style={{ position:"absolute", top:3, left:`calc(3px + ${idx} * (100% - 6px) / 3)`, width:"calc((100% - 6px) / 3)", height:"calc(100% - 6px)", borderRadius:7, background:C.accent, transition:"left 0.22s cubic-bezier(0.16,1,0.3,1)", boxShadow:"0 1px 6px rgba(74,222,128,0.25)", zIndex:0 }}/>
+                  {filters.map(f=>(
+                    <button key={f.id} onClick={()=>setAgendaView(f.id)} style={{ flex:1, padding:"7px 0", borderRadius:7, border:"none", cursor:"pointer", fontFamily:"inherit", background:"transparent", color:agendaView===f.id?C.bg:C.dim, fontSize:12, fontWeight:600, position:"relative", zIndex:1, transition:"color 0.18s", letterSpacing:"0.01em" }}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* KPIs agenda */}
             {canUse(biz.plan, "stats") && (
@@ -2281,7 +2289,7 @@ export default function CleoDashboard() {
 
             {/* MES */}
             {agendaView === "mes" && hasAnyAppts && (
-              <CalendarView appointments={appointments} blocked={blocked} onCancel={setCancelTarget} onBlock={(day) => { setBlockTarget(day); }} />
+              <CalendarView appointments={appointments} blocked={blocked} onCancel={setCancelTarget} onReschedule={setRescheduleTarget} onBlock={(day) => { setBlockTarget(day); }} />
             )}
           </div>);
         })()}
