@@ -10,6 +10,7 @@ import {
   viewsRouter,
   authRouter,
   businessRouter,
+  servicesRouter,
   webhookRouter,
   whatsappRouter,
   appointmentsRouter,
@@ -62,6 +63,7 @@ app.use("/api/support", requireAuth, supportRouter);
 
 // --- Rutas protegidas (requieren plan activo) ---
 app.use("/api/appointments", requireAuth, requireActivePlan, appointmentsRouter);
+app.use("/api/services", requireAuth, requireActivePlan, servicesRouter);
 app.use("/api/conversations", requireAuth, requireActivePlan, conversationsRouter);
 app.use("/api/blocked-slots", requireAuth, requireActivePlan, blockedSlotsRouter);
 

@@ -1024,3 +1024,103 @@ blockedSlotsRouter.delete("/:id", async (req: Request, res: Response) => {
   if (error) return res.status(500).json({ error: error.message });
   res.json({ deleted: true });
 });
+
+// ============================================
+// APPOINTMENTS RANGE
+// ============================================
+// GET /api/appointments/range?start=2026-04-01&end=2026-04-30
+appointmentsRouter.get("/range", async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { start, end } = req.query as { start: string; end: string };
+  if (!start || !end) return res.status(400).json({ error: "start y end requeridos (YYYY-MM-DD)" });
+
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id").eq("user_id", userId).single();
+  if (!business) return res.status(404).json({ error: "Negocio no encontrado" });
+
+  const { data, error } = await supabaseAdmin
+    .from("appointments")
+    .select("*")
+    .eq("business_id", business.id)
+    .gte("datetime", `${start}T00:00:00`)
+    .lte("datetime", `${end}T23:59:59`)
+    .order("datetime");
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
+// ============================================
+// SERVICES ROUTER
+// ============================================
+export const servicesRouter = Router();
+
+// GET /api/services
+servicesRouter.get("/", async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id").eq("user_id", userId).single();
+  if (!business) return res.status(404).json({ error: "Negocio no encontrado" });
+
+  const { data, error } = await supabaseAdmin
+    .from("services").select("*").eq("business_id", business.id).order("created_at");
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
+// POST /api/services
+servicesRouter.post("/", async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { name, description, price, duration_minutes, active } = req.body;
+  if (!name || !price) return res.status(400).json({ error: "name y price requeridos" });
+
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id").eq("user_id", userId).single();
+  if (!business) return res.status(404).json({ error: "Negocio no encontrado" });
+
+  const { data, error } = await supabaseAdmin
+    .from("services").insert({
+      business_id: business.id, name, description: description || null,
+      price: parseFloat(price), duration_minutes: duration_minutes || 30,
+      active: active !== false,
+    }).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// PUT /api/services/:id
+servicesRouter.put("/:id", async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { name, description, price, duration_minutes, active } = req.body;
+
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id").eq("user_id", userId).single();
+  if (!business) return res.status(404).json({ error: "Negocio no encontrado" });
+
+  const updates: any = {};
+  if (name !== undefined) updates.name = name;
+  if (description !== undefined) updates.description = description;
+  if (price !== undefined) updates.price = parseFloat(price);
+  if (duration_minutes !== undefined) updates.duration_minutes = duration_minutes;
+  if (active !== undefined) updates.active = active;
+
+  const { data, error } = await supabaseAdmin
+    .from("services").update(updates)
+    .eq("id", req.params.id).eq("business_id", business.id).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// DELETE /api/services/:id
+servicesRouter.delete("/:id", async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id").eq("user_id", userId).single();
+  if (!business) return res.status(404).json({ error: "Negocio no encontrado" });
+
+  const { error } = await supabaseAdmin
+    .from("services").delete()
+    .eq("id", req.params.id).eq("business_id", business.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ deleted: true });
+});
