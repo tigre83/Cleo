@@ -1577,22 +1577,20 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:11}}>
               <div style={{position:"relative",flexShrink:0}}>
-                <div style={{position:"absolute",inset:-4,borderRadius:16,background:"radial-gradient(circle,"+C.accent+"25 0%,transparent 70%)",animation:"pulse 2.5s ease-in-out infinite"}}/>
-                <div style={{position:"absolute",inset:-1,borderRadius:14,border:"1px solid "+C.accent+"30",animation:"pulse 2s ease-in-out infinite"}}/>
                 <img src="/cleo-avatar.png" alt="Cleo" style={{width:40,height:40,borderRadius:13,objectFit:"cover",display:"block",position:"relative",zIndex:1}}/>
-                <div style={{position:"absolute",bottom:-2,right:-2,width:11,height:11,borderRadius:"50%",background:"#22C55E",border:"2px solid "+C.bg,zIndex:2,boxShadow:"0 0 6px #22C55E"}}/>
               </div>
-              <div>
-                <div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,color:C.text,letterSpacing:"-0.01em"}}>Cleo</div>
-                <div style={{fontSize:10,display:"flex",alignItems:"center",gap:5,marginTop:3,transition:"color 0.4s",color:thinking?C.cyan:phase===0?"#EF4444":phase===1?C.accent:C.accent}}>
-                  <div style={{width:5,height:5,borderRadius:"50%",flexShrink:0,
-                    background:thinking?C.cyan:phase===0?"#EF4444":C.accent,
-                    animation:phase===0?"pulse 0.5s infinite":phase===1?"pulse 1s infinite":"none",
-                    boxShadow:"0 0 5px "+(thinking?C.cyan:phase===0?"#EF4444":C.accent),
-                    transition:"background 0.5s"}}/>
-                  <span style={{transition:"opacity 0.3s",opacity:1,letterSpacing:"0.01em"}}>
-                    {thinking?"Analizando...":phase===0?"Conectando...":phase===1?"Sincronizando negocio...":"En línea"}
-                  </span>
+              <div style={{display:"flex",flexDirection:"column",justifyContent:"center",gap:2}}>
+                <div style={{display:"flex",alignItems:"baseline",gap:3}}>
+                  <span style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,letterSpacing:"-0.03em",background:"linear-gradient(90deg,#4ADE80,#22D3EE)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",animation:"glowShift 4s ease-in-out infinite"}}>cleo</span>
+                  <span style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,color:"#4ADE80",lineHeight:1}}>.</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:5}}>
+                  <span style={{fontSize:9,color:"#6B7280",letterSpacing:"0.06em",fontWeight:400}}>powered by ia</span>
+                  <span style={{fontSize:9,color:"#6B7280",opacity:0.4}}>·</span>
+                  <div style={{display:"flex",alignItems:"center",gap:4,fontSize:9,color:thinking?C.cyan:phase===0?"#EF4444":C.accent,transition:"color 0.4s"}}>
+                    <div style={{width:4,height:4,borderRadius:"50%",flexShrink:0,background:thinking?C.cyan:phase===0?"#EF4444":C.accent,animation:phase===0?"pulse 0.5s infinite":phase===1?"pulse 1s infinite":"none",boxShadow:"0 0 4px "+(thinking?C.cyan:phase===0?"#EF4444":C.accent),transition:"background 0.5s"}}/>
+                    <span style={{letterSpacing:"0.03em"}}>{thinking?"Analizando...":phase===0?"Conectando...":phase===1?"Sincronizando...":"En línea"}</span>
+                  </div>
                 </div>
               </div>
             </div>
