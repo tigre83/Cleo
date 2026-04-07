@@ -857,10 +857,11 @@ function StatsView({ appointments, businessName, plan, showToast }) {
     return { day:d, ingresos:dayAppts.reduce((s,a)=>s+(a.service_price||0),0), citas:dayAppts.length };
   });
 
-  // Periodo anterior para comparación real
-  const prevWeekStart = new Date(weekStart); prevWeekStart.setDate(weekStart.getDate()-7);
-  const prevWeekEnd   = new Date(weekEnd);   prevWeekEnd.setDate(weekEnd.getDate()-7);
-  const prevAppts     = appointments.filter(a=>a.datetime>=prevWeekStart&&a.datetime<=prevWeekEnd&&a.status==="confirmed");
+  // Periodo anterior para comparación real — respeta statsPeriod
+  const periodLen = pEnd.getTime() - pStart.getTime();
+  const prevStart = new Date(pStart.getTime() - periodLen);
+  const prevEnd   = new Date(pEnd.getTime()   - periodLen);
+  const prevAppts     = appointments.filter(a=>a.datetime>=prevStart&&a.datetime<=prevEnd&&a.status==="confirmed");
   const prevRecaudado = prevAppts.filter(a=>new Date(a.datetime.getTime()+a.duration_minutes*60000)<now2).reduce((s,a)=>s+(a.service_price||0),0);
   const trendPct      = prevRecaudado>0?Math.round(((recaudadoSemana-prevRecaudado)/prevRecaudado)*100):null;
   const trendStr      = trendPct!==null?(trendPct>=0?"+"+trendPct+"%":trendPct+"%"):null;
@@ -2141,6 +2142,13 @@ export default function CleoDashboard() {
           })));
         }
       }
+      // Cargar blocked slots del mes actual
+      const monthStr = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+      const blockedRes = await fetch(API + "/api/blocked-slots?month=" + monthStr, { headers });
+      if (blockedRes.ok) {
+        const blockedData = await blockedRes.json();
+        if (Array.isArray(blockedData)) setBlocked(blockedData);
+      }
     } catch(e) {
       console.error("Error cargando datos:", e);
     } finally {
@@ -2241,10 +2249,20 @@ export default function CleoDashboard() {
     showToast("Cita cancelada");
   };
 
-  const handleBlock = (day) => {
+  const handleBlock = async (day) => {
     const dateStr = `${calMonth.getFullYear()}-${String(calMonth.getMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
     setBlocked(prev => [...prev, { date: dateStr }]);
     setBlockTarget(null);
+    showToast("Día bloqueado ✓");
+    try {
+      const { data:{ session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      await fetch(`${API}/api/blocked-slots`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},
+        body:JSON.stringify({ date: dateStr }),
+      });
+    } catch(e) { console.error("Error bloqueando día:", e); }
   };
 
   const weekAppts = appointments.filter(a => a.status === "confirmed");
