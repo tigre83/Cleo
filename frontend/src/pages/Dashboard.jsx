@@ -1388,27 +1388,29 @@ const _INTENTS = {
   citas_hoy:        (ctx) => ({ title:"Citas de hoy", body:ctx.tc>0?`Tienes ${ctx.tc} cita${ctx.tc!==1?"s":""} hoy.`:"Sin citas hoy. Comparte tu WhatsApp.", steps:ctx.tc>0?["Agenda → Día","Revisa citas"]:["Comparte WhatsApp"], action:{label:"Ver Agenda",tab:"agenda"} }),
   out_of_scope:     (_)   => ({ type:"out_of_scope" }),
   fallback:         (_)   => ({ type:"fallback" }),
-  out_of_scope:     (_)   => ({ type:"out_of_scope" }),
-  fallback:         (_)   => ({ type:"fallback" }),
+  farewell:         (_)   => ({ type:"farewell" }),
   saludo:           (ctx) => ({ type:"greeting", tc:ctx.tc, sc:ctx.sc, plan:ctx.plan, pl:ctx.pl, lim:{basico:10,negocio:20}[ctx.plan]||null, td:ctx.td }),
-  ayuda_general:    (_)   => ({ title:"¿En qué te ayudo?", body:"Escribe tu pregunta o toca una acción rápida.", steps:null, action:null }),
+  ayuda_general:    (_)   => ({ type:"fallback" }),
 };
 const _QABT = { agenda:["reagendar","cancelar","citas_hoy"], services:["crear_servicio","limite_servicios"], stats:["ingresos"], config:["mi_plan","whatsapp"] };
 const _AL   = { reagendar:"Reagendar cita",cancelar:"Cancelar cita",citas_hoy:"Ver citas hoy",crear_servicio:"Crear servicio",limite_servicios:"Ver límites",ingresos:"Ver ingresos",mi_plan:"Mi plan",whatsapp:"Config IA" };
 const _CATS = [{id:"citas",label:"Citas",keys:["reagendar","cancelar","citas_hoy"]},{id:"servicios",label:"Servicios",keys:["crear_servicio","limite_servicios"]},{id:"negocio",label:"Negocio",keys:["ingresos"]},{id:"ia",label:"IA / Plan",keys:["mi_plan","whatsapp"]}];
 function _detectIntent(q) {
   const s=q.toLowerCase().trim(), has=(...w)=>w.some(x=>s.includes(x));
-  if(/^(hola|holi|holis|buenas|buenos días|buen día|hey|hi|qué tal|que tal|buenas tardes|buenas noches|saludos|ey|hello)[\s!.]*$/.test(s)) return "saludo";
-  if(has("receta","lasagna","cocina","clima","deporte","futbol","pelicula","musica","chiste","politica","noticias","crypto","bitcoin","traducir","geografia","historia general","ciencia","matematica")) return "out_of_scope";
-  if(has("reagend","mover cita","cambiar hora")) return "reagendar";
-  if(has("cancel","eliminar cita","borrar cita")) return "cancelar";
-  if(has("crear servic","nuevo servic","agregar servic","servicio")) return "crear_servicio";
-  if(has("limite","límite","cuantos servic")) return "limite_servicios";
-  if(has("ingreso","dinero","ganancia","estadist")) return "ingresos";
-  if(has("plan","incluye","beneficio","suscri")) return "mi_plan";
-  if(has("whatsapp","bot","configur ia")) return "whatsapp";
-  if(has("cita hoy","cuantas citas","hoy","cita")) return "citas_hoy";
-  return "ayuda_general";
+  if(/^(hola|holi|buenas|buenos|hey|hi|qué tal|que tal|saludos|ey|hello|buen dia|buenas tardes|buenas noches)[\s!.]*$/.test(s)) return "saludo";
+  if(/^(gracias|grax|ok|okey|listo|perfecto|genial|excelente|entendido|de acuerdo|dale|claro|super|chao|adios|hasta luego|nos vemos)[\s!.]*$/.test(s)) return "farewell";
+  if(has("receta","lasagna","lasaña","cocina","clima","tiempo libre","deporte","futbol","pelicula","musica","chiste","politica","noticias","crypto","bitcoin","traducir","geografia","matematica","quimica","fisica")) return "out_of_scope";
+  if(has("reagend","mover cita","cambiar hora","cambiar fecha")) return "reagendar";
+  if(has("cancel","eliminar cita","borrar cita","quitar cita")) return "cancelar";
+  if(has("crear servic","nuevo servic","agregar servic","add servic","servicio nuevo")) return "crear_servicio";
+  if(has("limite","límite","cuantos servic","cupos","disponibles")) return "limite_servicios";
+  if(has("ingreso","dinero","ganancia","estadist","ventas","factur")) return "ingresos";
+  if(has("mi plan","ver plan","cambiar plan","incluye","beneficio","suscri","upgrade")) return "mi_plan";
+  if(has("whatsapp","bot","configur ia","asistente ia","modo ausencia")) return "whatsapp";
+  if(has("cita hoy","cuantas citas","citas de hoy","agenda hoy","hoy tengo","cita")) return "citas_hoy";
+  if(has("servicio")) return "crear_servicio";
+  if(has("plan")) return "mi_plan";
+  return "fallback";
 }
 function _insights(ctx) {
   const out=[];
@@ -1597,7 +1599,7 @@ function CleoAssistantInline({ open, setOpen, tab, biz, services, appointments, 
                 <div style={{position:"absolute",top:-20,right:-20,width:80,height:80,borderRadius:"50%",background:"radial-gradient(circle,"+C.accent+"15 0%,transparent 70%)"}}/>
                 <div style={{position:"absolute",bottom:0,left:0,right:0,height:1,background:"linear-gradient(90deg,"+C.accent+"30,transparent)"}}/>
                 <div style={{fontSize:18,fontWeight:800,fontFamily:"'Syne',sans-serif",color:C.text,letterSpacing:"-0.02em",marginBottom:4}}>Hola, soy Cleo</div>
-                <div style={{fontSize:12,color:C.dim,lineHeight:1.6,marginBottom:insights.length>0?12:0}}>Estoy monitoreando tu negocio ahora mismo.</div>
+                <div style={{fontSize:12,color:C.dim,lineHeight:1.6,marginBottom:insights.length>0?12:0}}>Monitoreando tu negocio. Preguntame sobre citas, servicios, plan o ingresos.</div>
                 {insights.length>0&&(
                   <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                     {insights.map((ins,i)=>(
