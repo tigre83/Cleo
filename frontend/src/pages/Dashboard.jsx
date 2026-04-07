@@ -2198,17 +2198,64 @@ export default function CleoDashboard() {
       <div style={{ padding: "20px 16px" }}>
 
         {tab === "agenda" && (() => {
-          const weekIncome = appointments.filter(a => a.status === "confirmed" && a.service_price).reduce((s, a) => s + a.service_price, 0);
-          const todayAppts = getApptsByDate(TODAY, appointments);
-          const todayIncome = todayAppts.filter(a => a.service_price).reduce((s, a) => s + a.service_price, 0);
           const filters = [{ id: "dia", label: "Día" }, { id: "semana", label: "Semana" }, { id: "mes", label: "Mes" }];
+
+          // ── Rango del período activo ─────────────────────────────────────
+          const getPeriodRange = (view) => {
+            const now = new Date();
+            if(view==="dia") {
+              const s = new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0);
+              const e = new Date(now.getFullYear(),now.getMonth(),now.getDate(),23,59,59);
+              return { start:s, end:e, slots:10 }; // ~10 slots/día laborable
+            }
+            if(view==="semana") {
+              const day = now.getDay(); // 0=dom
+              const mon = new Date(now); mon.setDate(now.getDate() - (day===0?6:day-1)); mon.setHours(0,0,0,0);
+              const sun = new Date(mon); sun.setDate(mon.getDate()+6); sun.setHours(23,59,59,999);
+              return { start:mon, end:sun, slots:60 }; // 6 días * 10 slots
+            }
+            // mes
+            const s = new Date(now.getFullYear(),now.getMonth(),1,0,0,0);
+            const e = new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59);
+            const daysInMonth = e.getDate();
+            return { start:s, end:e, slots:daysInMonth*10 };
+          };
+
+          const { start, end, slots } = getPeriodRange(agendaView);
+
+          // ── Filtrar appointments del período ─────────────────────────────
+          const periodAppts = appointments.filter(a => a.datetime >= start && a.datetime <= end);
+          const confirmed   = periodAppts.filter(a => a.status === "confirmed");
+          const cancelled   = periodAppts.filter(a => a.status === "cancelled");
+
+          // ── Métricas ─────────────────────────────────────────────────────
+          const now = new Date();
+          // Recaudado: citas completadas (pasadas confirmadas)
+          const recaudado = confirmed.filter(a => {
+            const end = new Date(a.datetime.getTime() + a.duration_minutes*60000);
+            return end < now;
+          }).reduce((s,a) => s + (a.service_price||0), 0);
+
+          // Por recaudar: citas futuras confirmadas
+          const porRecaudar = confirmed.filter(a => a.datetime > now)
+            .reduce((s,a) => s + (a.service_price||0), 0);
+
+          // Ocupación: citas confirmadas / slots disponibles del período
+          const pctOcupacion = Math.min(100, Math.round((confirmed.length / slots) * 100));
+
+          // ── Labels dinámicos ──────────────────────────────────────────────
+          const labels = {
+            dia:    { rec:"Recaudado hoy",      proj:"Por recaudar hoy",      ocu:"Ocupación hoy" },
+            semana: { rec:"Recaudado semana",   proj:"Por recaudar semana",   ocu:"Ocupación semanal" },
+            mes:    { rec:"Recaudado este mes", proj:"Por recaudar este mes", ocu:"Ocupación mensual" },
+          }[agendaView];
+
           return (<div>
             {/* Segmented control premium */}
             {(()=>{
               const idx = filters.findIndex(f=>f.id===agendaView);
               return (
                 <div style={{ position:"relative", display:"flex", background:C.surface, borderRadius:10, padding:3, marginBottom:14, border:"1px solid "+C.border }}>
-                  {/* Pill deslizante */}
                   <div style={{ position:"absolute", top:3, left:`calc(3px + ${idx} * (100% - 6px) / 3)`, width:"calc((100% - 6px) / 3)", height:"calc(100% - 6px)", borderRadius:7, background:C.accent, transition:"left 0.22s cubic-bezier(0.16,1,0.3,1)", boxShadow:"0 1px 6px rgba(74,222,128,0.25)", zIndex:0 }}/>
                   {filters.map(f=>(
                     <button key={f.id} onClick={()=>setAgendaView(f.id)} style={{ flex:1, padding:"7px 0", borderRadius:7, border:"none", cursor:"pointer", fontFamily:"inherit", background:"transparent", color:agendaView===f.id?C.bg:C.dim, fontSize:12, fontWeight:600, position:"relative", zIndex:1, transition:"color 0.18s", letterSpacing:"0.01em" }}>
@@ -2219,35 +2266,36 @@ export default function CleoDashboard() {
               );
             })()}
 
-            {/* KPIs agenda */}
+            {/* KPIs — 3 métricas consistentes por período */}
             {canUse(biz.plan, "stats") && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
-                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.dim, marginBottom: 6 }}>Ingresos hoy</div>
-                  <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: C.accent }}>${todayIncome}</div>
-                  <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>{todayAppts.length} cita{todayAppts.length !== 1 ? "s" : ""}</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
+                {/* Card 1: Recaudado */}
+                <div style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:12, padding:"11px 12px" }}>
+                  <div style={{ fontSize:8, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.dim, marginBottom:5 }}>{labels.rec}</div>
+                  <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:C.accent, transition:"all 0.3s" }}>${recaudado}</div>
+                  <div style={{ fontSize:9, color:C.dim, marginTop:2 }}>{confirmed.filter(a=>new Date(a.datetime.getTime()+a.duration_minutes*60000)<now).length} citas</div>
                 </div>
-                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.dim, marginBottom: 6 }}>Esta semana</div>
-                  <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: C.text }}>${weekIncome}</div>
-                  <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>{appointments.filter(a=>a.status==="confirmed").length} confirmadas</div>
+                {/* Card 2: Por recaudar */}
+                <div style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:12, padding:"11px 12px" }}>
+                  <div style={{ fontSize:8, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.dim, marginBottom:5 }}>{labels.proj}</div>
+                  <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:C.text, transition:"all 0.3s" }}>${porRecaudar}</div>
+                  <div style={{ fontSize:9, color:C.dim, marginTop:2 }}>{confirmed.filter(a=>a.datetime>now).length} pendientes</div>
                 </div>
-                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.dim, marginBottom: 6 }}>Ocupación</div>
-                  {(() => {
-                    const totalSlots = 7 * 8;
-                    const occupied = appointments.filter(a=>a.status==="confirmed").length;
-                    const pct = Math.min(100, Math.round((occupied/totalSlots)*100));
-                    return <>
-                      <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: pct > 60 ? C.accent : C.text }}>{pct}%</div>
-                      <div style={{ height: 3, background: C.border, borderRadius: 2, marginTop: 6, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: C.accent, borderRadius: 2, transition: "width 0.5s ease" }}/>
-                      </div>
-                    </>;
-                  })()}
+                {/* Card 3: Ocupación */}
+                <div style={{ background:C.surface, border:"1px solid "+C.border, borderRadius:12, padding:"11px 12px" }}>
+                  <div style={{ fontSize:8, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:C.dim, marginBottom:5 }}>{labels.ocu}</div>
+                  <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:pctOcupacion>60?C.accent:C.text, transition:"all 0.3s" }}>{pctOcupacion}%</div>
+                  <div style={{ height:3, background:C.border, borderRadius:2, marginTop:6, overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:pctOcupacion+"%", background:C.accent, borderRadius:2, transition:"width 0.5s ease" }}/>
+                  </div>
                 </div>
               </div>
             )}
+            {/* Metadata secundaria del período */}
+            <div style={{ display:"flex", gap:12, marginBottom:14, fontSize:10, color:C.dim }}>
+              <span>{periodAppts.length} cita{periodAppts.length!==1?"s":""} en el período</span>
+              {cancelled.length>0 && <span style={{ color:"#EF444480" }}>· {cancelled.length} cancelada{cancelled.length!==1?"s":""}</span>}
+            </div>
 
             {/* Empty state */}
             {!hasAnyAppts && (
