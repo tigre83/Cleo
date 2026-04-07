@@ -813,14 +813,33 @@ function StatsView({ appointments, businessName, plan, showToast }) {
   const citasSemana      = weekAppts2.filter(a=>a.status==="confirmed").length;
   const canceladasSemana = weekAppts2.filter(a=>a.status==="cancelled").length;
   const citasMes         = monthAppts2.filter(a=>a.status==="confirmed").length;
-  const conversaciones   = 47; // cuando exista tabla real se conecta aquí
+  const conversaciones   = 0; // TODO: conectar a tabla messages cuando exista
   const conversion       = conversaciones>0?Math.round((citasSemana/conversaciones)*100):0;
   const ahorroMin        = citasSemana*15;
   const ahorroStr        = ahorroMin>=60?Math.floor(ahorroMin/60)+"h "+(ahorroMin%60)+"min":ahorroMin+"min";
 
   // Hero insight dinámico
-  const heroTitle = recaudadoSemana>100?"Buen rendimiento esta semana":citasSemana===0?"Sin actividad esta semana":"La IA está trabajando por ti";
-  const heroSub   = recaudadoSemana>0?`$${recaudadoSemana} recaudados · ${citasSemana} cita${citasSemana!==1?"s":""} confirmadas esta semana`:"Comparte tu WhatsApp y Cleo comenzará a generar citas automáticamente.";
+  // Motor de insights basado en reglas reales
+  let heroTitle, heroSub;
+  if(citasSemana===0&&recaudadoSemana===0) {
+    heroTitle = "Aún no hay actividad esta semana";
+    heroSub   = "Comparte tu WhatsApp con tus clientes y Cleo comenzará a agendar automáticamente.";
+  } else if(conversaciones>0&&citasSemana===0) {
+    heroTitle = "Hay conversaciones activas sin citas";
+    heroSub   = `${conversaciones} conversaciones registradas pero ninguna se convirtió en cita aún.`;
+  } else if(trendPct!==null&&trendPct<0) {
+    heroTitle = "La actividad bajó frente a la semana anterior";
+    heroSub   = `$${recaudadoSemana} recaudados · ${Math.abs(trendPct)}% menos que la semana pasada.`;
+  } else if(trendPct!==null&&trendPct>0) {
+    heroTitle = "Tu negocio mejoró frente a la semana anterior";
+    heroSub   = `$${recaudadoSemana} recaudados · ${trendPct}% más que la semana pasada.`;
+  } else if(recaudadoSemana>0) {
+    heroTitle = "Buen rendimiento esta semana";
+    heroSub   = `$${recaudadoSemana} recaudados · ${citasSemana} cita${citasSemana!==1?"s":""} confirmadas.`;
+  } else {
+    heroTitle = "La IA está trabajando por ti";
+    heroSub   = `${citasSemana} cita${citasSemana!==1?"s":""} en agenda · $${porRecaudar} por recaudar.`;
+  }
 
   // Chart data — ingresos por día de la semana actual
   const DIAS = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
@@ -830,11 +849,20 @@ function StatsView({ appointments, businessName, plan, showToast }) {
     return { day:d, ingresos:dayAppts.reduce((s,a)=>s+(a.service_price||0),0), citas:dayAppts.length };
   });
 
+  // Periodo anterior para comparación real
+  const prevWeekStart = new Date(weekStart); prevWeekStart.setDate(weekStart.getDate()-7);
+  const prevWeekEnd   = new Date(weekEnd);   prevWeekEnd.setDate(weekEnd.getDate()-7);
+  const prevAppts     = appointments.filter(a=>a.datetime>=prevWeekStart&&a.datetime<=prevWeekEnd&&a.status==="confirmed");
+  const prevRecaudado = prevAppts.filter(a=>new Date(a.datetime.getTime()+a.duration_minutes*60000)<now2).reduce((s,a)=>s+(a.service_price||0),0);
+  const trendPct      = prevRecaudado>0?Math.round(((recaudadoSemana-prevRecaudado)/prevRecaudado)*100):null;
+  const trendStr      = trendPct!==null?(trendPct>=0?"+"+trendPct+"%":trendPct+"%"):null;
+  const trendUp       = trendPct!==null&&trendPct>=0;
+
   const kpis = [
-    { label:"Ingresos",     value:recaudadoSemana, prefix:"$", sub:"Esta semana",     trend:"+12%", up:true },
-    { label:"Por recaudar", value:porRecaudar,      prefix:"$", sub:"Citas pendientes",note:"si se completan" },
+    { label:"Ingresos",     value:recaudadoSemana, prefix:"$", sub:"Esta semana",      trend:trendStr, up:trendUp },
+    { label:"Por recaudar", value:porRecaudar,      prefix:"$", sub:"Citas pendientes", note:"si se concretan" },
     { label:"Citas",        value:citasSemana,      prefix:"",  sub:"Esta semana" },
-    { label:"Conversión",   value:conversion,       prefix:"",  suffix:"%", sub:"Conversaciones → citas" },
+    { label:"Conversión",   value:conversion,       prefix:"",  suffix:"%", sub:"Convers. → citas" },
   ];
 
   return (
@@ -851,7 +879,11 @@ function StatsView({ appointments, businessName, plan, showToast }) {
         <div style={{ fontFamily:"'Syne',sans-serif", fontSize:16, fontWeight:800, color:C.text, marginBottom:6, letterSpacing:"-0.01em" }}>{heroTitle}</div>
         <div style={{ fontSize:12, color:C.dim, lineHeight:1.6, marginBottom:12 }}>{heroSub}</div>
         <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-          {[{t:"+12% vs semana anterior",c:C.accent},{t:conversaciones+" conversaciones IA",c:C.cyan},{t:citasSemana+" citas generadas",c:"#A78BFA"}].map((chip,i)=>(
+          {[
+            trendStr?{t:trendStr+" vs semana anterior",c:trendUp?C.accent:"#EF4444"}:null,
+            conversaciones>0?{t:conversaciones+" conversaciones IA",c:C.cyan}:null,
+            {t:citasSemana+" cita"+(citasSemana!==1?"s":"")+" esta semana",c:"#A78BFA"},
+          ].filter(Boolean).map((chip,i)=>(
             <div key={i} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:20, background:chip.c+"15", border:"1px solid "+chip.c+"30" }}>
               <div style={{ width:4, height:4, borderRadius:"50%", background:chip.c }}/>
               <span style={{ fontSize:10, fontWeight:600, color:chip.c }}>{chip.t}</span>
