@@ -2313,7 +2313,9 @@ export default function CleoDashboard() {
             )}
 
             {/* DÍA */}
-            {agendaView === "dia" && hasAnyAppts && (
+            {agendaView === "dia" && hasAnyAppts && (()=>{
+              const todayAppts = appointments.filter(a => a.status==="confirmed" && a.datetime.toDateString()===TODAY.toDateString()).sort((a,b)=>a.datetime-b.datetime);
+              return (
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.dim, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
                   <Calendar size={13} /> Hoy — {TODAY.toLocaleDateString("es-EC", { weekday: "long", day: "numeric", month: "long" })}
@@ -2330,7 +2332,8 @@ export default function CleoDashboard() {
                   </div>
                 )}
               </div>
-            )}
+            );
+            })()}
 
             {/* SEMANA */}
             {agendaView === "semana" && hasAnyAppts && <WeeklyView appointments={appointments} onCancel={setCancelTarget} onReschedule={setRescheduleTarget}/>}
