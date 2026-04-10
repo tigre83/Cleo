@@ -177,7 +177,7 @@ function ROICalc() {
   );
 }
 
-function S1({ data: d, setData: sd, onNext, onLegal }) {
+function S1({ data: d, setData: sd, onNext, onLegal, isMobile: mob }) {
   const [phase, setPhase] = useState("form"); // form | verify
   const [sp, setSp] = useState(false);
   const [er, setEr] = useState({});
