@@ -336,7 +336,7 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <div style={{ marginBottom: 4 }}>
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 19, fontWeight: 800, margin: 0 }}>Crea tu cuenta en Cleo</h2>
-        <p style={{ color: C.dim, fontSize: 12, marginTop: 6 }}>Tu asistente IA estar\u00e1 listo en minutos</p>
+        <p style={{ color: C.dim, fontSize: 12, marginTop: 6 }}>Tu asistente IA estará listo en minutos</p>
       </div>
 
       <div>
@@ -350,9 +350,9 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
       </div>
 
       <div>
-        <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 6, display: "block" }}>Contrase\u00f1a</label>
+        <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 6, display: "block" }}>Contraseña</label>
         <div style={{ position: "relative" }}>
-          <input type={sp?"text":"password"} placeholder="Crea una contrase\u00f1a segura" value={pw}
+          <input type={sp?"text":"password"} placeholder="Crea una contraseña segura" value={pw}
             onChange={e => sd({...d, password: e.target.value})}
             style={{...inp(er.p), paddingRight: 50}}
             onFocus={inpFocus} onBlur={inpBlur} />
@@ -396,10 +396,10 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
       <div style={{ display:"flex", alignItems:"flex-start", gap:8, marginBottom:12 }}>
         <input type="checkbox" checked={terms} onChange={function(){setTerms(!terms)}} style={{ marginTop:3, accentColor:C.accent, width:16, height:16, flexShrink:0 }} />
         <span style={{ fontSize:12, color:C.dim, lineHeight:1.4 }}>
-          {"He le\u00eddo y acepto los "}
-          <span onClick={function(){if(onLegal)onLegal("terminos")}} style={{ color:C.accent, cursor:"pointer", textDecoration:"underline" }}>T\u00e9rminos y Condiciones</span>
+          {"He leído y acepto los "}
+          <span onClick={function(){if(onLegal)onLegal("terminos")}} style={{ color:C.accent, cursor:"pointer", textDecoration:"underline" }}>Términos y Condiciones</span>
           {" y la "}
-          <span onClick={function(){if(onLegal)onLegal("privacidad")}} style={{ color:C.accent, cursor:"pointer", textDecoration:"underline" }}>Pol\u00edtica de Privacidad</span>
+          <span onClick={function(){if(onLegal)onLegal("privacidad")}} style={{ color:C.accent, cursor:"pointer", textDecoration:"underline" }}>Política de Privacidad</span>
         </span>
       </div>
 
@@ -409,7 +409,7 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
         onMouseLeave={e => { e.currentTarget.style.opacity = (!terms || metCount < 3) ? "0.4" : "1"; e.currentTarget.style.transform = "none"; }}>
         {loading ? <><Loader size={16} style={{ animation: "spin 1s linear infinite" }} /> Creando cuenta...</> : "Crear mi cuenta gratis"}
       </button>
-      <p style={{ textAlign: "center", fontSize: 12, color: C.dim, margin: 0 }}>7 d\u00edas gratis \u00b7 Sin tarjeta de cr\u00e9dito</p>
+      <p style={{ textAlign: "center", fontSize: 12, color: C.dim, margin: 0 }}>7 días gratis · Sin tarjeta de crédito</p>
     </div>
   );
 }
@@ -828,9 +828,9 @@ export default function CleoApp({ initialView }) {
   if (vw === "onboarding") {
     const stepLabels = ["Cuenta","Negocio","WhatsApp","Listo \u2713"];
     const benefits = [
-      { title:"Responde 24/7", desc:"Atiende a tus clientes mientras t\u00fa duermes.", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, delay:"0s" },
-      { title:"Agenda autom\u00e1ticamente", desc:"Confirma citas sin intervenci\u00f3n humana.", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>, delay:"0.7s" },
-      { title:"Todo desde un panel", desc:"Agenda, servicios, estad\u00edsticas e ingresos.", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>, delay:"1.4s" },
+      { title:"Responde 24/7", desc:"Atiende a tus clientes mientras tú duermes.", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, delay:"0s" },
+      { title:"Agenda automáticamente", desc:"Confirma citas sin intervención humana.", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>, delay:"0.7s" },
+      { title:"Todo desde un panel", desc:"Agenda, servicios, estadísticas e ingresos.", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>, delay:"1.4s" },
     ];
 
     return (
@@ -870,7 +870,7 @@ export default function CleoApp({ initialView }) {
                   Tu negocio atendido{" "}<span style={{ background: C.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>24/7 con IA</span>{" "}en WhatsApp
                 </h2>
                 <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.5, marginBottom: 28, position: "relative", animation: "fadeUp 0.45s 0.15s both" }}>
-                  Configura Cleo en menos de 10 minutos. Sin conocimientos t\u00e9cnicos.
+                  Configura Cleo en menos de 10 minutos. Sin conocimientos técnicos.
                 </p>
 
                 {/* Benefits */}
@@ -893,8 +893,8 @@ export default function CleoApp({ initialView }) {
                 {/* Trial card */}
                 <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "13px 15px", position: "relative", animation: "fadeUp 0.45s 0.55s both" }}>
                   <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: 1.5, color: C.dim, marginBottom: 4 }}>Prueba gratuita</div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 19, color: C.accent }}>7 d\u00edas gratis</div>
-                  <div style={{ fontSize: 10, color: C.dim, marginTop: 3 }}>Sin tarjeta \u00b7 Cancela cuando quieras</div>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 19, color: C.accent }}>7 días gratis</div>
+                  <div style={{ fontSize: 10, color: C.dim, marginTop: 3 }}>Sin tarjeta · Cancela cuando quieras</div>
                 </div>
               </div>
             )}
