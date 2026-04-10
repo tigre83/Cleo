@@ -1,8 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://cleo.app</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://cleo.app/terminos</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
-  <url><loc>https://cleo.app/privacidad</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
-  <url><loc>https://cleo.app/status</loc><changefreq>always</changefreq><priority>0.5</priority></url>
-  <url><loc>https://cleo.app/changelog</loc><changefreq>weekly</changefreq><priority>0.4</priority></url>
+  <url>
+    <loc>https://www.cleoia.app/</loc>
+    <lastmod>2026-04-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.cleoia.app/terminos</loc>
+    <lastmod>2026-04-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://www.cleoia.app/privacidad</loc>
+    <lastmod>2026-04-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
 </urlset>

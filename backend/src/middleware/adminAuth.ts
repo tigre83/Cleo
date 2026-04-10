@@ -17,7 +17,8 @@ export function adminAuthMiddleware(req: AdminRequest, res: Response, next: Next
 
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as AdminAuthPayload;
-    if (decoded.role !== 'admin') {
+    const validRoles = ['admin', 'owner', 'soporte'];
+    if (!validRoles.includes(decoded.role)) {
       res.status(403).json({ error: 'Acceso denegado' });
       return;
     }

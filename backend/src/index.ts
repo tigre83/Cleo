@@ -4,11 +4,13 @@ import { env } from "./config/env";
 import { requireAuth, requireActivePlan } from "./middleware/auth";
 import { securityHeaders, getCorsOptions, verifyWebhookSignature } from "./middleware/security";
 import { initSentry, Sentry } from "./config/sentry";
-import { runDailyCleanup } from "./services/cron.service";
+import { runDailyCleanup, runAppointmentReminders } from "./services/cron.service";
 import adminRoutes from "./routes/admin";
 import {
+  viewsRouter,
   authRouter,
   businessRouter,
+  servicesRouter,
   webhookRouter,
   whatsappRouter,
   appointmentsRouter,
@@ -49,6 +51,7 @@ app.get("/health", (_req, res) => {
 });
 
 // --- Rutas públicas ---
+app.use("/api/views", viewsRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRoutes);
 app.use("/api/webhook", webhookRouter);  // Meta necesita acceso sin auth
@@ -60,6 +63,7 @@ app.use("/api/support", requireAuth, supportRouter);
 
 // --- Rutas protegidas (requieren plan activo) ---
 app.use("/api/appointments", requireAuth, requireActivePlan, appointmentsRouter);
+app.use("/api/services", requireAuth, requireActivePlan, servicesRouter);
 app.use("/api/conversations", requireAuth, requireActivePlan, conversationsRouter);
 app.use("/api/blocked-slots", requireAuth, requireActivePlan, blockedSlotsRouter);
 
@@ -98,6 +102,11 @@ app.listen(env.PORT, () => {
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
   runDailyCleanup().catch(e => console.error("Error cron inicial:", e));
   setInterval(() => runDailyCleanup().catch(e => console.error("Error cron:", e)), TWENTY_FOUR_HOURS);
+
+  // Recordatorios de citas: cada 30 minutos
+  const THIRTY_MINUTES = 30 * 60 * 1000;
+  runAppointmentReminders().catch(e => console.error("Error recordatorios inicial:", e));
+  setInterval(() => runAppointmentReminders().catch(e => console.error("Error recordatorios:", e)), THIRTY_MINUTES);
 });
 
 export default app;

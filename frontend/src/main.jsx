@@ -4,6 +4,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
+import AdminInvite from './pages/AdminInvite';
+import ResetPassword from './pages/ResetPassword';
+
 function App() {
   return (
     <BrowserRouter>
@@ -13,9 +16,14 @@ function App() {
         <Route path="/terminos" element={<Landing initialView="terminos" />} />
         <Route path="/privacidad" element={<Landing initialView="privacidad" />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/admin/invite/:token" element={<AdminInvite />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Landing />} />
       </Routes>
     </BrowserRouter>
   );
 }
+
 ReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>);
+// Sat Apr  4 19:41:05 -05 2026
+// Sun Apr  5 13:15:50 -05 2026

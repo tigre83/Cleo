@@ -53,6 +53,74 @@ async function sendVerificationEmail(email: string, code: string, businessName: 
   });
 }
 
+
+// ============================================
+// PAGE VIEWS (analytics propio)
+// ============================================
+export const viewsRouter = Router();
+
+// POST /api/views — registrar visita
+viewsRouter.post("/", async (req: Request, res: Response) => {
+  const { page, referrer } = req.body;
+  const userAgent = req.headers["user-agent"] || "";
+
+  // Ignorar bots
+  const isBot = /bot|crawler|spider|crawling/i.test(userAgent);
+  if (isBot) return res.json({ ok: true });
+
+  await supabaseAdmin.from("page_views").insert({
+    page: page || "/",
+    referrer: referrer || null,
+    user_agent: userAgent.slice(0, 200),
+  });
+
+  return res.json({ ok: true });
+});
+
+// GET /api/views/stats — obtener estadísticas (solo admin)
+viewsRouter.get("/stats", async (_req: Request, res: Response) => {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const weekStart  = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const [total, today, week, month] = await Promise.all([
+    supabaseAdmin.from("page_views").select("id", { count:"exact", head:true }),
+    supabaseAdmin.from("page_views").select("id", { count:"exact", head:true }).gte("created_at", todayStart),
+    supabaseAdmin.from("page_views").select("id", { count:"exact", head:true }).gte("created_at", weekStart),
+    supabaseAdmin.from("page_views").select("id", { count:"exact", head:true }).gte("created_at", monthStart),
+  ]);
+
+  // Top referrers este mes
+  const { data: refs } = await supabaseAdmin
+    .from("page_views")
+    .select("referrer")
+    .gte("created_at", monthStart)
+    .not("referrer", "is", null);
+
+  const refCount: Record<string, number> = {};
+  (refs || []).forEach(r => {
+    if (r.referrer) {
+      try {
+        const host = new URL(r.referrer).hostname.replace("www.", "");
+        refCount[host] = (refCount[host] || 0) + 1;
+      } catch {}
+    }
+  });
+  const topReferrers = Object.entries(refCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([source, count]) => ({ source, count }));
+
+  return res.json({
+    total:   total.count   || 0,
+    today:   today.count   || 0,
+    week:    week.count    || 0,
+    month:   month.count   || 0,
+    topReferrers,
+  });
+});
+
 // ============================================
 // AUTH ROUTES
 // ============================================
@@ -238,6 +306,99 @@ authRouter.post("/request-password-change", async (req: Request, res: Response) 
   }
 
   res.json({ sent: true });
+});
+
+
+// POST /api/auth/forgot-password — enviar código sin estar autenticado
+authRouter.post("/forgot-password", async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email requerido" });
+
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id, business_name, email_verified").eq("email", email).single();
+
+  if (!business) return res.json({ sent: true }); // No revelar si existe
+
+  const code = generateCode();
+  const codeHash = hashCode(code);
+  const codeExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+  await supabaseAdmin.from("businesses").update({
+    verification_code_hash: codeHash,
+    verification_code_expires_at: codeExpiresAt,
+  }).eq("id", business.id);
+
+  const bizName = business?.business_name || "tu negocio";
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: "Cleo <noreply@cleoia.app>",
+      to: [email],
+      subject: `${code} — Recupera tu contraseña de Cleo`,
+      html: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#080808;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#080808;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
+        <tr><td style="text-align:center;padding-bottom:28px;">
+          <span style="font-size:30px;font-weight:800;color:#4ADE80;">cleo.</span>
+          <div style="font-size:11px;letter-spacing:2px;color:#555;margin-top:4px;">powered by ia</div>
+        </td></tr>
+        <tr><td style="background:#0D0D0D;border:1px solid #1A1A1A;border-radius:16px;padding:36px;">
+          <p style="margin:0 0 6px;font-size:13px;color:#6B7280;">Hola,</p>
+          <h1 style="margin:0 0 4px;font-size:20px;font-weight:800;color:#F9FAFB;">${bizName}</h1>
+          <p style="margin:0 0 24px;font-size:14px;color:#9CA3AF;">Recibimos una solicitud para recuperar tu contraseña de Cleo.</p>
+          <p style="margin:0 0 12px;font-size:13px;color:#6B7280;text-align:center;">Tu código de verificación es:</p>
+          <div style="text-align:center;margin-bottom:24px;">
+            <div style="display:inline-block;background:#080808;border:1px solid #1E1E1E;border-radius:12px;padding:18px 32px;">
+              <span style="font-size:36px;font-weight:700;letter-spacing:12px;color:#22D3EE;font-family:'Courier New',monospace;">${code}</span>
+            </div>
+          </div>
+          <div style="background:#0A1A0A;border:1px solid #14532D;border-radius:8px;padding:12px 16px;">
+            <p style="margin:0;font-size:12px;color:#6B7280;">⏱ Este código <strong style="color:#F9FAFB;">expira en 15 minutos</strong>. Si no solicitaste este cambio, ignora este email.</p>
+          </div>
+        </td></tr>
+        <tr><td style="text-align:center;padding-top:20px;">
+          <p style="margin:0;font-size:11px;color:#374151;">© 2026 Cleo · Hecho en Ecuador para PYMEs</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+    }),
+  });
+
+  return res.json({ sent: true });
+});
+
+// POST /api/auth/reset-password-with-code — nueva contraseña con código
+authRouter.post("/reset-password-with-code", async (req: Request, res: Response) => {
+  const { email, code, new_password } = req.body;
+  if (!email || !code || !new_password) return res.status(400).json({ error: "Faltan campos" });
+
+  const inputHash = hashCode(code);
+  const { data: business } = await supabaseAdmin
+    .from("businesses")
+    .select("id, user_id, verification_code_hash, verification_code_expires_at")
+    .eq("email", email).single();
+
+  if (!business) return res.status(404).json({ error: "Cuenta no encontrada" });
+  if (new Date(business.verification_code_expires_at) < new Date()) return res.status(410).json({ error: "Código expirado" });
+  if (inputHash !== business.verification_code_hash) return res.status(401).json({ error: "Código inválido" });
+
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(business.user_id, { password: new_password });
+  if (error) return res.status(400).json({ error: error.message });
+
+  await supabaseAdmin.from("businesses").update({
+    verification_code_hash: null,
+    verification_code_expires_at: null,
+  }).eq("id", business.id);
+
+  return res.json({ updated: true });
 });
 
 // POST /api/auth/change-password — Verificar código + cambiar contraseña
@@ -860,6 +1021,106 @@ blockedSlotsRouter.delete("/:id", async (req: Request, res: Response) => {
     .eq("id", req.params.id as string)
     .eq("business_id", business.id);
 
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ deleted: true });
+});
+
+// ============================================
+// APPOINTMENTS RANGE
+// ============================================
+// GET /api/appointments/range?start=2026-04-01&end=2026-04-30
+appointmentsRouter.get("/range", async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { start, end } = req.query as { start: string; end: string };
+  if (!start || !end) return res.status(400).json({ error: "start y end requeridos (YYYY-MM-DD)" });
+
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id").eq("user_id", userId).single();
+  if (!business) return res.status(404).json({ error: "Negocio no encontrado" });
+
+  const { data, error } = await supabaseAdmin
+    .from("appointments")
+    .select("*")
+    .eq("business_id", business.id)
+    .gte("datetime", `${start}T00:00:00`)
+    .lte("datetime", `${end}T23:59:59`)
+    .order("datetime");
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
+// ============================================
+// SERVICES ROUTER
+// ============================================
+export const servicesRouter = Router();
+
+// GET /api/services
+servicesRouter.get("/", async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id").eq("user_id", userId).single();
+  if (!business) return res.status(404).json({ error: "Negocio no encontrado" });
+
+  const { data, error } = await supabaseAdmin
+    .from("services").select("*").eq("business_id", business.id).order("created_at");
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
+// POST /api/services
+servicesRouter.post("/", async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { name, description, price, duration_minutes, active } = req.body;
+  if (!name || !price) return res.status(400).json({ error: "name y price requeridos" });
+
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id").eq("user_id", userId).single();
+  if (!business) return res.status(404).json({ error: "Negocio no encontrado" });
+
+  const { data, error } = await supabaseAdmin
+    .from("services").insert({
+      business_id: business.id, name, description: description || null,
+      price: parseFloat(price), duration_minutes: duration_minutes || 30,
+      active: active !== false,
+    }).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// PUT /api/services/:id
+servicesRouter.put("/:id", async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { name, description, price, duration_minutes, active } = req.body;
+
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id").eq("user_id", userId).single();
+  if (!business) return res.status(404).json({ error: "Negocio no encontrado" });
+
+  const updates: any = {};
+  if (name !== undefined) updates.name = name;
+  if (description !== undefined) updates.description = description;
+  if (price !== undefined) updates.price = parseFloat(price);
+  if (duration_minutes !== undefined) updates.duration_minutes = duration_minutes;
+  if (active !== undefined) updates.active = active;
+
+  const { data, error } = await supabaseAdmin
+    .from("services").update(updates)
+    .eq("id", req.params.id).eq("business_id", business.id).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// DELETE /api/services/:id
+servicesRouter.delete("/:id", async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { data: business } = await supabaseAdmin
+    .from("businesses").select("id").eq("user_id", userId).single();
+  if (!business) return res.status(404).json({ error: "Negocio no encontrado" });
+
+  const { error } = await supabaseAdmin
+    .from("services").delete()
+    .eq("id", req.params.id).eq("business_id", business.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ deleted: true });
 });

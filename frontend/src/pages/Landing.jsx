@@ -101,6 +101,20 @@ function ChatDemo() {
   const [ci, setCi] = useState(""); const [cm, setCm] = useState([]); const [isCu, setIsCu] = useState(false); const r = useRef(null);
   const f = DEMO_FLOWS[ak];
   const res = useCallback((k) => { setAk(k); setVis([]); setTyp(false); setIsCu(false); setCm([]); }, []);
+
+  // Track page view
+  useEffect(() => {
+    const API = import.meta.env.VITE_API_URL;
+    fetch(`${API}/api/views`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        page: "/",
+        referrer: document.referrer || null,
+      }),
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => { if (isCu) return; const t = []; f.messages.forEach((m) => { if (m.from === "bot") t.push(setTimeout(() => setTyp(true), m.delay - 1200)); t.push(setTimeout(() => { setTyp(false); setVis(p => [...p, m]); }, m.delay)); }); return () => t.forEach(clearTimeout); }, [ak, f.messages, isCu]);
   useEffect(() => { r.current && (r.current.scrollTop = r.current.scrollHeight); }, [vis, cm, typ]);
   const snd = () => { if (!ci.trim()) return; setIsCu(true); setCm(p => [...p, { from: "user", text: ci }]); setCi(""); setTyp(true); setTimeout(() => { setTyp(false); const x = ["Gracias, ¿me das tu nombre para agendar?", "Entendido. ¿Qué día te queda mejor?", "Déjame verificar disponibilidad."]; setCm(p => [...p, { from: "bot", text: x[Math.floor(Math.random() * x.length)] }]); }, 2000); };
@@ -838,7 +852,7 @@ export default function CleoApp({ initialView }) {
               <button onClick={cycleTheme} style={{ width: 32, height: 32, borderRadius: "50%", background: C.surface, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 {resolved === "dark" ? <MoonIcon size={14} color={C.dim} /> : resolved === "light" ? <Sun size={14} color={C.dim} /> : <Settings size={14} color={C.dim} />}
               </button>
-              <span style={{ color: C.dim, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Iniciar sesión</span>
+              <button onClick={() => window.location.href="/dashboard"} style={{ color: C.dim, fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Iniciar sesión</button>
               <button onClick={go} style={{ padding: "8px 20px", borderRadius: 50, background: C.accent, color: C.bg, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit" }}>Prueba gratis</button>
             </div>
           )}
