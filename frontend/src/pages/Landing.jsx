@@ -588,25 +588,159 @@ function S3({ data: d, onNext }) {
 }
 
 function S4({ data: d, onBack }) {
-  const [tab, setTab] = useState("hoy"); const now = new Date();
+  const steps = [
+    { text: "Envía un WhatsApp a tu número y prueba el bot", icon: <Send size={13} color={C.accent} /> },
+    { text: "Compártelo con alguien para prueba real", icon: <Users size={13} color={C.accent} /> },
+    { text: "Personaliza servicios en configuración", icon: <Settings size={13} color={C.accent} /> },
+  ];
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ background: C.accentGlow, border: `1px solid ${C.accent}30`, borderRadius: 16, padding: "28px 20px", textAlign: "center" }}><div style={{ width: 48, height: 48, borderRadius: "50%", background: `${C.accent}20`, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}><Check size={24} color={C.accent} /></div><h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, margin: 0 }}>{d.business_name} está listo</h2><p style={{ color: C.dim, fontSize: 13, marginTop: 6 }}>Tu IA ya está activa. Comparte tu número con tus clientes.</p><div style={{ background: C.surface, borderRadius: 8, padding: "6px 14px", display: "inline-block", marginTop: 10, fontSize: 12, color: C.accent }}>Trial — 7 días gratis</div></div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-        {[{ l: "Citas hoy", v: "0", I: Calendar },{ l: "Mensajes", v: "0", I: MessageSquare },{ l: "Estado", v: "Activo", I: Activity }].map((s, i) => (<div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 10px", textAlign: "center" }}><s.I size={16} color={C.accent} style={{ marginBottom: 4 }} /><div style={{ fontWeight: 700, fontSize: 16, marginTop: 2 }}>{s.v}</div><div style={{ fontSize: 10, color: C.dim }}>{s.l}</div></div>))}
-      </div>
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ display: "flex", borderBottom: `1px solid ${C.border}` }}>{["hoy","manana"].map(t => (<button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: "11px", border: "none", cursor: "pointer", fontFamily: "inherit", background: tab === t ? C.accentGlow : "transparent", color: tab === t ? C.accent : C.dim, fontWeight: 600, fontSize: 12, borderBottom: tab === t ? `2px solid ${C.accent}` : "2px solid transparent" }}>{t === "hoy" ? `Hoy — ${now.toLocaleDateString("es-EC",{weekday:"short",day:"numeric",month:"short"})}` : "Mañana"}</button>))}</div>
-        <div style={{ padding: 24, textAlign: "center", color: C.dim }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 10 }}><CircleDot size={8} color={C.accent} /><span style={{ fontSize: 13, fontWeight: 600, color: C.accent }}>Tu IA ya está activa</span></div>
-          <p style={{ fontSize: 13, lineHeight: 1.5 }}>Aún no tienes citas agendadas. Comparte tu número de WhatsApp con tus clientes y Cleo hará el resto.</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Hero with aurora glow */}
+      <div style={{
+        position: "relative", borderRadius: 20, padding: "40px 24px 32px", textAlign: "center", overflow: "hidden",
+        background: C.surface, border: `1px solid ${C.accent}18`,
+      }}>
+        {/* Aurora radial glow */}
+        <div style={{
+          position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)",
+          width: 320, height: 320, borderRadius: "50%",
+          background: `radial-gradient(circle, ${C.accent}18 0%, ${C.accent}08 40%, transparent 70%)`,
+          pointerEvents: "none", filter: "blur(30px)",
+        }} />
+
+        {/* Animated checkmark with ring */}
+        <div style={{ position: "relative", display: "inline-block", marginBottom: 18 }}>
+          <div style={{
+            position: "absolute", top: 0, left: 0, width: 60, height: 60, borderRadius: "50%",
+            border: `2px solid ${C.accent}40`,
+            animation: "ringPulse 2s ease-out infinite",
+          }} />
+          <div style={{
+            width: 60, height: 60, borderRadius: "50%",
+            background: `linear-gradient(135deg, ${C.accent}25, ${C.accent}10)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            animation: "scaleIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both",
+            border: `1.5px solid ${C.accent}30`,
+          }}>
+            <Check size={28} color={C.accent} strokeWidth={3} />
+          </div>
+        </div>
+
+        {/* Title with gradient */}
+        <h2 style={{
+          fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, margin: 0,
+          background: C.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+          animation: "fadeUp 0.5s 0.2s both",
+        }}>
+          {d.business_name} está listo 🎉
+        </h2>
+
+        {/* Subtitle */}
+        <p style={{
+          color: C.dim, fontSize: 13, marginTop: 8, lineHeight: 1.5,
+          animation: "fadeUp 0.5s 0.3s both",
+        }}>
+          Tu IA ya está activa. Comparte tu número con tus clientes.
+        </p>
+
+        {/* Trial badge pill */}
+        <div style={{
+          display: "inline-block", marginTop: 14,
+          padding: "6px 16px", borderRadius: 50,
+          background: C.accentGlow, border: `1px solid ${C.accent}40`,
+          fontSize: 12, fontWeight: 600, color: C.accent, letterSpacing: 0.3,
+          animation: "fadeUp 0.5s 0.4s both",
+        }}>
+          Trial · 7 días gratis
         </div>
       </div>
-      <div style={{ background: C.surface, border: `1px solid ${C.accent}20`, borderRadius: 12, padding: 18 }}>
-        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Próximos pasos</div>
-        {["Envía un WhatsApp a tu número y prueba el bot","Compártelo con alguien para prueba real","Personaliza servicios en configuración"].map((t, i) => (<div key={i} style={{ display: "flex", gap: 8, fontSize: 12, color: C.dim, padding: "4px 0", alignItems: "center" }}><div style={{ width: 18, height: 18, borderRadius: 6, background: C.accentGlow, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span style={{ fontSize: 10, fontWeight: 700, color: C.accent }}>{i+1}</span></div>{t}</div>))}
+
+      {/* KPI cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        {[
+          { emoji: "📅", label: "Citas hoy", value: "0" },
+          { emoji: "💬", label: "Mensajes", value: "0" },
+          { emoji: "⚡", label: "Estado", value: "Activo", dot: true },
+        ].map((kpi, i) => (
+          <div key={i} style={{
+            background: C.surface, border: `1px solid ${C.border}`,
+            borderRadius: 14, padding: "16px 10px", textAlign: "center",
+            animation: `fadeUp 0.45s ${0.1 * (i + 1)}s both`,
+          }}>
+            <div style={{ fontSize: 20, marginBottom: 6 }}>{kpi.emoji}</div>
+            <div style={{ fontWeight: 800, fontSize: 18, fontFamily: "'Syne', sans-serif" }}>
+              {kpi.dot ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  {kpi.value}
+                  <span style={{
+                    width: 7, height: 7, borderRadius: "50%", background: C.accent,
+                    display: "inline-block", animation: "dotPulse 1.8s ease-in-out infinite",
+                  }} />
+                </span>
+              ) : kpi.value}
+            </div>
+            <div style={{ fontSize: 10, color: C.dim, marginTop: 2, fontWeight: 500 }}>{kpi.label}</div>
+          </div>
+        ))}
       </div>
-      <button onClick={onBack} style={{ width: "100%", padding: 14, borderRadius: 12, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><ArrowLeft size={14} /> Volver al inicio</button>
+
+      {/* Próximos pasos */}
+      <div style={{
+        background: C.surface, border: `1px solid ${C.border}`,
+        borderRadius: 16, padding: "20px 18px",
+        animation: "fadeUp 0.5s 0.45s both",
+      }}>
+        <div style={{
+          fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 14, marginBottom: 14,
+        }}>Próximos pasos</div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {steps.map((s, i) => (
+            <div key={i} className="s4-step" style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "10px 12px", borderRadius: 10,
+              background: `${C.surface2}`,
+              border: `1px solid ${C.border}`,
+              cursor: "default",
+              transition: "transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)",
+            }}>
+              {/* Gradient numbered circle */}
+              <div style={{
+                width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                background: C.grad,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <span style={{ fontSize: 12, fontWeight: 800, color: "#080808" }}>{i + 1}</span>
+              </div>
+              {/* Icon */}
+              <div style={{
+                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                background: C.accentGlow,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {s.icon}
+              </div>
+              {/* Text */}
+              <span style={{ fontSize: 12, color: C.dim, lineHeight: 1.4, fontWeight: 500 }}>{s.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main CTA button */}
+      <button
+        onClick={() => { window.location.href = "/dashboard"; }}
+        style={{
+          width: "100%", height: 52, borderRadius: 14, border: "none",
+          background: C.grad, color: "#080808",
+          fontSize: 15, fontWeight: 700, fontFamily: "inherit",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          boxShadow: `0 4px 24px ${C.accent}30, 0 0 48px ${C.accent}15`,
+          animation: "fadeUp 0.5s 0.55s both",
+        }}
+      >
+        Ir a mi panel →
+      </button>
     </div>
   );
 }
@@ -649,7 +783,7 @@ export default function CleoApp({ initialView }) {
   // Analytics helper
   const track = function(event, props) { if(window.plausible) window.plausible(event, {props}); };
 
-  useEffect(() => { const s = document.createElement("style"); s.textContent = `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}@keyframes fadeCheck{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}@keyframes gradBreathe{0%{background-position:0% 50%;filter:brightness(1)}50%{background-position:100% 50%;filter:brightness(1.2)}100%{background-position:0% 50%;filter:brightness(1)}}@keyframes radar{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.8);opacity:0}}@keyframes navEntry{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes checkPop{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}50%{box-shadow:0 0 12px 3px rgba(74,222,128,0.12)}}*{box-sizing:border-box;margin:0;padding:0}html,body{overflow-x:hidden;width:100%;max-width:100vw}html{scroll-behavior:smooth}input:focus,select:focus{border-color:${C.accent}!important}::selection{background:${C.accent}30}input[type="range"]{height:6px;border-radius:3px}button{transition:opacity 0.15s,transform 0.15s}button:active{transform:scale(0.98)}`; document.head.appendChild(s); return () => document.head.removeChild(s); }, []);
+  useEffect(() => { const s = document.createElement("style"); s.textContent = `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}@keyframes fadeCheck{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}@keyframes gradBreathe{0%{background-position:0% 50%;filter:brightness(1)}50%{background-position:100% 50%;filter:brightness(1.2)}100%{background-position:0% 50%;filter:brightness(1)}}@keyframes radar{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.8);opacity:0}}@keyframes navEntry{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes checkPop{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}50%{box-shadow:0 0 12px 3px rgba(74,222,128,0.12)}}@keyframes scaleIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}@keyframes ringPulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.8);opacity:0}}@keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}@keyframes s4StepHover{from{transform:translateX(0)}to{transform:translateX(4px)}}.s4-step:hover{transform:translateX(4px)!important}*{box-sizing:border-box;margin:0;padding:0}html,body{overflow-x:hidden;width:100%;max-width:100vw}html{scroll-behavior:smooth}input:focus,select:focus{border-color:${C.accent}!important}::selection{background:${C.accent}30}input[type="range"]{height:6px;border-radius:3px}button{transition:opacity 0.15s,transform 0.15s}button:active{transform:scale(0.98)}`; document.head.appendChild(s); return () => document.head.removeChild(s); }, []);
   const scr = r => { r.current?.scrollIntoView({ behavior: "smooth", block: "start" }); };
   const go = () => { track("Empieza gratis"); setVw("onboarding"); setSt(1); window.scrollTo({ top: 0 }); };
   const nx = () => { setSt(s => Math.min(s+1, 4)); window.scrollTo({ top: 0 }); };
