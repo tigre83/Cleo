@@ -93,8 +93,22 @@ const Logo = ({ size = 20, tag = false }) => (
     {tag && <span style={{ fontFamily: "monospace", fontSize: Math.max(size * 0.32, 8), letterSpacing: 2.5, color: C.iaText, marginTop: 2 }}>powered by ia</span>}
   </span>
 );
-const inp = (err) => ({ width: "100%", padding: "14px 16px", borderRadius: 12, fontSize: 15, fontFamily: "inherit", border: `1.5px solid ${err ? C.red : C.border}`, outline: "none", background: C.surface, color: C.text, boxSizing: "border-box" });
-const btn1 = (off) => ({ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: off ? C.border : C.accent, color: off ? C.dim : C.bg, fontSize: 16, fontWeight: 700, cursor: off ? "default" : "pointer", fontFamily: "inherit" });
+const inp = (err) => ({
+  width: "100%", padding: "10px 13px", borderRadius: 10, fontSize: 14,
+  fontFamily: "inherit", border: `1.5px solid ${err ? C.red : C.border}`,
+  outline: "none", background: C.surface2, color: C.text,
+  boxSizing: "border-box",
+  transition: "border-color 0.18s, box-shadow 0.18s",
+});
+const btn1 = (off) => ({
+  width: "100%", padding: "14px", borderRadius: 12, border: "none",
+  background: off ? C.surface2 : C.accent,
+  color: off ? C.dim : C.bg, fontSize: 15, fontWeight: 700,
+  cursor: off ? "default" : "pointer", fontFamily: "inherit",
+  transition: "opacity 0.18s, transform 0.18s, box-shadow 0.18s",
+  boxShadow: off ? "none" : "0 4px 20px rgba(74,222,128,0.25)",
+  opacity: off ? 0.4 : 1,
+});
 
 function ChatDemo() {
   const [ak, setAk] = useState("belleza"); const [vis, setVis] = useState([]); const [typ, setTyp] = useState(false);
@@ -315,33 +329,33 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
   );
 
   // --- REGISTER FORM ---
+  const inpFocus = (e) => { e.target.style.borderColor = C.accent; e.target.style.boxShadow = "0 0 0 3px rgba(74,222,128,0.08)"; };
+  const inpBlur = (e) => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <div style={{ textAlign: "center", marginBottom: 4 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, background: C.accentGlow, border: `1px solid ${C.accent}30`, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-          <Users size={22} color={C.accent} />
-        </div>
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, margin: 0 }}>Crea tu cuenta en Cleo</h2>
-        <p style={{ color: C.dim, fontSize: 14, marginTop: 6 }}>Tu asistente IA estará listo en minutos</p>
+      <div style={{ marginBottom: 4 }}>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 19, fontWeight: 800, margin: 0 }}>Crea tu cuenta en Cleo</h2>
+        <p style={{ color: C.dim, fontSize: 12, marginTop: 6 }}>Tu asistente IA estar\u00e1 listo en minutos</p>
       </div>
 
       <div>
         <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 6, display: "block" }}>Nombre de tu negocio</label>
-        <input placeholder="Ej: Glamour Studio" value={d.business_name||""} onChange={e => sd({...d, business_name: e.target.value})} style={inp(er.n)} onFocus={e => e.target.style.borderColor=C.accent} onBlur={e => e.target.style.borderColor=C.border} />
+        <input placeholder="Ej: Glamour Studio" value={d.business_name||""} onChange={e => sd({...d, business_name: e.target.value})} style={inp(er.n)} onFocus={inpFocus} onBlur={inpBlur} />
       </div>
 
       <div>
         <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 6, display: "block" }}>Email</label>
-        <input type="email" placeholder="tu@email.com" value={d.email||""} onChange={e => sd({...d, email: e.target.value})} style={inp(er.e)} onFocus={e => e.target.style.borderColor=C.accent} onBlur={e => e.target.style.borderColor=C.border} />
+        <input type="email" placeholder="tu@email.com" value={d.email||""} onChange={e => sd({...d, email: e.target.value})} style={inp(er.e)} onFocus={inpFocus} onBlur={inpBlur} />
       </div>
 
       <div>
-        <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 6, display: "block" }}>Contraseña</label>
+        <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 6, display: "block" }}>Contrase\u00f1a</label>
         <div style={{ position: "relative" }}>
-          <input type={sp?"text":"password"} placeholder="Crea una contraseña segura" value={pw}
+          <input type={sp?"text":"password"} placeholder="Crea una contrase\u00f1a segura" value={pw}
             onChange={e => sd({...d, password: e.target.value})}
             style={{...inp(er.p), paddingRight: 50}}
-            onFocus={e => e.target.style.borderColor=C.accent} onBlur={e => e.target.style.borderColor=C.border} />
+            onFocus={inpFocus} onBlur={inpBlur} />
           <button onClick={() => setSp(!sp)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.dim }}>
             <Eye size={16} />
           </button>
@@ -382,18 +396,20 @@ function S1({ data: d, setData: sd, onNext, onLegal }) {
       <div style={{ display:"flex", alignItems:"flex-start", gap:8, marginBottom:12 }}>
         <input type="checkbox" checked={terms} onChange={function(){setTerms(!terms)}} style={{ marginTop:3, accentColor:C.accent, width:16, height:16, flexShrink:0 }} />
         <span style={{ fontSize:12, color:C.dim, lineHeight:1.4 }}>
-          {"He leído y acepto los "}
-          <span onClick={function(){if(onLegal)onLegal("terminos")}} style={{ color:C.accent, cursor:"pointer", textDecoration:"underline" }}>Términos y Condiciones</span>
+          {"He le\u00eddo y acepto los "}
+          <span onClick={function(){if(onLegal)onLegal("terminos")}} style={{ color:C.accent, cursor:"pointer", textDecoration:"underline" }}>T\u00e9rminos y Condiciones</span>
           {" y la "}
-          <span onClick={function(){if(onLegal)onLegal("privacidad")}} style={{ color:C.accent, cursor:"pointer", textDecoration:"underline" }}>Política de Privacidad</span>
+          <span onClick={function(){if(onLegal)onLegal("privacidad")}} style={{ color:C.accent, cursor:"pointer", textDecoration:"underline" }}>Pol\u00edtica de Privacidad</span>
         </span>
       </div>
 
       <button onClick={handleRegister} disabled={loading || !terms || metCount < 3}
-        style={{...btn1(!terms || metCount < 3), opacity: loading ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        style={{...btn1(!terms || metCount < 3), opacity: loading ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        onMouseEnter={e => { if (!loading && terms && metCount >= 3) { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}}
+        onMouseLeave={e => { e.currentTarget.style.opacity = (!terms || metCount < 3) ? "0.4" : "1"; e.currentTarget.style.transform = "none"; }}>
         {loading ? <><Loader size={16} style={{ animation: "spin 1s linear infinite" }} /> Creando cuenta...</> : "Crear mi cuenta gratis"}
       </button>
-      <p style={{ textAlign: "center", fontSize: 12, color: C.dim, margin: 0 }}>7 días gratis · Sin tarjeta de crédito</p>
+      <p style={{ textAlign: "center", fontSize: 12, color: C.dim, margin: 0 }}>7 d\u00edas gratis \u00b7 Sin tarjeta de cr\u00e9dito</p>
     </div>
   );
 }
@@ -633,7 +649,7 @@ export default function CleoApp({ initialView }) {
   // Analytics helper
   const track = function(event, props) { if(window.plausible) window.plausible(event, {props}); };
 
-  useEffect(() => { const s = document.createElement("style"); s.textContent = `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}@keyframes fadeCheck{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}@keyframes gradBreathe{0%{background-position:0% 50%;filter:brightness(1)}50%{background-position:100% 50%;filter:brightness(1.2)}100%{background-position:0% 50%;filter:brightness(1)}}@keyframes radar{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.8);opacity:0}}@keyframes navEntry{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes checkPop{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}*{box-sizing:border-box;margin:0;padding:0}html,body{overflow-x:hidden;width:100%;max-width:100vw}html{scroll-behavior:smooth}input:focus,select:focus{border-color:${C.accent}!important}::selection{background:${C.accent}30}input[type="range"]{height:6px;border-radius:3px}button{transition:opacity 0.15s,transform 0.15s}button:active{transform:scale(0.98)}`; document.head.appendChild(s); return () => document.head.removeChild(s); }, []);
+  useEffect(() => { const s = document.createElement("style"); s.textContent = `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}@keyframes fadeCheck{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}@keyframes gradBreathe{0%{background-position:0% 50%;filter:brightness(1)}50%{background-position:100% 50%;filter:brightness(1.2)}100%{background-position:0% 50%;filter:brightness(1)}}@keyframes radar{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.8);opacity:0}}@keyframes navEntry{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes checkPop{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}50%{box-shadow:0 0 12px 3px rgba(74,222,128,0.12)}}*{box-sizing:border-box;margin:0;padding:0}html,body{overflow-x:hidden;width:100%;max-width:100vw}html{scroll-behavior:smooth}input:focus,select:focus{border-color:${C.accent}!important}::selection{background:${C.accent}30}input[type="range"]{height:6px;border-radius:3px}button{transition:opacity 0.15s,transform 0.15s}button:active{transform:scale(0.98)}`; document.head.appendChild(s); return () => document.head.removeChild(s); }, []);
   const scr = r => { r.current?.scrollIntoView({ behavior: "smooth", block: "start" }); };
   const go = () => { track("Empieza gratis"); setVw("onboarding"); setSt(1); window.scrollTo({ top: 0 }); };
   const nx = () => { setSt(s => Math.min(s+1, 4)); window.scrollTo({ top: 0 }); };
@@ -809,28 +825,96 @@ export default function CleoApp({ initialView }) {
     </div>
   );
 
-  if (vw === "onboarding") return (
+  if (vw === "onboarding") {
+    const stepLabels = ["Cuenta","Negocio","WhatsApp","Listo \u2713"];
+    const benefits = [
+      { title:"Responde 24/7", desc:"Atiende a tus clientes mientras t\u00fa duermes.", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, delay:"0s" },
+      { title:"Agenda autom\u00e1ticamente", desc:"Confirma citas sin intervenci\u00f3n humana.", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>, delay:"0.7s" },
+      { title:"Todo desde un panel", desc:"Agenda, servicios, estad\u00edsticas e ingresos.", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>, delay:"1.4s" },
+    ];
+
+    return (
     <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", background: C.bg, color: C.text, minHeight: "100vh" }}>
+      {/* NAV */}
       <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "14px 20px", position: "sticky", top: 0, zIndex: 50 }}>
-        <div style={{ maxWidth: 480, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ maxWidth: 920, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {st > 1 && st < 4 && <button onClick={() => setSt(s => Math.max(s-1,1))} style={{ background: "none", border: "none", cursor: "pointer", color: C.dim, padding: 4, display: "flex" }}><ArrowLeft size={18} /></button>}
             <Logo tag />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {st < 4 && <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 12, color: C.dim }}>{st}/4</span><div style={{ display: "flex", gap: 3 }}>{[1,2,3,4].map(s => <div key={s} style={{ width: s <= st ? 20 : 8, height: 5, borderRadius: 3, background: s <= st ? C.accent : C.border, transition: "all 0.3s" }} />)}</div></div>}
+            {st < 4 && <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {stepLabels.map((label, i) => (
+                <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: 22, height: 3, borderRadius: 2, background: i + 1 <= st ? C.accent : C.border, transition: "all 0.3s" }} />
+                  <span style={{ fontSize: 9, fontWeight: i + 1 <= st ? 600 : 400, color: i + 1 <= st ? C.accent : C.dim, transition: "color 0.3s" }}>{label}</span>
+                </div>
+              ))}
+            </div>}
             <button onClick={() => { setVw("landing"); setSt(1); }} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", color: C.dim }}><X size={14} /></button>
           </div>
         </div>
       </div>
-      <div style={{ maxWidth: 480, margin: "0 auto", padding: "24px 20px 60px" }}>
-        {st === 1 && <S1 data={d} setData={setD} onNext={nx} onLegal={function(page){setVw(page)}} />}
-        {st === 2 && <S2 data={d} setData={setD} onNext={nx} isMobile={mob} />}
-        {st === 3 && <S3 data={d} onNext={nx} />}
-        {st === 4 && <S4 data={d} onBack={() => { setVw("landing"); setSt(1); }} />}
-      </div>
+
+      {/* BODY */}
+      {st === 1 ? (
+        <div style={{ maxWidth: 920, margin: "0 auto", padding: mob ? "24px 20px 60px" : "24px 20px 60px" }}>
+          <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", display: mob ? "block" : "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr" }}>
+            {/* LEFT PANEL */}
+            {!mob && (
+              <div style={{ background: C.bg, borderRight: `1px solid ${C.border}`, padding: "40px 32px", position: "relative", overflow: "hidden" }}>
+                {/* Ambient glow */}
+                <div style={{ position: "absolute", top: -80, left: -80, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(74,222,128,0.07) 0%, transparent 70%)", pointerEvents: "none" }} />
+
+                <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, lineHeight: 1.3, marginBottom: 10, position: "relative", animation: "fadeUp 0.45s 0.05s both" }}>
+                  Tu negocio atendido{" "}<span style={{ background: C.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>24/7 con IA</span>{" "}en WhatsApp
+                </h2>
+                <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.5, marginBottom: 28, position: "relative", animation: "fadeUp 0.45s 0.15s both" }}>
+                  Configura Cleo en menos de 10 minutos. Sin conocimientos t\u00e9cnicos.
+                </p>
+
+                {/* Benefits */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, position: "relative", marginBottom: 28 }}>
+                  {benefits.map((b, i) => (
+                    <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 12px", borderRadius: 10, border: `1px solid transparent`, transition: "border-color 0.2s, background 0.2s", animation: `fadeUp 0.45s ${0.25 + i * 0.1}s both`, cursor: "default" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = "rgba(74,222,128,0.03)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "transparent"; e.currentTarget.style.background = "transparent"; }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 9, background: C.accentGlow, border: `1px solid ${C.accent}20`, display: "flex", alignItems: "center", justifyContent: "center", color: C.accent, flexShrink: 0, animation: "breathe 3s ease-in-out infinite", animationDelay: `${i * 0.7}s` }}>
+                        {b.icon}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 600 }}>{b.title}</div>
+                        <div style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>{b.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Trial card */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "13px 15px", position: "relative", animation: "fadeUp 0.45s 0.55s both" }}>
+                  <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: 1.5, color: C.dim, marginBottom: 4 }}>Prueba gratuita</div>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 19, color: C.accent }}>7 d\u00edas gratis</div>
+                  <div style={{ fontSize: 10, color: C.dim, marginTop: 3 }}>Sin tarjeta \u00b7 Cancela cuando quieras</div>
+                </div>
+              </div>
+            )}
+
+            {/* RIGHT PANEL */}
+            <div style={{ background: C.surface, padding: mob ? "24px 20px" : "40px 32px" }}>
+              <S1 data={d} setData={setD} onNext={nx} onLegal={function(page){setVw(page)}} />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "24px 20px 60px" }}>
+          {st === 2 && <S2 data={d} setData={setD} onNext={nx} isMobile={mob} />}
+          {st === 3 && <S3 data={d} onNext={nx} />}
+          {st === 4 && <S4 data={d} onBack={() => { setVw("landing"); setSt(1); }} />}
+        </div>
+      )}
     </div>
-  );
+    );
+  }
 
   return (
     <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", background: C.bg, color: C.text, minHeight: "100vh", overflowX: "hidden" }}>
