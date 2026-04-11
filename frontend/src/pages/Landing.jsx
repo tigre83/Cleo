@@ -46,32 +46,78 @@ const DAYS = [
 const DURATIONS = [{ value: 15, label: "15 min" },{ value: 30, label: "30 min" },{ value: 45, label: "45 min" },{ value: 60, label: "1 hora" },{ value: 90, label: "1h 30m" }];
 
 const DEMO_FLOWS = {
-  belleza: { name: "Glamour Studio", tab: "Belleza", color: "#4ADE80", messages: [
-    { from: "user", text: "Hola, quiero uñas acrílicas y un corte", delay: 0 },
-    { from: "bot", text: "Hola, te cuento lo que tenemos:\n\nUñas acrílicas — desde $25 hasta $40\nCorte dama — $12 o $18 (con secado)\n\n¿Agendamos ambos para el mismo día?", delay: 1800 },
-    { from: "user", text: "Sí, para el sábado", delay: 3800 },
-    { from: "bot", text: "El sábado tenemos:\nUñas con Paola: 9:00, 11:00, 14:00\nCorte con Daniela: 10:30, 13:00\n\nTe recomiendo uñas a las 9:00 y corte a las 10:30.", delay: 5600 },
-    { from: "user", text: "Perfecto, a nombre de Valentina Ruiz", delay: 7800 },
-    { from: "bot", text: "Confirmado, Valentina:\nSáb 9:00 — Uñas ($30) con Paola\nSáb 10:30 — Corte + secado ($18) con Daniela\n\nTe envío recordatorio el viernes.", delay: 9600 },
-  ]},
-  spa: { name: "Zenith Spa", tab: "Spa", color: "#34D399", messages: [
-    { from: "user", text: "Qué paquetes de spa tienen?", delay: 0 },
-    { from: "bot", text: "Nuestros paquetes:\n\nRelax Básico — Masaje 60min ($45)\nDía de Reina — Masaje + facial + exfoliación ($85)\nPremium — Todo + manicure spa ($120)\nParejas — 2 masajes + jacuzzi ($130)", delay: 1800 },
-    { from: "user", text: "Día de Reina, es regalo para mi mamá", delay: 4000 },
-    { from: "bot", text: "Qué lindo regalo. Dura ~2 horas. Disponible Mar-Sáb.\n\nPor $10 extra preparamos tarjeta de regalo personalizada + copa de vino de cortesía.\n\n¿Para qué día lo agendamos?", delay: 5800 },
-  ]},
-  dental: { name: "Sonrisas Dental", tab: "Salud", color: "#60A5FA", messages: [
-    { from: "user", text: "Quiero agendar una limpieza dental", delay: 0 },
-    { from: "bot", text: "Esta semana tenemos:\n\nMié — 9:00, 11:30, 15:00\nJue — 10:00, 14:30\nVie — 9:00, 16:00\n\n¿Qué día y hora te queda mejor?", delay: 1800 },
-    { from: "user", text: "Viernes a las 9", delay: 3600 },
-    { from: "bot", text: "Viernes 9:00 AM confirmado. La limpieza vale $35, dura ~40 min. Aceptamos Diners, Visa y Mastercard.\n\n¿A nombre de quién reservo?", delay: 5200 },
-  ]},
-  inmobiliaria: { name: "Remax Quito", tab: "Inmobiliaria", color: "#FBBF24", messages: [
-    { from: "user", text: "Busco depa de 3 dormitorios en Cumbayá", delay: 0 },
-    { from: "bot", text: "4 opciones en Cumbayá:\n\nMiravalle III — 120m², $185,000\nPortal de Cumbayá — 95m², $142,000\nJardines del Este — 135m², $210,000\nLa Primavera — 110m², $168,000\n\n¿Te interesa alguno?", delay: 1800 },
-    { from: "user", text: "Portal de Cumbayá, tiene parqueadero?", delay: 4200 },
-    { from: "bot", text: "Sí. Incluye 1 parqueadero cubierto, piscina, gimnasio, BBQ. A 5 min del C.C. Scala.\n\n¿Te agendo un recorrido con nuestro asesor?", delay: 6000 },
-  ]},
+  belleza: {
+    name: "Glamour Studio", tab: "Belleza", color: "#4ADE80",
+    placeholder: "Ej: Quiero cita para uñas el sábado",
+    preview: [
+      { from: "user", text: "Hola, quiero uñas acrílicas y un corte" },
+      { from: "bot",  text: "¡Hola! Tenemos disponible el sábado:\n\nUñas con Paola: 9:00 · 11:00 · 14:00\nCorte con Daniela: 10:30 · 13:00\n\nTe recomiendo uñas 9:00 y corte 10:30. ¿Confirmo?" },
+      { from: "user", text: "Sí, a nombre de Valentina Ruiz" },
+      { from: "bot",  text: "✅ Confirmado, Valentina:\nSáb 9:00 — Uñas acrílicas ($30)\nSáb 10:30 — Corte + secado ($18)\n\nTe envío recordatorio el viernes. 📅" },
+    ],
+    responses: [
+      { match: ["uña","acril","manicure","nail"], reply: "Tenemos uñas acrílicas desde $25 hasta $40. Esta semana disponible: Mié, Jue y Sáb. ¿Cuál te queda mejor?" },
+      { match: ["corte","pelo","cabello","secado"], reply: "Corte dama $12 o $18 con secado. Disponible Lun–Sáb. ¿Tienes preferencia de horario?" },
+      { match: ["sábado","sabado","sab"], reply: "El sábado tenemos:\nUñas con Paola: 9:00, 11:00, 14:00\nCorte con Daniela: 10:30, 13:00\n\n¿Te agendo?" },
+      { match: ["precio","cuanto","costo","vale"], reply: "Nuestros precios:\nUñas acrílicas: $25–$40\nCorte dama: $12–$18\nColoración: desde $35\nManicure: $10\n\n¿Qué servicio te interesa?" },
+      { match: ["hola","buenas","buenos","hi"], reply: "¡Hola! Soy Cleo, asistente de Glamour Studio. ¿En qué puedo ayudarte hoy? 💅" },
+      { match: [], reply: "Gracias por escribir. ¿Me dices tu nombre para agendar la cita?" },
+    ],
+  },
+  spa: {
+    name: "Zenith Spa", tab: "Spa", color: "#34D399",
+    placeholder: "Ej: ¿Tienen masaje para parejas este fin de semana?",
+    preview: [
+      { from: "user", text: "Qué paquetes de spa tienen?" },
+      { from: "bot",  text: "Nuestros paquetes:\n\nRelax Básico — Masaje 60min ($45)\nDía de Reina — Masaje + facial + exfoliación ($85)\nPremium — Todo incluido ($120)\nParejas — 2 masajes + jacuzzi ($130)" },
+      { from: "user", text: "Día de Reina para el sábado" },
+      { from: "bot",  text: "Perfecto. Sábado disponible: 10:00 · 13:00 · 15:30\nDuración ~2h. ¿A qué hora prefieres?" },
+    ],
+    responses: [
+      { match: ["pareja","parejas","dos","novio","esposo"], reply: "Paquete Parejas: 2 masajes relajantes + jacuzzi privado por $130. Disponible Mar–Dom. ¿Para cuándo?" },
+      { match: ["masaje","relax","relajante"], reply: "Masaje Relax 60min — $45\nMasaje Descontracturante 60min — $55\nMasaje Piedras Calientes — $65\n\n¿Cuál te interesa?" },
+      { match: ["facial","cara","rostro"], reply: "Facial Hidratante: $45 · 50min\nFacial Anti-edad: $65 · 70min\nIncluyendo vapor y mascarilla profesional. ¿Te agendo?" },
+      { match: ["regalo","mamá","mama","cumpleaños"], reply: "¡Qué detalle! Preparamos tarjeta de regalo personalizada + copa de bienvenida sin costo extra. ¿Qué paquete prefieres?" },
+      { match: ["hola","buenas","buenos","hi"], reply: "¡Bienvenida a Zenith Spa! Soy tu asistente virtual. ¿Qué experiencia quieres vivir hoy? ✨" },
+      { match: [], reply: "¿Me dices tu nombre para preparar tu reserva?" },
+    ],
+  },
+  dental: {
+    name: "Sonrisas Dental", tab: "Salud", color: "#60A5FA",
+    placeholder: "Ej: ¿Tienen turno mañana a las 10?",
+    preview: [
+      { from: "user", text: "Quiero agendar una limpieza dental" },
+      { from: "bot",  text: "Esta semana tenemos disponible:\n\nMié — 9:00 · 11:30 · 15:00\nJue — 10:00 · 14:30\nVie — 9:00 · 16:00\n\n¿Qué día te queda mejor?" },
+      { from: "user", text: "Viernes a las 9" },
+      { from: "bot",  text: "✅ Viernes 9:00 AM reservado.\nLimpieza dental — $35 · ~40min\nAceptamos Diners, Visa y Mastercard.\n\n¿A nombre de quién?" },
+    ],
+    responses: [
+      { match: ["limpieza","profilaxis"], reply: "Limpieza dental profesional — $35, dura ~40min. Disponible esta semana:\nMié 9:00/11:30/15:00 · Jue 10:00/14:30 · Vie 9:00/16:00" },
+      { match: ["dolor","duele","muela","molar"], reply: "Entiendo. Te agendamos con urgencia. Hoy tenemos espacio a las 15:00 o 17:00. ¿Puedes venir?" },
+      { match: ["blanqueamiento","blanquear"], reply: "Blanqueamiento LED profesional — $80, 1 hora. Resultados visibles desde la primera sesión. ¿Te interesa agendar?" },
+      { match: ["ortodoncia","brackets","frenos"], reply: "Ofrecemos consulta de ortodoncia gratis esta semana. El Dr. Pérez tiene cita el Jue 10:00 y Vie 14:00. ¿Te agendo?" },
+      { match: ["hola","buenas","buenos","hi"], reply: "¡Hola! Soy el asistente de Sonrisas Dental. ¿En qué puedo ayudarte? 🦷" },
+      { match: [], reply: "¿Cuál es tu nombre para registrar el turno?" },
+    ],
+  },
+  inmobiliaria: {
+    name: "Remax Quito", tab: "Inmobiliaria", color: "#FBBF24",
+    placeholder: "Ej: Busco depa 2 dormitorios en Cumbayá",
+    preview: [
+      { from: "user", text: "Busco depa de 3 dormitorios en Cumbayá" },
+      { from: "bot",  text: "Tengo 4 opciones en Cumbayá:\n\nMiravalle III — 120m² · $185,000\nPortal de Cumbayá — 95m² · $142,000\nJardines del Este — 135m² · $210,000\nLa Primavera — 110m² · $168,000" },
+      { from: "user", text: "Portal de Cumbayá, ¿tiene parqueadero?" },
+      { from: "bot",  text: "Sí. Incluye parqueadero cubierto, piscina, gimnasio y BBQ. A 5 min del C.C. Scala.\n\n¿Te agendo un recorrido esta semana?" },
+    ],
+    responses: [
+      { match: ["cumbayá","cumbaya"], reply: "En Cumbayá tengo:\nPortal de Cumbayá — 95m² · $142,000\nMiravalle III — 120m² · $185,000\nJardines del Este — 135m² · $210,000\n\n¿Cuántos dormitorios buscas?" },
+      { match: ["norte","quito norte","carcelén","calderón"], reply: "En el norte de Quito tengo opciones desde $85,000. ¿Prefieres 2 o 3 dormitorios?" },
+      { match: ["precio","presupuesto","cuanto","valor"], reply: "¿Cuál es tu presupuesto aproximado? Tenemos opciones desde $85,000 hasta $280,000 con financiamiento bancario disponible." },
+      { match: ["recorrido","visita","ver","conocer"], reply: "Perfecto. Puedo agendarte un recorrido con nuestro asesor. ¿Prefieres esta semana? Disponible Lun–Sáb 9:00–18:00." },
+      { match: ["hola","buenas","buenos","hi"], reply: "¡Hola! Soy el asistente de Remax Quito. ¿Qué tipo de propiedad estás buscando? 🏠" },
+      { match: [], reply: "¿Me das tu nombre y te cuento más detalles sobre las opciones disponibles?" },
+    ],
+  },
 };
 
 const PLANS = [
@@ -210,45 +256,175 @@ const btn1 = (off) => ({
 });
 
 function ChatDemo() {
-  const [ak, setAk] = useState("belleza"); const [vis, setVis] = useState([]); const [typ, setTyp] = useState(false);
-  const [ci, setCi] = useState(""); const [cm, setCm] = useState([]); const [isCu, setIsCu] = useState(false); const r = useRef(null);
+  const [ak, setAk] = useState("belleza");
+  const [msgs, setMsgs] = useState([]);
+  const [typing, setTyping] = useState(false);
+  const [input, setInput] = useState("");
+  const [ctaVisible, setCtaVisible] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
+  const scrollRef = useRef(null);
+  const inputRef = useRef(null);
   const f = DEMO_FLOWS[ak];
-  const res = useCallback((k) => { setAk(k); setVis([]); setTyp(false); setIsCu(false); setCm([]); }, []);
 
-  // Track page view
+  // Cargar preview al cambiar sector
   useEffect(() => {
-    const API = import.meta.env.VITE_API_URL;
-    fetch(`${API}/api/views`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        page: "/",
-        referrer: document.referrer || null,
-      }),
-    }).catch(() => {});
-  }, []);
+    setMsgs(f.preview.slice(0, 2));
+    setTyping(false);
+    setCtaVisible(false);
+    setUserInteracted(false);
+    setInput("");
+  }, [ak]);
 
-  useEffect(() => { if (isCu) return; const t = []; f.messages.forEach((m) => { if (m.from === "bot") t.push(setTimeout(() => setTyp(true), m.delay - 1200)); t.push(setTimeout(() => { setTyp(false); setVis(p => [...p, m]); }, m.delay)); }); return () => t.forEach(clearTimeout); }, [ak, f.messages, isCu]);
-  useEffect(() => { r.current && (r.current.scrollTop = r.current.scrollHeight); }, [vis, cm, typ]);
-  const snd = () => { if (!ci.trim()) return; setIsCu(true); setCm(p => [...p, { from: "user", text: ci }]); setCi(""); setTyp(true); setTimeout(() => { setTyp(false); const x = ["Gracias, ¿me das tu nombre para agendar?", "Entendido. ¿Qué día te queda mejor?", "Déjame verificar disponibilidad."]; setCm(p => [...p, { from: "bot", text: x[Math.floor(Math.random() * x.length)] }]); }, 2000); };
-  const all = isCu ? [...vis, ...cm] : vis;
+  // Auto-scroll
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [msgs, typing]);
+
+  const getReply = (text) => {
+    const lower = text.toLowerCase();
+    for (const r of f.responses) {
+      if (r.match.length === 0) continue;
+      if (r.match.some(kw => lower.includes(kw))) return r.reply;
+    }
+    return f.responses[f.responses.length - 1].reply;
+  };
+
+  const send = () => {
+    if (!input.trim()) return;
+    const userMsg = { from: "user", text: input.trim(), ts: new Date().toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" }) };
+    setMsgs(p => [...p, userMsg]);
+    setInput("");
+    setUserInteracted(true);
+    setTyping(true);
+    const reply = getReply(userMsg.text);
+    setTimeout(() => {
+      setTyping(false);
+      const botMsg = { from: "bot", text: reply, ts: new Date().toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" }) };
+      setMsgs(p => [...p, botMsg]);
+      // Mostrar CTA después de 2 intercambios del usuario
+      const userCount = msgs.filter(m => m.from === "user").length + 1;
+      if (userCount >= 1) setTimeout(() => setCtaVisible(true), 1200);
+    }, 1400 + Math.random() * 600);
+  };
+
+  const switchSector = (k) => {
+    setAk(k);
+  };
+
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", maxWidth: 560, margin: "0 auto", width: "100%" }}>
-      <div style={{ display: "flex", overflowX: "auto", borderBottom: `1px solid ${C.border}`, scrollbarWidth: "none" }}>
-        {Object.entries(DEMO_FLOWS).map(([k, v]) => (<button key={k} onClick={() => res(k)} style={{ flex: "0 0 auto", padding: "12px 18px", background: ak === k ? C.surface2 : "transparent", border: "none", borderBottom: ak === k ? `2px solid ${v.color}` : "2px solid transparent", color: ak === k ? C.text : C.dim, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{v.tab}</button>))}
+    <div style={{ maxWidth: 600, margin: "0 auto", width: "100%" }}>
+
+      {/* Tabs de sector */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", paddingBottom: 2, scrollbarWidth: "none" }}>
+        {Object.entries(DEMO_FLOWS).map(([k, v]) => (
+          <button key={k} onClick={() => switchSector(k)}
+            style={{ flexShrink: 0, padding: "7px 16px", borderRadius: 50, border: `1px solid ${ak === k ? v.color + "50" : C.border}`, background: ak === k ? v.color + "12" : "transparent", color: ak === k ? v.color : C.dim, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.18s", whiteSpace: "nowrap" }}
+            onMouseEnter={e => { if (ak !== k) { e.currentTarget.style.borderColor = v.color + "30"; e.currentTarget.style.color = C.text; }}}
+            onMouseLeave={e => { if (ak !== k) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}}>
+            {v.tab}
+          </button>
+        ))}
       </div>
-      <div style={{ background: C.surface2, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ width: 32, height: 32, borderRadius: 10, background: `${f.color}15`, border: `1px solid ${f.color}30`, display: "flex", alignItems: "center", justifyContent: "center" }}><MessageSquare size={14} color={f.color} /></div>
-        <div><div style={{ fontWeight: 600, fontSize: 13 }}>{f.name}</div><div style={{ fontSize: 10, color: C.accent, display: "flex", alignItems: "center", gap: 4 }}><CircleDot size={7} /> En línea</div></div>
+
+      {/* Contenedor del chat */}
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.35)" }}>
+
+        {/* Header del negocio */}
+        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 12, background: C.surface }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: f.color + "15", border: `1.5px solid ${f.color}30`, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0 }}>
+            <MessageSquare size={16} color={f.color} />
+            <div style={{ position: "absolute", bottom: -2, right: -2, width: 11, height: 11, borderRadius: "50%", background: "#22C55E", border: `2px solid ${C.surface}` }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{f.name}</div>
+            <div style={{ fontSize: 10, color: "#22C55E", display: "flex", alignItems: "center", gap: 4, marginTop: 1 }}>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#22C55E", animation: "pulse 1.5s infinite" }} />
+              En línea · Responde al instante
+            </div>
+          </div>
+          <div style={{ fontSize: 10, color: C.dim, background: C.surface2, border: `1px solid ${C.border}`, padding: "3px 10px", borderRadius: 20 }}>WhatsApp</div>
+        </div>
+
+        {/* Mensajes */}
+        <div ref={scrollRef} style={{ padding: "16px 14px", minHeight: 260, maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, background: "#080808", scrollBehavior: "smooth" }}>
+
+          {/* Label intro */}
+          {!userInteracted && (
+            <div style={{ textAlign: "center", marginBottom: 4 }}>
+              <span style={{ fontSize: 10, color: C.dim, background: C.surface, border: `1px solid ${C.border}`, padding: "3px 10px", borderRadius: 20 }}>
+                Conversación de ejemplo — escribe abajo para interactuar
+              </span>
+            </div>
+          )}
+
+          {msgs.map((m, i) => (
+            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: m.from === "user" ? "flex-end" : "flex-start", animation: "fadeUp 0.22s ease" }}>
+              <div style={{
+                maxWidth: "82%", padding: "10px 14px",
+                borderRadius: m.from === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                background: m.from === "user" ? "#1A3A28" : C.surface,
+                border: `1px solid ${m.from === "user" ? f.color + "20" : C.border}`,
+                fontSize: 13, color: m.from === "user" ? "#D0F0D8" : C.text,
+                lineHeight: 1.55, whiteSpace: "pre-line",
+              }}>
+                {m.text}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, paddingLeft: m.from === "bot" ? 4 : 0, paddingRight: m.from === "user" ? 4 : 0 }}>
+                {m.ts && <span style={{ fontSize: 9, color: C.dim }}>{m.ts}</span>}
+                {m.from === "bot" && <span style={{ fontSize: 9, color: f.color, display: "flex", alignItems: "center", gap: 2 }}><Check size={8} color={f.color} strokeWidth={3}/><Check size={8} color={f.color} strokeWidth={3} style={{ marginLeft: -4 }}/></span>}
+              </div>
+            </div>
+          ))}
+
+          {typing && (
+            <div style={{ display: "flex", alignItems: "flex-start", animation: "fadeUp 0.2s ease" }}>
+              <div style={{ padding: "12px 16px", borderRadius: "16px 16px 16px 4px", background: C.surface, border: `1px solid ${C.border}`, display: "flex", gap: 4, alignItems: "center" }}>
+                {[0,1,2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: f.color, animation: `pulse ${0.5 + i * 0.15}s ease-in-out infinite` }} />)}
+              </div>
+            </div>
+          )}
+
+          {/* CTA dentro del chat */}
+          {ctaVisible && !typing && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6, marginTop: 4, animation: "fadeUp 0.3s ease" }}>
+              <div style={{ padding: "10px 14px", borderRadius: "16px 16px 16px 4px", background: C.surface, border: `1px solid ${C.border}`, fontSize: 13, color: C.text, lineHeight: 1.55 }}>
+                ¿Quieres que Cleo haga esto por tu negocio? 🚀
+              </div>
+              <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                style={{ padding: "8px 18px", borderRadius: 50, background: f.color, color: C.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: `0 4px 16px ${f.color}30`, transition: "opacity 0.18s, transform 0.18s" }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}>
+                Activa mi asistente gratis →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Input */}
+        <div style={{ padding: "12px 14px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 8, alignItems: "center", background: C.surface }}>
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && send()}
+            placeholder={f.placeholder}
+            style={{ flex: 1, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 50, padding: "10px 18px", color: C.text, fontSize: 13, outline: "none", fontFamily: "inherit", transition: "border-color 0.18s, box-shadow 0.18s" }}
+            onFocus={e => { e.target.style.borderColor = f.color + "60"; e.target.style.boxShadow = `0 0 0 3px ${f.color}10`; }}
+            onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+          />
+          <button onClick={send}
+            style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: input.trim() ? f.color : C.surface2, color: input.trim() ? C.bg : C.dim, cursor: input.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.18s", flexShrink: 0, boxShadow: input.trim() ? `0 4px 14px ${f.color}30` : "none" }}
+            onMouseEnter={e => { if (input.trim()) { e.currentTarget.style.transform = "scale(1.08)"; }}}
+            onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}>
+            <Send size={15} />
+          </button>
+        </div>
       </div>
-      <div ref={r} style={{ padding: 14, minHeight: 250, maxHeight: 310, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-        {all.map((m, i) => (<div key={i} style={{ alignSelf: m.from === "user" ? "flex-end" : "flex-start", maxWidth: "82%", padding: "10px 14px", borderRadius: 14, borderBottomRightRadius: m.from === "user" ? 4 : 14, borderBottomLeftRadius: m.from === "bot" ? 4 : 14, background: m.from === "user" ? "#1E3A28" : C.surface2, color: m.from === "user" ? "#D0F0D8" : C.text, fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-line" }}>{m.text}</div>))}
-        {typ && <div style={{ alignSelf: "flex-start", padding: "12px 18px", borderRadius: 14, background: C.surface2, display: "flex", gap: 4 }}>{[0,1,2].map(i => <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: C.dim, animation: `pulse 1.2s ${i * 0.2}s infinite` }} />)}</div>}
-      </div>
-      <div style={{ display: "flex", gap: 8, padding: "10px 14px", borderTop: `1px solid ${C.border}` }}>
-        <input value={ci} onChange={e => setCi(e.target.value)} onKeyDown={e => e.key === "Enter" && snd()} placeholder="Escribe un mensaje..." style={{ flex: 1, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 50, padding: "10px 16px", color: C.text, fontSize: 13, outline: "none", fontFamily: "inherit" }} />
-        <button onClick={snd} style={{ width: 38, height: 38, borderRadius: "50%", border: "none", background: C.accent, color: C.bg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Send size={15} /></button>
-      </div>
+
+      {/* Hint */}
+      <p style={{ textAlign: "center", fontSize: 11, color: C.dim, marginTop: 12 }}>
+        Escribe cualquier mensaje — Cleo responde en segundos
+      </p>
     </div>
   );
 }
@@ -1343,7 +1519,12 @@ export default function CleoApp({ initialView }) {
         </div>
       </section>
 
-      <section ref={dr} style={sx}><span style={lb}>Demo interactiva</span><div style={tt}>Pruébalo tú mismo</div><p style={{ color: C.dim, fontSize: 14, marginBottom: 28, maxWidth: 440 }}>Elige un sector. También puedes escribir tu mensaje.</p><ChatDemo /></section>
+      <section ref={dr} style={sx}>
+        <span style={lb}>Demo interactiva</span>
+        <div style={tt}>Escribe un mensaje.<br/><span style={{ background: C.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Cleo responde en segundos.</span></div>
+        <p style={{ color: C.dim, fontSize: mob ? 14 : 16, marginBottom: 32, maxWidth: 480, lineHeight: 1.6 }}>Elige tu sector y escribe como si fueras un cliente real. Así es exactamente cómo funciona en tu negocio.</p>
+        <ChatDemo />
+      </section>
 
       <section style={sx}><span style={lb}>Sectores</span><div style={tt}>Para negocios que agendan citas</div>
         {SECTORS.map((g, gi) => (<div key={gi} style={{ marginBottom: 20 }}><div style={{ fontSize: 12, fontWeight: 600, color: C.accent, marginBottom: 8 }}>{g.cat}</div><div style={{ display: "grid", gridTemplateColumns: mob?"1fr 1fr":"repeat(4,1fr)", gap: 6 }}>{g.items.map((s, i) => (<div key={i} style={{ display: "flex", alignItems: "center", gap: 7, padding: mob?"9px 10px":"10px 14px", borderRadius: 10, background: C.surface, border: `1px solid ${C.border}`, fontSize: mob?11:12, fontWeight: 500 }}><s.I size={13} color={C.dim} strokeWidth={1.5} style={{ flexShrink: 0 }} /><span style={{ lineHeight: 1.3 }}>{s.l}</span></div>))}</div></div>))}
