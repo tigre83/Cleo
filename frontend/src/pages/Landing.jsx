@@ -87,6 +87,105 @@ const SECTORS = [
   { cat: "Otros", items: [{ I: Building, l: "Inmobiliarias" },{ I: Dog, l: "Veterinarias" },{ I: BookOpen, l: "Tareas dirigidas" },{ I: GraduationCap, l: "Nivelaciones académicas" }]},
 ];
 
+
+// ── CHAT MOCKUP — hero visual ─────────────────────────────────────────────────
+function ChatMockup({ C }) {
+  const [step, setStep] = useState(0);
+  const [typing, setTyping] = useState(false);
+
+  const MSGS = [
+    { from: "client", text: "Hola, ¿tienen cita disponible mañana a las 10?" },
+    { from: "cleo",   text: "¡Hola! Claro, tenemos disponible mañana martes a las 10:00 AM. ¿Te agendo?" },
+    { from: "client", text: "Sí por favor, a nombre de Valentina" },
+    { from: "cleo",   text: "✅ ¡Listo, Valentina! Cita confirmada para mañana martes 10:00 AM. Te enviaré un recordatorio esta noche. 📅" },
+  ];
+
+  useEffect(() => {
+    const run = async () => {
+      for (let i = 0; i < MSGS.length; i++) {
+        await new Promise(r => setTimeout(r, i === 0 ? 800 : 1400));
+        setTyping(true);
+        await new Promise(r => setTimeout(r, MSGS[i].from === "cleo" ? 900 : 400));
+        setTyping(false);
+        setStep(s => s + 1);
+      }
+      await new Promise(r => setTimeout(r, 3000));
+      setStep(0);
+    };
+    run();
+    const interval = setInterval(run, MSGS.length * 2000 + 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const visible = MSGS.slice(0, step);
+  const lastIsBot = visible.length > 0 && visible[visible.length - 1].from === "cleo";
+
+  return (
+    <div style={{ width: 320, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, overflow: "hidden", boxShadow: `0 24px 80px rgba(0,0,0,0.4), 0 0 0 1px ${C.border}` }}>
+      {/* Header */}
+      <div style={{ padding: "14px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10, background: C.surface }}>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", background: `${C.accent}15`, border: `1.5px solid ${C.accent}30`, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: C.accent, boxShadow: `0 0 8px ${C.accent}` }} />
+          <div style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: "50%", background: "#22C55E", border: `2px solid ${C.surface}` }} />
+        </div>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Cleo IA</div>
+          <div style={{ fontSize: 10, color: C.accent, display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ width: 5, height: 5, borderRadius: "50%", background: C.accent, animation: "pulse 1.5s infinite" }} />
+            En línea · Responde al instante
+          </div>
+        </div>
+        <div style={{ marginLeft: "auto", fontSize: 10, color: C.dim, background: C.surface2, padding: "3px 8px", borderRadius: 20, border: `1px solid ${C.border}` }}>WhatsApp</div>
+      </div>
+
+      {/* Messages */}
+      <div style={{ padding: "16px 14px", minHeight: 220, display: "flex", flexDirection: "column", gap: 10, background: "#080808" }}>
+        {visible.map((msg, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: msg.from === "client" ? "flex-end" : "flex-start", animation: "fadeUp 0.25s ease" }}>
+            <div style={{
+              maxWidth: "80%",
+              padding: "9px 13px",
+              borderRadius: msg.from === "client" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
+              background: msg.from === "client" ? "#1A3A2A" : C.surface,
+              border: `1px solid ${msg.from === "client" ? C.accent + "25" : C.border}`,
+              fontSize: 13, color: msg.from === "client" ? "#D0F0D8" : C.text,
+              lineHeight: 1.5,
+            }}>
+              {msg.text}
+              {msg.from === "cleo" && (
+                <div style={{ fontSize: 9, color: C.accent, marginTop: 4, display: "flex", alignItems: "center", gap: 3 }}>
+                  <Check size={8} color={C.accent} strokeWidth={3} /><Check size={8} color={C.accent} strokeWidth={3} style={{ marginLeft: -4 }} /> Entregado
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* Typing indicator */}
+        {typing && (
+          <div style={{ display: "flex", justifyContent: lastIsBot ? "flex-end" : "flex-start", animation: "fadeUp 0.2s ease" }}>
+            <div style={{ padding: "10px 14px", borderRadius: "14px 14px 14px 4px", background: C.surface, border: `1px solid ${C.border}`, display: "flex", gap: 4, alignItems: "center" }}>
+              {[0, 1, 2].map(i => (
+                <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: C.accent, animation: `pulse ${0.6 + i * 0.15}s ease-in-out infinite` }} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input */}
+      <div style={{ padding: "10px 12px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 8, alignItems: "center", background: C.surface }}>
+        <div style={{ flex: 1, padding: "8px 12px", borderRadius: 20, background: C.surface2, border: `1px solid ${C.border}`, fontSize: 12, color: C.dim }}>
+          Escribe un mensaje...
+        </div>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: C.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Send size={13} color={C.bg} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const Logo = ({ size = 20, tag = false }) => (
   <span style={{ display: "inline-flex", flexDirection: "column", alignItems: tag ? "flex-start" : "center", userSelect: "none" }}>
     <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: size, lineHeight: 1, letterSpacing: -1, background: "linear-gradient(100deg, #4ADE80 0%, #22D3EE 50%, #4ADE80 100%)", backgroundSize: "300% 100%", animation: "gradBreathe 2.5s ease-in-out infinite", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>cleo<span style={{ WebkitTextFillColor: "inherit" }}>.</span></span>
@@ -1077,17 +1176,64 @@ export default function CleoApp({ initialView }) {
         </div>
       </nav>
 
-      <section style={{ padding: mob?"70px 16px 40px":"100px 20px 80px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "-30%", left: "50%", transform: "translateX(-50%)", width: 600, height: 600, background: `radial-gradient(circle,${C.accentGlow} 0%,transparent 70%)`, pointerEvents: "none" }} />
-        <div style={{ position: "relative", maxWidth: 680, margin: "0 auto" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", borderRadius: 50, background: C.surface, border: `1px solid ${C.border}`, fontSize: 11, color: C.dim, marginBottom: 20 }}><CircleDot size={8} color={C.accent} /> Hecho en Ecuador para PYMEs</div>
-          <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: mob ? 30 : "clamp(36px,5vw,50px)", fontWeight: 800, lineHeight: 1.1, letterSpacing: mob?-0.5:-1.5, marginBottom: 18 }}>Tu negocio atendido{" "}<span style={{ background: C.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>24/7 con IA</span>{" "}en WhatsApp</h1>
-          <p style={{ fontSize: mob?14:16, color: C.dim, maxWidth: 480, margin: "0 auto 24px" }}>Chatbot inteligente que responde, agenda citas y confirma — sin intervención humana.</p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexDirection: mob?"column":"row", alignItems: "center", padding: mob?"0 12px":"0" }}>
-            <button onClick={go} style={{ padding: "14px 32px", borderRadius: 50, background: C.accent, color: C.bg, fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: `0 0 40px ${C.accentGlow}`, width: mob?"100%":"auto" }}>Empieza gratis — 7 días</button>
-            <button onClick={() => { track("Ver demo"); scr(dr); }} style={{ padding: "14px 32px", borderRadius: 50, background: "transparent", color: C.text, border: `1px solid ${C.border}`, fontSize: 15, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", width: mob?"100%":"auto" }}>Ver demo</button>
+      <section style={{ padding: mob?"70px 16px 60px":"100px 20px 90px", position: "relative", overflow: "hidden" }}>
+        {/* Glow fondo */}
+        <div style={{ position: "absolute", top: "-20%", left: "50%", transform: "translateX(-50%)", width: 800, height: 800, background: `radial-gradient(circle,${C.accentGlow} 0%,transparent 65%)`, pointerEvents: "none" }} />
+
+        <div style={{ position: "relative", maxWidth: 1080, margin: "0 auto", display: mob ? "block" : "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
+
+          {/* ── TEXTO ── */}
+          <div style={{ textAlign: mob ? "center" : "left" }}>
+            {/* Badge */}
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", borderRadius: 50, background: C.surface, border: `1px solid ${C.border}`, fontSize: 11, color: C.dim, marginBottom: 24 }}>
+              <CircleDot size={7} color={C.accent} /> IA para PYMEs ecuatorianas
+            </div>
+
+            {/* Headline */}
+            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: mob ? 32 : "clamp(40px,5vw,58px)", fontWeight: 800, lineHeight: 1.08, letterSpacing: mob ? -0.5 : -2, marginBottom: 20, color: C.text }}>
+              Cada cliente que<br/>
+              escribe{" "}
+              <span style={{ background: C.grad, backgroundSize: "300% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "gradBreathe 2.5s ease-in-out infinite" }}>merece respuesta.</span><br/>
+              Cleo la da.
+            </h1>
+
+            {/* Subheadline */}
+            <p style={{ fontSize: mob ? 15 : 17, color: C.dim, maxWidth: 460, margin: mob ? "0 auto 28px" : "0 0 28px", lineHeight: 1.65 }}>
+              Tu negocio responde, agenda citas y confirma por WhatsApp — automáticamente. Sin que tú hagas nada.
+            </p>
+
+            {/* CTAs */}
+            <div style={{ display: "flex", gap: 12, flexDirection: mob ? "column" : "row", alignItems: mob ? "stretch" : "center", marginBottom: 24 }}>
+              <button onClick={go}
+                style={{ padding: "15px 32px", borderRadius: 50, background: C.accent, color: C.bg, fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: `0 0 32px rgba(74,222,128,0.3), 0 4px 16px rgba(74,222,128,0.2)`, transition: "opacity 0.18s, transform 0.18s" }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}>
+                Empieza gratis — 7 días
+              </button>
+              <button onClick={() => { track("Ver demo"); scr(dr); }}
+                style={{ padding: "15px 32px", borderRadius: 50, background: "transparent", color: C.text, border: `1px solid ${C.border}`, fontSize: 15, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", transition: "border-color 0.2s" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = C.accent + "60"}
+                onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                Ver cómo funciona
+              </button>
+            </div>
+
+            {/* Trust pills */}
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: mob ? "center" : "flex-start" }}>
+              {["Sin tarjeta de crédito", "Setup en 15 minutos", "Cancela cuando quieras"].map((t, i) => (
+                <span key={i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.dim }}>
+                  <Check size={11} color={C.accent} strokeWidth={3} />{t}
+                </span>
+              ))}
+            </div>
           </div>
-          <div style={{ marginTop: 24, display: "flex", gap: mob?8:20, justifyContent: "center", flexDirection: mob?"column":"row", alignItems: "center", fontSize: 12, color: C.dim }}>{["Sin tarjeta","15 min de setup","Cancela cuando quieras"].map((t, i) => <span key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}><Check size={12} color={C.accent} />{t}</span>)}</div>
+
+          {/* ── MOCKUP CHAT ── */}
+          {!mob && (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <ChatMockup C={C} />
+            </div>
+          )}
         </div>
       </section>
 
