@@ -233,9 +233,17 @@ function ChatMockup({ C }) {
 }
 
 const Logo = ({ size = 20, tag = false }) => (
-  <span style={{ display: "inline-flex", flexDirection: "column", alignItems: tag ? "flex-start" : "center", userSelect: "none" }}>
-    <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: size, lineHeight: 1, letterSpacing: -1, background: "linear-gradient(100deg, #4ADE80 0%, #22D3EE 50%, #4ADE80 100%)", backgroundSize: "300% 100%", animation: "gradBreathe 2.5s ease-in-out infinite", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>cleo<span style={{ WebkitTextFillColor: "inherit" }}>.</span></span>
-    {tag && <span style={{ fontFamily: "monospace", fontSize: Math.max(size * 0.32, 8), letterSpacing: 2.5, color: C.iaText, marginTop: 2 }}>powered by ia</span>}
+  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, userSelect: "none", cursor: "default" }}>
+    {/* Icono dot con glow */}
+    <span style={{ position: "relative", width: size * 1.1, height: size * 1.1, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(74,222,128,0.08)", animation: "breathe 3s ease-in-out infinite" }} />
+      <span style={{ width: size * 0.38, height: size * 0.38, borderRadius: "50%", background: "linear-gradient(135deg, #4ADE80, #22D3EE)", boxShadow: "0 0 10px rgba(74,222,128,0.5)", display: "inline-block", flexShrink: 0 }} />
+    </span>
+    {/* Wordmark + tag */}
+    <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-start" }}>
+      <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: size, lineHeight: 1, letterSpacing: -1, background: "linear-gradient(100deg, #4ADE80 0%, #22D3EE 50%, #4ADE80 100%)", backgroundSize: "300% 100%", animation: "gradBreathe 2.5s ease-in-out infinite", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>cleo<span style={{ WebkitTextFillColor: "inherit" }}>.</span></span>
+      {tag && <span style={{ fontFamily: "'DM Mono', monospace, monospace", fontSize: Math.max(size * 0.28, 7), letterSpacing: "0.18em", color: "rgba(107,114,128,0.7)", marginTop: 1, textTransform: "lowercase", lineHeight: 1 }}>powered by ia</span>}
+    </span>
   </span>
 );
 const inp = (err) => ({
@@ -1076,7 +1084,7 @@ export default function CleoApp({ initialView }) {
       <div style={{ padding:"16px 20px", borderBottom:"1px solid "+C.border, position:"sticky", top:0, background:C.bg, zIndex:50 }}>
         <div style={{ maxWidth:680, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <button onClick={function(){setVw("onboarding")}} style={{ background:"none", border:"none", cursor:"pointer", color:C.dim, display:"flex", alignItems:"center", gap:6, fontFamily:"inherit", fontSize:13 }}><ArrowLeft size={16} /> Volver</button>
-          <Logo size={18} tag />
+          <Logo size={22} tag />
         </div>
       </div>
       <div style={legalWrap}>
@@ -1118,7 +1126,7 @@ export default function CleoApp({ initialView }) {
       <div style={{ padding:"16px 20px", borderBottom:"1px solid "+C.border, position:"sticky", top:0, background:C.bg, zIndex:50 }}>
         <div style={{ maxWidth:680, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <button onClick={function(){setVw("onboarding")}} style={{ background:"none", border:"none", cursor:"pointer", color:C.dim, display:"flex", alignItems:"center", gap:6, fontFamily:"inherit", fontSize:13 }}><ArrowLeft size={16} /> Volver</button>
-          <Logo size={18} tag />
+          <Logo size={22} tag />
         </div>
       </div>
       <div style={legalWrap}>
@@ -1162,7 +1170,7 @@ export default function CleoApp({ initialView }) {
         <h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:700, marginBottom:8 }}>Página no encontrada</h1>
         <p style={{ fontSize:14, color:C.dim, lineHeight:1.5, marginBottom:24 }}>La página que buscas no existe o fue movida.</p>
         <button onClick={function(){setVw("landing");window.scrollTo(0,0)}} style={{ padding:"14px 32px", borderRadius:50, background:C.accent, color:C.bg, fontSize:15, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit" }}>Volver al inicio</button>
-        <div style={{ marginTop:20 }}><Logo size={18} tag /></div>
+        <div style={{ marginTop:20 }}><Logo size={22} tag /></div>
       </div>
     </div>
   );
@@ -1172,7 +1180,7 @@ export default function CleoApp({ initialView }) {
       <div style={{ padding:"16px 20px", borderBottom:"1px solid "+C.border, position:"sticky", top:0, background:C.bg, zIndex:50 }}>
         <div style={{ maxWidth:680, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <button onClick={function(){setVw("landing")}} style={{ background:"none", border:"none", cursor:"pointer", color:C.dim, display:"flex", alignItems:"center", gap:6, fontFamily:"inherit", fontSize:13 }}><ArrowLeft size={16} /> Inicio</button>
-          <Logo size={18} tag />
+          <Logo size={22} tag />
         </div>
       </div>
       <div style={legalWrap}>
@@ -1206,7 +1214,7 @@ export default function CleoApp({ initialView }) {
       <div style={{ padding:"16px 20px", borderBottom:"1px solid "+C.border, position:"sticky", top:0, background:C.bg, zIndex:50 }}>
         <div style={{ maxWidth:680, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <button onClick={function(){setVw("landing")}} style={{ background:"none", border:"none", cursor:"pointer", color:C.dim, display:"flex", alignItems:"center", gap:6, fontFamily:"inherit", fontSize:13 }}><ArrowLeft size={16} /> Inicio</button>
-          <Logo size={18} tag />
+          <Logo size={22} tag />
         </div>
       </div>
       <div style={legalWrap}>
@@ -1329,24 +1337,41 @@ export default function CleoApp({ initialView }) {
     <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", background: C.bg, color: C.text, minHeight: "100vh", overflowX: "hidden" }}>
       <nav style={{ position: "sticky", top: 0, zIndex: 100, padding: "14px 20px", background: C.navBg, backdropFilter: "blur(20px)", borderBottom: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ animation: "navEntry 0.6s cubic-bezier(0.16,1,0.3,1) both" }}><Logo size={22} tag /></div>
+          <div style={{ animation: "navEntry 0.6s cubic-bezier(0.16,1,0.3,1) both" }}><Logo size={24} tag /></div>
           {mob ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, animation: "navEntry 0.6s 0.1s cubic-bezier(0.16,1,0.3,1) both" }}>
               <button onClick={cycleTheme} style={{ width: 30, height: 30, borderRadius: "50%", background: C.surface, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 {resolved === "dark" ? <MoonIcon size={13} color={C.dim} /> : resolved === "light" ? <Sun size={13} color={C.dim} /> : <Settings size={13} color={C.dim} />}
               </button>
-              <button onClick={go} style={{ padding: "8px 18px", borderRadius: 50, background: C.accent, color: C.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit" }}>Empezar gratis</button>
+              <button onClick={go} style={{ padding: "8px 18px", borderRadius: 50, background: C.accent, color: C.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 14px rgba(74,222,128,0.25)" }}>Empezar gratis</button>
             </div>
           ) : (
             <div style={{ display: "flex", gap: 24, alignItems: "center", animation: "navEntry 0.6s 0.1s cubic-bezier(0.16,1,0.3,1) both" }}>
-              <button onClick={() => scr(dr)} style={{ color: C.dim, fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Cómo funciona</button>
-              <button onClick={() => scr(pr)} style={{ color: C.dim, fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Planes</button>
-              <button onClick={() => scr(cr)} style={{ color: C.dim, fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Calculadora</button>
-              <button onClick={cycleTheme} style={{ width: 32, height: 32, borderRadius: "50%", background: C.surface, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              {[["Cómo funciona", () => scr(dr)], ["Planes", () => scr(pr)], ["Calculadora", () => scr(cr)]].map(([label, action]) => (
+                <button key={label} onClick={action}
+                  style={{ color: C.dim, fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", transition: "color 0.15s", padding: "4px 2px" }}
+                  onMouseEnter={e => e.currentTarget.style.color = C.text}
+                  onMouseLeave={e => e.currentTarget.style.color = C.dim}>
+                  {label}
+                </button>
+              ))}
+              <button onClick={cycleTheme} style={{ width: 32, height: 32, borderRadius: "50%", background: C.surface, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "border-color 0.15s" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = C.accent + "40"}
+                onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
                 {resolved === "dark" ? <MoonIcon size={14} color={C.dim} /> : resolved === "light" ? <Sun size={14} color={C.dim} /> : <Settings size={14} color={C.dim} />}
               </button>
-              <button onClick={() => window.location.href="/dashboard"} style={{ color: C.dim, fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Iniciar sesión</button>
-              <button onClick={go} style={{ padding: "8px 20px", borderRadius: 50, background: C.accent, color: C.bg, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit" }}>Prueba gratis</button>
+              <button onClick={() => window.location.href="/dashboard"}
+                style={{ color: C.dim, fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", transition: "color 0.15s" }}
+                onMouseEnter={e => e.currentTarget.style.color = C.text}
+                onMouseLeave={e => e.currentTarget.style.color = C.dim}>
+                Iniciar sesión
+              </button>
+              <button onClick={go}
+                style={{ padding: "9px 22px", borderRadius: 50, background: C.accent, color: C.bg, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 16px rgba(74,222,128,0.25)", transition: "opacity 0.18s, transform 0.18s, box-shadow 0.18s" }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 22px rgba(74,222,128,0.35)"; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(74,222,128,0.25)"; }}>
+                Prueba gratis
+              </button>
             </div>
           )}
         </div>
@@ -1565,7 +1590,7 @@ export default function CleoApp({ initialView }) {
 
       <section style={{ ...sx, textAlign: "center", paddingBottom: mob?60:100 }}><div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: mob?"40px 20px":"56px 40px", maxWidth: 560, margin: "0 auto" }}><h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: mob ? 20 : 24, fontWeight: 700, letterSpacing: -0.5, marginBottom: 10 }}>¿Lista para automatizar?</h2><p style={{ color: C.dim, fontSize: 14, marginBottom: 24 }}>7 días gratis, sin compromiso.</p><button onClick={go} style={{ padding: "15px 40px", borderRadius: 50, background: C.accent, color: C.bg, fontSize: 16, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit" }}>Crear mi cuenta gratis</button></div></section>
 
-      <footer style={{ padding: "28px 20px", borderTop: `1px solid ${C.border}`, textAlign: "center" }}><div style={{ marginBottom: 6 }}><Logo size={18} tag /></div><div style={{ fontSize: 11, color: C.dim, marginBottom: 8 }}>Hecho en Ecuador para PYMEs ecuatorianas</div><div style={{ fontSize: 11, display:"flex", justifyContent:"center", gap:6, flexWrap:"wrap" }}><button onClick={function(){setVw("terminos");window.scrollTo(0,0)}} style={{ background:"none", border:"none", color:"#374151", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>Términos</button><span style={{ color:"#2A2A2A" }}>·</span><button onClick={function(){setVw("privacidad");window.scrollTo(0,0)}} style={{ background:"none", border:"none", color:"#374151", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>Privacidad</button><span style={{ color:"#2A2A2A" }}>·</span><button onClick={function(){setVw("status");window.scrollTo(0,0)}} style={{ background:"none", border:"none", color:"#374151", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>Estado</button><span style={{ color:"#2A2A2A" }}>·</span><button onClick={function(){setVw("changelog");window.scrollTo(0,0)}} style={{ background:"none", border:"none", color:"#374151", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>Novedades</button></div></footer>
+      <footer style={{ padding: "28px 20px", borderTop: `1px solid ${C.border}`, textAlign: "center" }}><div style={{ marginBottom: 6 }}><Logo size={22} tag /></div><div style={{ fontSize: 11, color: C.dim, marginBottom: 8 }}>Hecho en Ecuador para PYMEs ecuatorianas</div><div style={{ fontSize: 11, display:"flex", justifyContent:"center", gap:6, flexWrap:"wrap" }}><button onClick={function(){setVw("terminos");window.scrollTo(0,0)}} style={{ background:"none", border:"none", color:"#374151", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>Términos</button><span style={{ color:"#2A2A2A" }}>·</span><button onClick={function(){setVw("privacidad");window.scrollTo(0,0)}} style={{ background:"none", border:"none", color:"#374151", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>Privacidad</button><span style={{ color:"#2A2A2A" }}>·</span><button onClick={function(){setVw("status");window.scrollTo(0,0)}} style={{ background:"none", border:"none", color:"#374151", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>Estado</button><span style={{ color:"#2A2A2A" }}>·</span><button onClick={function(){setVw("changelog");window.scrollTo(0,0)}} style={{ background:"none", border:"none", color:"#374151", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>Novedades</button></div></footer>
     </div>
   );
 }
