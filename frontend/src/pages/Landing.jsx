@@ -1041,21 +1041,21 @@ export default function CleoApp({ initialView }) {
   useEffect(() => { const c = () => setMob(window.innerWidth < 768); c(); window.addEventListener("resize", c); return () => window.removeEventListener("resize", c); }, []);
   useEffect(() => {
     // SEO Meta tags
-    document.title = "Cleo — Tu negocio atendido 24/7 con IA en WhatsApp";
+    document.title = "Cleo — Agenda citas automáticamente por WhatsApp con IA | Ecuador";
     // Favicon
     const fav = document.createElement("link"); fav.rel="icon"; fav.href="https://cleo.app/favicon.ico"; document.head.appendChild(fav);
     const apple = document.createElement("link"); apple.rel="apple-touch-icon"; apple.href="https://cleo.app/apple-touch-icon.png"; document.head.appendChild(apple);
     const metas = [
-      {name:"description",content:"Chatbot inteligente que responde, agenda citas y confirma — mientras tú te enfocas en tu negocio. Hecho en Ecuador para PYMEs."},
-      {name:"keywords",content:"agendamiento WhatsApp Ecuador, chatbot IA PYMEs, agenda automática WhatsApp"},
-      {property:"og:title",content:"Cleo — Tu negocio atendido 24/7 con IA"},
-      {property:"og:description",content:"Responde, agenda y confirma citas automáticamente en WhatsApp. Prueba gratis 7 días."},
+      {name:"description",content:"Cleo automatiza la atención de tu negocio por WhatsApp. Agenda citas, responde clientes y confirma reservas con IA — 24/7. Sin intervención humana. Ideal para peluquerías, spas, consultorios y PYMEs ecuatorianas."},
+      {name:"keywords",content:"agendar citas por WhatsApp, automatización WhatsApp Ecuador, chatbot IA negocios, agenda automática WhatsApp, asistente virtual WhatsApp, recordatorio citas automático, reservas online Ecuador, chatbot peluquería, chatbot spa, chatbot consultorio, bot WhatsApp Ecuador, inteligencia artificial negocios Ecuador, respuesta automática WhatsApp, sistema de citas Ecuador, agendamiento online PYME"},
+      {property:"og:title",content:"Cleo — Agenda citas por WhatsApp con IA | Ecuador"},
+      {property:"og:description",content:"Automatiza la atención de tu negocio por WhatsApp. Cleo responde, agenda citas y confirma reservas con IA — sin que tú hagas nada. Prueba gratis 7 días."},
       {property:"og:image",content:"https://cleo.app/og-image.png"},
       {property:"og:url",content:"https://cleo.app"},
       {property:"og:type",content:"website"},
       {name:"twitter:card",content:"summary_large_image"},
-      {name:"twitter:title",content:"Cleo — IA para tu negocio en WhatsApp"},
-      {name:"twitter:description",content:"Agenda citas automáticamente 24/7. Hecho en Ecuador."},
+      {name:"twitter:title",content:"Cleo — Agenda citas automáticamente por WhatsApp"},
+      {name:"twitter:description",content:"Tu negocio responde y agenda citas por WhatsApp con IA. 24/7. Hecho en Ecuador para PYMEs."},
       {name:"twitter:image",content:"https://cleo.app/og-image.png"},
     ];
     const added = metas.map(function(m){const t=document.createElement("meta");if(m.name)t.name=m.name;if(m.property)t.setAttribute("property",m.property);t.content=m.content;document.head.appendChild(t);return t;});
